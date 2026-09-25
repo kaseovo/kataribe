@@ -76,6 +76,9 @@ export async function startInterview(
   let session: Session | undefined;
   let capture: Capture | undefined;
   let playedAnything = false;
+  // Set once stop() closes the socket. That close is ours and expected, and
+  // reporting it would overwrite what the upload says — including a failure.
+  let stopping = false;
 
   const openedAt = performance.now();
   const transcript: { speaker: Speaker; text: string; started_at: number }[] = [];
@@ -136,8 +139,10 @@ export async function startInterview(
         if (content.turnComplete) callbacks.onPhase('listening');
       },
       onerror: (event: ErrorEvent) => callbacks.onClosed(event.message || 'Connection error'),
-      onclose: (event: CloseEvent) =>
-        callbacks.onClosed(`Closed ${event.code}: ${event.reason || 'no reason given'}`),
+      onclose: (event: CloseEvent) => {
+        if (stopping) return;
+        callbacks.onClosed(`Closed ${event.code}: ${event.reason || 'no reason given'}`);
+      },
     },
   });
 
@@ -195,6 +200,7 @@ export async function startInterview(
       const mic = capture?.recorded() ?? new Int16Array(0);
       const spoken = playback.recorded();
       await capture?.stop();
+      stopping = true;
       session?.close();
       await playback.close();
 
