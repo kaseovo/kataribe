@@ -6,10 +6,11 @@ import pytest
 from fastapi.testclient import TestClient
 from google.genai import types
 
+from kataribe import brain
 from kataribe.config import Settings, get_settings
 from kataribe.gemini import InterviewTuning, SessionCredentials, build_live_config
 from kataribe.main import create_app
-from kataribe.store import Quote, Store, Story, Turn
+from kataribe.store import FamilyQuestion, Plan, Quote, Store, Story, Turn
 
 
 def client_with(settings: Settings) -> TestClient:
@@ -190,7 +191,7 @@ def story_for(store_dir: Path, *, visibility: str) -> tuple[TestClient, str, str
             )
         ],
     )
-    return stored(store_dir), senior_id, session_id
+    return stored(store_dir, gemini_api_key="k"), senior_id, session_id
 
 
 def test_the_family_sees_a_story_that_was_agreed(tmp_path: Path) -> None:
@@ -222,3 +223,208 @@ def test_a_quote_carries_where_to_start_playing(tmp_path: Path) -> None:
     assert quote["session_id"] == session_id
     # Turn 1 begins roughly where turn 0 ended.
     assert quote["seek_seconds"] == 2.0
+
+
+def test_a_relative_can_ask_and_sees_it_waiting(tmp_path: Path) -> None:
+    client, senior_id, _ = story_for(tmp_path, visibility="family")
+
+    asked = client.post(
+        f"/api/family/{senior_id}/questions",
+        json={"asked_by": "孫のゆか", "text": "結婚式のときのお着物はどんなものでしたか?"},
+    ).json()
+
+    assert asked["status"] == "waiting"
+    questions = client.get(f"/api/family/{senior_id}").json()["questions"]
+    assert [q["text"] for q in questions] == ["結婚式のときのお着物はどんなものでしたか?"]
+
+
+def test_a_held_question_looks_exactly_like_a_waiting_one(tmp_path: Path) -> None:
+    # Held means it touches something she refused. Saying so to the family would
+    # tell them what she refused, so to them it is simply still waiting.
+    client, senior_id, _ = story_for(tmp_path, visibility="family")
+    store = Store(tmp_path)
+    store.add_family_question(senior_id, asked_by="孫のゆか", text="戦争のころは?", status="held")
+
+    question = client.get(f"/api/family/{senior_id}").json()["questions"][0]
+
+    assert question["status"] == "waiting"
+    assert "held" not in json.dumps(question)
+
+
+def test_an_answer_she_shared_comes_back_with_the_question(tmp_path: Path) -> None:
+    client, senior_id, session_id = story_for(tmp_path, visibility="family")
+    store = Store(tmp_path)
+    question_id = store.add_family_question(senior_id, asked_by="孫のゆか", text="生まれた村は?")
+    store.mark_question_asked(question_id, session_id, ["story1"])
+
+    question = client.get(f"/api/family/{senior_id}").json()["questions"][0]
+
+    assert question["status"] == "asked"
+    assert question["answered_in"] == ["story1"]
+
+
+def test_an_answer_is_shown_only_if_that_story_was_shared(tmp_path: Path) -> None:
+    client, senior_id, session_id = story_for(tmp_path, visibility="private")
+    store = Store(tmp_path)
+    question_id = store.add_family_question(senior_id, asked_by="孫のゆか", text="生まれた村は?")
+    private_story = store.stories_for_senior(senior_id)[0].id
+    store.mark_question_asked(question_id, session_id, [private_story])
+
+    question = client.get(f"/api/family/{senior_id}").json()["questions"][0]
+
+    # They learn it was asked, and nothing about whether or what she answered.
+    assert question["status"] == "asked"
+    assert question["answered_in"] == []
+
+
+def test_a_question_touching_a_refused_topic_is_held_yet_looks_waiting(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    client, senior_id, _ = story_for(tmp_path, visibility="family")
+    store = Store(tmp_path)
+    store.save_plan(senior_id, Plan(story_so_far="", next_questions=[], avoid_topics=["戦争"]))
+    monkeypatch.setattr(
+        brain, "screen", lambda settings, questions, avoid: {q.id for q in questions}
+    )
+
+    asked = client.post(
+        f"/api/family/{senior_id}/questions",
+        json={"asked_by": "孫のゆか", "text": "戦争のころはどこにいたの?"},
+    ).json()
+
+    assert asked["status"] == "waiting"
+    assert [q.status for q in store.family_questions(senior_id)] == ["held"]
+
+
+def test_a_question_that_cannot_be_screened_is_not_taken(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Taking it anyway would leave it waiting, unchecked, to be put to her.
+    client, senior_id, _ = story_for(tmp_path, visibility="family")
+    store = Store(tmp_path)
+    store.save_plan(senior_id, Plan(story_so_far="", next_questions=[], avoid_topics=["戦争"]))
+
+    def unreachable(
+        settings: Settings, questions: list[FamilyQuestion], avoid: list[str]
+    ) -> set[str]:
+        raise RuntimeError("503 UNAVAILABLE")
+
+    monkeypatch.setattr(brain, "screen", unreachable)
+
+    response = client.post(
+        f"/api/family/{senior_id}/questions",
+        json={"asked_by": "孫のゆか", "text": "お着物は?"},
+    )
+
+    assert response.status_code == 503
+    assert store.family_questions(senior_id) == []
+
+
+def test_nothing_needs_screening_before_anything_was_refused(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    client, senior_id, _ = story_for(tmp_path, visibility="family")
+
+    def unexpected(
+        settings: Settings, questions: list[FamilyQuestion], avoid: list[str]
+    ) -> set[str]:
+        raise AssertionError("screened with nothing to screen against")
+
+    monkeypatch.setattr(brain, "screen", unexpected)
+
+    response = client.post(
+        f"/api/family/{senior_id}/questions",
+        json={"asked_by": "孫のゆか", "text": "お着物は?"},
+    )
+
+    assert response.status_code == 200
+
+
+@pytest.mark.parametrize("field", ["asked_by", "text"])
+def test_a_blank_question_or_asker_is_refused(tmp_path: Path, field: str) -> None:
+    client, senior_id, _ = story_for(tmp_path, visibility="family")
+    question = {"asked_by": "孫のゆか", "text": "お着物は?", field: "   "}
+
+    response = client.post(f"/api/family/{senior_id}/questions", json=question)
+
+    assert response.status_code == 422
+
+
+def test_a_question_for_nobody_is_refused(tmp_path: Path) -> None:
+    response = stored(tmp_path).post(
+        "/api/family/nope/questions", json={"asked_by": "孫のゆか", "text": "お着物は?"}
+    )
+
+    assert response.status_code == 404
+
+
+def test_waiting_questions_reach_the_interviewer_with_who_asked() -> None:
+    from kataribe.brain import context_for
+    from kataribe.store import Senior
+
+    senior = Senior(
+        id="s", name="田中ハル", name_reading="", birth_year=None, birthplace="", family=[]
+    )
+    waiting = [
+        FamilyQuestion(
+            id=str(i),
+            senior_id="s",
+            asked_by="孫のゆか",
+            text=f"質問{i}",
+            status="pending",
+            asked_in_session=None,
+            answer_story_ids=[],
+        )
+        for i in range(2)
+    ]
+
+    context = context_for(senior, Plan("", [], []), waiting)
+
+    assert "孫のゆかより: 質問0" in context
+    assert "孫のゆかより: 質問1" in context
+
+
+def test_a_session_carries_at_most_the_two_oldest_waiting_questions(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A session is five to ten minutes; a queue of relatives' questions would
+    # crowd out her own stories.
+    seen: dict[str, str] = {}
+
+    def mint(settings: Settings, tuning: InterviewTuning, context: str = "") -> SessionCredentials:
+        seen["context"] = context
+        return SessionCredentials(
+            token="t", model="m", expires_at=datetime.datetime.now(datetime.UTC)
+        )
+
+    monkeypatch.setattr("kataribe.api.sessions.mint_session_credentials", mint)
+    client, senior_id, _ = story_for(tmp_path, visibility="family")
+    store = Store(tmp_path)
+    for i in range(3):
+        store.add_family_question(senior_id, asked_by="孫のゆか", text=f"質問{i}")
+    store.add_family_question(senior_id, asked_by="孫のゆか", text="戦争のころは?", status="held")
+
+    client.post("/api/sessions", json={"senior_id": senior_id})
+
+    assert "質問0" in seen["context"] and "質問1" in seen["context"]
+    assert "質問2" not in seen["context"]
+    # And never a held one, whatever its age.
+    assert "戦争" not in seen["context"]
+
+
+def test_a_session_remembers_which_questions_it_carried(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Processing judges only these, so that "asked" means the interviewer had it.
+    fake_credentials(monkeypatch)
+    client, senior_id, _ = story_for(tmp_path, visibility="family")
+    store = Store(tmp_path)
+    ids = [
+        store.add_family_question(senior_id, asked_by="孫のゆか", text=f"質問{i}") for i in range(3)
+    ]
+
+    session_id = client.post("/api/sessions", json={"senior_id": senior_id}).json()["session_id"]
+
+    session = store.get(session_id)
+    assert session is not None
+    assert session.carried_questions == ids[:2]

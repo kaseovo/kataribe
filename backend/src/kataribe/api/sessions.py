@@ -1,20 +1,22 @@
 import datetime
 import json
+import logging
 from functools import lru_cache
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from kataribe import brain
 from kataribe.config import Settings, get_settings
 from kataribe.gemini import VOICES, InterviewTuning, mint_session_credentials
 from kataribe.languages import LANGUAGES, get
 from kataribe.processing import process_session
-from kataribe.store import LIFE_STAGES, Store, Turn
+from kataribe.store import LIFE_STAGES, FamilyQuestion, Store, Turn
 
 router = APIRouter(prefix="/api", tags=["sessions"])
+log = logging.getLogger(__name__)
 
 
 @lru_cache
@@ -92,11 +94,36 @@ class FamilyChapter(BaseModel):
     stories: list[FamilyStoryView]
 
 
+class FamilyQuestionRequest(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    asked_by: str = Field(min_length=1, max_length=40)
+    """Who is asking, as the interviewer should say it: 孫のゆか, not just ゆか."""
+    text: str = Field(min_length=1, max_length=300)
+
+
+class FamilyQuestionView(BaseModel):
+    """What a relative sees of their question.
+
+    `status` is only ever "waiting" or "asked". A question held back because it
+    touches something the senior refused is reported as waiting, since telling
+    the family otherwise would tell them what was refused.
+    """
+
+    id: str
+    asked_by: str
+    text: str
+    status: Literal["waiting", "asked"]
+    answered_in: list[str]
+    """Ids of shared stories that hold the answer. Never a private one."""
+
+
 class FamilyView(BaseModel):
     senior: SeniorView
     chapters: list[FamilyChapter]
     withheld: int
     """Stories the person has not agreed to share. Counted, never shown."""
+    questions: list[FamilyQuestionView] = Field(default_factory=list)
 
 
 class PlanView(BaseModel):
@@ -198,12 +225,16 @@ def create_session(
     context = ""
     plan = None
     senior = None
+    waiting: list[FamilyQuestion] = []
     if request.senior_id:
         senior = store.get_senior(request.senior_id)
         if senior is None:
             raise HTTPException(status_code=404, detail=f"No senior {request.senior_id}")
         plan = store.get_plan(senior.id)
-        context = brain.context_for(senior, plan)
+        # Oldest first, and only two: a session is five to ten minutes, and a
+        # queue of relatives' questions would crowd out her own stories.
+        waiting = store.family_questions(senior.id, status="pending")[:2]
+        context = brain.context_for(senior, plan, waiting)
 
     # The person's language decides the prompt, the locale and the defaults.
     base = InterviewTuning.for_language(senior.language if senior else None)
@@ -221,6 +252,7 @@ def create_session(
         silence_duration_ms=tuning.silence_duration_ms,
         end_of_speech_sensitivity=tuning.end_of_speech_sensitivity,
         senior_id=request.senior_id,
+        carried_questions=[q.id for q in waiting],
     )
 
     return SessionResponse(
@@ -381,11 +413,63 @@ def read_family_view(senior_id: str, store: Annotated[Store, Depends(get_store)]
             )
         )
 
+    shared_ids = {story.id for story in shared}
     return FamilyView(
         senior=SeniorView(**senior.__dict__),
         chapters=chapters,
         withheld=len(everything) - len(shared),
+        questions=[_family_safe(q, shared_ids) for q in store.family_questions(senior_id)],
     )
+
+
+def _family_safe(question: FamilyQuestion, shared_ids: set[str]) -> FamilyQuestionView:
+    return FamilyQuestionView(
+        id=question.id,
+        asked_by=question.asked_by,
+        text=question.text,
+        status="asked" if question.status == "asked" else "waiting",
+        answered_in=[sid for sid in question.answer_story_ids if sid in shared_ids],
+    )
+
+
+@router.post("/family/{senior_id}/questions")
+def ask_a_question(
+    senior_id: str,
+    request: FamilyQuestionRequest,
+    settings: Annotated[Settings, Depends(get_settings)],
+    store: Annotated[Store, Depends(get_store)],
+) -> FamilyQuestionView:
+    if store.get_senior(senior_id) is None:
+        raise HTTPException(status_code=404, detail=f"No senior {senior_id}")
+
+    # Screened before it is stored, so a question never sits waiting unchecked
+    # against what she refused. If it cannot be checked, it is not taken.
+    status = "pending"
+    avoid = store.get_plan(senior_id).avoid_topics
+    if avoid:
+        draft = FamilyQuestion(
+            id="new",
+            senior_id=senior_id,
+            asked_by=request.asked_by,
+            text=request.text,
+            status="pending",
+            asked_in_session=None,
+            answer_story_ids=[],
+        )
+        try:
+            held = brain.screen(settings, [draft], avoid)
+        except Exception as error:
+            log.exception("could not screen a family question for %s", senior_id)
+            raise HTTPException(
+                status_code=503, detail="The question could not be sent just now."
+            ) from error
+        status = "held" if held else "pending"
+
+    question_id = store.add_family_question(
+        senior_id, asked_by=request.asked_by, text=request.text, status=status
+    )
+    stored = next(q for q in store.family_questions(senior_id) if q.id == question_id)
+    return _family_safe(stored, set())
 
 
 def _seek(starts: dict[str, list[float]], session_id: str, turn: int) -> float:

@@ -9,7 +9,12 @@ import { expect, test, type APIRequestContext } from '@playwright/test';
  * upstream, what matters is that nothing private appears on the screen a
  * relative actually opens.
  */
-async function seed(request: APIRequestContext, visibility: 'family' | 'private', title: string) {
+async function seed(
+  request: APIRequestContext,
+  visibility: 'family' | 'private',
+  title: string,
+  question?: string,
+) {
   const senior = await (
     await request.post('/api/seniors', {
       data: {
@@ -39,6 +44,8 @@ async function seed(request: APIRequestContext, visibility: 'family' | 'private'
       '父は村で小さな織物の工場をやっておりました。',
       '--visibility',
       visibility,
+      // Recorded as asked, with this story as the answer, as processing would.
+      ...(question ? ['--asked-by', '孫のゆか', '--question', question] : []),
     ],
     { cwd: '../backend' },
   );
@@ -67,6 +74,51 @@ test('a story she did not agree to share never appears', async ({ page, request 
   await expect(page.locator('.withheld')).toContainText('kept private');
   await expect(page.locator('.told')).toHaveCount(0);
   // Not the title, not the summary, not a word of it.
+  await expect(page.locator('body')).not.toContainText('話したくないこと');
+  await expect(page.locator('body')).not.toContainText('織物');
+});
+
+test('a relative can send a question, and sees it waiting', async ({ page, request }) => {
+  const seniorId = await seed(request, 'family', '織物工場のこと');
+
+  await page.goto(`/family/${seniorId}`);
+  await page.getByLabel('Who is asking').fill('孫のゆか');
+  await page.getByLabel('Your question').fill('結婚式のときのお着物は、どんなものでしたか?');
+  await page.getByRole('button', { name: 'Send question' }).click();
+
+  const question = page.locator('.question');
+  await expect(question).toContainText('孫のゆか');
+  await expect(question).toContainText('お着物');
+  await expect(question).toContainText('Waiting to be asked');
+
+  // Kept, not just shown.
+  await page.reload();
+  await expect(page.locator('.question')).toContainText('お着物');
+});
+
+test('her answer comes back to the one who asked', async ({ page, request }) => {
+  const seniorId = await seed(request, 'family', '織物工場のこと', 'お父さんの工場のことを教えて');
+
+  await page.goto(`/family/${seniorId}`);
+
+  const question = page.locator('.question');
+  await expect(question).toContainText('Answered in');
+  await expect(question.getByRole('link', { name: '織物工場のこと' })).toBeVisible();
+  // And on the story itself, who it answered.
+  await expect(page.locator('.told .asked-for')).toContainText('孫のゆか asked');
+});
+
+test('an answer she kept private stays private, even from the one who asked', async ({
+  page,
+  request,
+}) => {
+  const seniorId = await seed(request, 'private', '話したくないこと', '子どものころのことを教えて');
+
+  await page.goto(`/family/${seniorId}`);
+
+  // They learn it was asked, and nothing about whether or what she answered.
+  await expect(page.locator('.question')).toContainText('No reply has been shared');
+  await expect(page.locator('.question a')).toHaveCount(0);
   await expect(page.locator('body')).not.toContainText('話したくないこと');
   await expect(page.locator('body')).not.toContainText('織物');
 });

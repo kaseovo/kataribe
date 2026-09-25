@@ -116,7 +116,7 @@ Both models this plan originally weighed are now superseded: `gemini-2.5-flash-n
 
 ## Data model sketch
 
-Six Firestore collections cover the hackathon; audio lives in Cloud Storage and is referenced by path.
+Seven Firestore collections cover the hackathon; audio lives in Cloud Storage and is referenced by path.
 
 | Collection | Key fields |
 | --- | --- |
@@ -126,6 +126,7 @@ Six Firestore collections cover the hackathon; audio lives in Cloud Storage and 
 | `people/{id}` | seniorId, name, relation, storyIds[] |
 | `plans/{seniorId}` | storySoFar, nextQuestions[], avoidTopics[], updatedAt |
 | `family/{id}` | seniorId, name, email, lastSeenAt |
+| `questions/{id}` | seniorId, askedBy, text, status (pending, held, asked), askedInSession, answerStoryIds[] |
 
 `versionOf` links a retold story to its earlier telling, so both versions are kept.
 

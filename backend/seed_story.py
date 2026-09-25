@@ -7,7 +7,11 @@ write path into the family view is the last thing this product should grow, so
 the tests reach the store directly instead, through the same code the
 processing pipeline uses.
 
+Given `--question`, the story is also recorded as the answer to a question from
+the family, as processing does when the interviewer put one to her.
+
     uv run python seed_story.py --senior-id abc --visibility family ...
+    uv run python seed_story.py ... --asked-by 孫のゆか --question 工場のことを教えて
 """
 
 import argparse
@@ -26,6 +30,8 @@ def main() -> None:
     parser.add_argument("--life-stage", default="子供時代")
     parser.add_argument("--quote", required=True)
     parser.add_argument("--visibility", choices=["private", "family"], default="private")
+    parser.add_argument("--question", help="a family question this story answers")
+    parser.add_argument("--asked-by", default="孫のゆか")
     args = parser.parse_args()
 
     store = Store(args.data_dir)
@@ -46,12 +52,13 @@ def main() -> None:
         duration_seconds=15.0,
         input_label="seeded",
     )
+    story_id = uuid.uuid4().hex[:12]
     store.replace_stories(
         session_id,
         args.senior_id,
         [
             Story(
-                id=uuid.uuid4().hex[:12],
+                id=story_id,
                 senior_id=args.senior_id,
                 session_id=session_id,
                 title=args.title,
@@ -66,6 +73,11 @@ def main() -> None:
             )
         ],
     )
+    if args.question:
+        question_id = store.add_family_question(
+            args.senior_id, asked_by=args.asked_by, text=args.question
+        )
+        store.mark_question_asked(question_id, session_id, [story_id])
     print(session_id)
 
 

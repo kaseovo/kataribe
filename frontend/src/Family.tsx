@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 
 import './App.css';
 import './Family.css';
@@ -26,10 +26,21 @@ interface Chapter {
   stories: Story[];
 }
 
+/** Held questions — ones that touch something she refused — arrive here as
+ *  `waiting`. Telling the family otherwise would tell them what she refused. */
+interface Question {
+  id: string;
+  asked_by: string;
+  text: string;
+  status: 'waiting' | 'asked';
+  answered_in: string[];
+}
+
 interface View {
   senior: { name: string; birth_year: number | null; birthplace: string };
   chapters: Chapter[];
   withheld: number;
+  questions: Question[];
 }
 
 /** What the family sees. Only stories the person agreed to share reach this
@@ -38,6 +49,9 @@ interface View {
 export default function Family({ seniorId }: { seniorId: string }) {
   const [view, setView] = useState<View | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [draft, setDraft] = useState({ asked_by: '', text: '' });
+  const [sending, setSending] = useState(false);
+  const [unsent, setUnsent] = useState<string | null>(null);
   const player = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
@@ -46,6 +60,28 @@ export default function Family({ seniorId }: { seniorId: string }) {
       .then(setView)
       .catch(() => setError('We could not find that story.'));
   }, [seniorId]);
+
+  const ask = async (event: FormEvent) => {
+    event.preventDefault();
+    setSending(true);
+    setUnsent(null);
+    try {
+      const response = await fetch(`/api/family/${seniorId}/questions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(draft),
+      });
+      if (!response.ok) throw new Error(String(response.status));
+      const question: Question = await response.json();
+      setView((v) => v && { ...v, questions: [...v.questions, question] });
+      // Whoever is asking is likely to ask again, so their name stays.
+      setDraft({ ...draft, text: '' });
+    } catch {
+      setUnsent('Your question could not be sent just now. Please try again in a moment.');
+    } finally {
+      setSending(false);
+    }
+  };
 
   const play = (quote: Quote) => {
     const audio = player.current;
@@ -60,6 +96,9 @@ export default function Family({ seniorId }: { seniorId: string }) {
   if (!view) return null;
 
   const told = view.chapters.reduce((n, c) => n + c.stories.length, 0);
+  const titles = new Map(view.chapters.flatMap((c) => c.stories.map((s) => [s.id, s.title])));
+  const askedFor = (storyId: string) =>
+    view.questions.filter((q) => q.answered_in.includes(storyId));
 
   return (
     <div className="family">
@@ -84,7 +123,12 @@ export default function Family({ seniorId }: { seniorId: string }) {
         <section key={chapter.life_stage} className="chapter">
           <h2>{chapter.life_stage}</h2>
           {chapter.stories.map((story) => (
-            <article key={story.id} className="told">
+            <article key={story.id} id={story.id} className="told">
+              {askedFor(story.id).map((q) => (
+                <p key={q.id} className="asked-for">
+                  {q.asked_by} asked: {q.text}
+                </p>
+              ))}
               <h3>
                 {story.title}
                 {story.approx_period && <em>{story.approx_period}</em>}
@@ -105,6 +149,71 @@ export default function Family({ seniorId }: { seniorId: string }) {
           ))}
         </section>
       ))}
+
+      <section className="asking">
+        <h2>Ask {view.senior.name} something</h2>
+        <p className="how">
+          Your question is put to {view.senior.name} in a coming conversation, gently and in their
+          own time, and they will hear that it came from you. If they would rather not answer, it is
+          not pressed.
+        </p>
+
+        {view.questions.length > 0 && (
+          <ul className="questions">
+            {view.questions.map((q) => (
+              <li key={q.id} className={`question ${q.status}`}>
+                <p>
+                  <span className="who">{q.asked_by}</span>
+                  {q.text}
+                </p>
+                <p className="state">
+                  {q.status === 'waiting' && 'Waiting to be asked'}
+                  {q.status === 'asked' && q.answered_in.length > 0 && (
+                    <>
+                      Answered in{' '}
+                      {q.answered_in.map((id, i) => (
+                        <span key={id}>
+                          {i > 0 && ', '}
+                          <a href={`#${id}`}>{titles.get(id)}</a>
+                        </span>
+                      ))}
+                    </>
+                  )}
+                  {q.status === 'asked' &&
+                    q.answered_in.length === 0 &&
+                    'Asked. No reply has been shared.'}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <form onSubmit={ask}>
+          <input
+            aria-label="Who is asking"
+            placeholder="Relation and name, e.g. 孫のゆか"
+            maxLength={40}
+            value={draft.asked_by}
+            onChange={(e) => setDraft({ ...draft, asked_by: e.target.value })}
+          />
+          <textarea
+            aria-label="Your question"
+            placeholder="結婚式のときのお着物は、どんなものでしたか?"
+            maxLength={300}
+            rows={3}
+            value={draft.text}
+            onChange={(e) => setDraft({ ...draft, text: e.target.value })}
+          />
+          <button
+            type="submit"
+            className="start"
+            disabled={sending || !draft.asked_by.trim() || !draft.text.trim()}
+          >
+            Send question
+          </button>
+          {unsent && <p className="unsent">{unsent}</p>}
+        </form>
+      </section>
 
       {view.withheld > 0 && (
         <p className="withheld">

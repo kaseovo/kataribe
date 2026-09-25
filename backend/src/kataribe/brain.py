@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field
 
 from kataribe.config import Settings
 from kataribe.languages import Language, get
-from kataribe.store import LIFE_STAGES, Plan, Quote, Senior, Story, Turn
+from kataribe.store import LIFE_STAGES, FamilyQuestion, Plan, Quote, Senior, Story, Turn
 
 NOISE = re.compile(r"[\s、。「」『』・,.!?！？…ー]")
 
@@ -42,9 +42,28 @@ class ExtractedStory(BaseModel):
     )
 
 
+class RaisedQuestion(BaseModel):
+    question: int = Field(description="The number of the family question, as listed")
+    stories: list[int] = Field(
+        default_factory=list,
+        description="Indexes into `stories` of whatever the speaker said in answer",
+    )
+
+
 class Extraction(BaseModel):
     stories: list[ExtractedStory]
     refused_topics: list[str]
+    raised: list[RaisedQuestion] = Field(
+        default_factory=list,
+        description="Family questions the interviewer actually put to the speaker",
+    )
+
+
+class Screening(BaseModel):
+    hold: list[int] = Field(
+        default_factory=list,
+        description="Numbers of the questions that touch a topic never to raise",
+    )
 
 
 class NextPlan(BaseModel):
@@ -72,8 +91,16 @@ def _who(senior: Senior) -> str:
     return "\n".join(facts)
 
 
+def _listed(questions: list[FamilyQuestion]) -> str:
+    return "\n".join(f"[{i}] {q.asked_by}: {q.text}" for i, q in enumerate(questions))
+
+
 def extract(
-    settings: Settings, senior: Senior, turns: list[Turn], language: Language | None = None
+    settings: Settings,
+    senior: Senior,
+    turns: list[Turn],
+    language: Language | None = None,
+    family_questions: list[FamilyQuestion] | None = None,
 ) -> Extraction:
     """Instructions are in English; what it writes is in the language spoken.
 
@@ -90,7 +117,12 @@ def extract(
             "asked about their life. Pull out the events of their life from it.\n\n"
             f"=== About this person (established facts) ===\n{_who(senior)}\n\n"
             f"=== The conversation ===\n{_numbered(turns)}\n\n"
-            "=== How to do it ===\n"
+            + (
+                f"=== Questions their family sent in ===\n{_listed(family_questions)}\n\n"
+                if family_questions
+                else ""
+            )
+            + "=== How to do it ===\n"
             f"- Write everything in {spoken.label}, the language they spoke.\n"
             "- Only what the speaker actually said. Never the interviewer's words.\n"
             "- Do not fill in anything the conversation does not contain.\n"
@@ -109,7 +141,12 @@ def extract(
             "  said. Leave it empty if they were not asked, if they declined, if\n"
             "  they hesitated, or if the answer is at all unclear. A polite noise\n"
             "  that is not an answer is not agreement.\n"
-            "- refused_topics: anything they said they did not want to discuss."
+            "- refused_topics: anything they said they did not want to discuss.\n"
+            "- raised: for each family question listed above that the interviewer\n"
+            "  actually put to them in this conversation, its number, and the\n"
+            "  indexes of the stories that hold their answer. Leave a question out\n"
+            "  if it was not asked. If it was asked but they did not answer, list\n"
+            "  it with no stories."
         ),
         config=types.GenerateContentConfig(
             response_mime_type="application/json",
@@ -170,6 +207,43 @@ def verify(extraction: Extraction, turns: list[Turn]) -> tuple[list[Story], list
     return stories, dropped
 
 
+def screen(settings: Settings, questions: list[FamilyQuestion], avoid: list[str]) -> set[str]:
+    """Ids of family questions that must never be put to the senior.
+
+    Relatives do not know what the senior has refused to talk about, and should
+    not find out from this. A question about the war, sent by a grandchild after
+    the war was declined, is simply not asked — and to the family it looks no
+    different from a question still waiting its turn.
+    """
+    if not questions or not avoid:
+        return set()
+
+    client = genai.Client(api_key=settings.gemini_api_key)
+    response = client.models.generate_content(
+        model=settings.text_model,
+        contents=(
+            "An elderly person has asked never to be asked about some topics. Their "
+            "family, who do not know this, have sent questions. Decide which "
+            "questions would lead into a topic they asked never to raise — directly, "
+            "or by the obvious route there.\n\n"
+            f"=== Topics never to raise ===\n{', '.join(avoid)}\n\n"
+            f"=== Questions from the family ===\n{_listed(questions)}\n\n"
+            "Return the numbers of the questions to hold back. When in doubt, hold "
+            "it back: an unasked question costs a little, and a question about "
+            "something they refused costs their trust."
+        ),
+        config=types.GenerateContentConfig(
+            response_mime_type="application/json",
+            response_schema=Screening,
+            temperature=0.0,
+        ),
+    )
+    result = response.parsed
+    if not isinstance(result, Screening):
+        raise RuntimeError(f"Screening returned nothing usable: {response.text!r}")
+    return {questions[i].id for i in result.hold if 0 <= i < len(questions)}
+
+
 def plan_next(
     settings: Settings,
     senior: Senior,
@@ -219,8 +293,13 @@ def plan_next(
     return result
 
 
-def context_for(senior: Senior, plan: Plan) -> str:
-    """The part of the interviewer's prompt that changes between sessions."""
+def context_for(
+    senior: Senior, plan: Plan, family_questions: list[FamilyQuestion] | None = None
+) -> str:
+    """The part of the interviewer's prompt that changes between sessions.
+
+    `family_questions` must already be screened: anything here may be asked.
+    """
     lines = [
         "## お相手について",
         "",
@@ -239,6 +318,23 @@ def context_for(senior: Senior, plan: Plan) -> str:
             "順番に聞く必要はありません。相手のお話にあわせて、自然に。",
             "",
             *(f"- {q}" for q in plan.next_questions),
+        ]
+    if family_questions:
+        # Asked in the opening line, where it interrupts nothing she is telling —
+        # but after the recall of last time, which it must not push out.
+        when = (
+            "はじめの一言で、前回のお話にひとことふれてから、ひとつめをおたずねください。"
+            if plan.story_so_far
+            else "はじめの一言で、ひとつめをおたずねください。"
+        )
+        lines += [
+            "",
+            "## ご家族から届いたご質問",
+            "",
+            f"ご家族が知りたがっていらっしゃることです。{when}",
+            "どなたからのご質問かを、かならず添えて。答えたくなさそうなら、すぐに引いてください。",
+            "",
+            *(f"- {q.asked_by}より: {q.text}" for q in family_questions),
         ]
     if plan.avoid_topics:
         lines += [

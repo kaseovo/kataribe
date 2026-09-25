@@ -71,7 +71,7 @@ Prototype deadline **2026-10-18**. A real senior tests from week 2.
 - [x] **3 — It has a brain** — stories extracted and verified, timeline, gaps, next questions, context carried into the following session
 - [~] 4 — It notices you — **cut from the hackathon**, see below
 - [x] **5 — It asks permission** — consent asked in conversation, evidenced by the person's own words; family view shows only shared stories, with audio
-- [ ] 6 — The family asks back
+- [x] **6 — The family asks back** — relatives send questions from the family page; the interviewer opens with one, saying who asked; the answer links back to the story, if she shared it
 - [ ] 7 — Ready to judge
 
 ## Running the week-1 test
@@ -217,6 +217,34 @@ There is deliberately no endpoint that writes stories. The browser tests seed th
 Each quote has a play button. Word-level offsets are not returned by the model, so it seeks to where the previous turn ended — close to where she began speaking, not exact.
 
 **Not yet done:** the family page's chrome is in English, over Japanese content. For a Japanese family, and for the demo, the page should follow the person's language.
+
+## The family asks back
+
+A relative opens the family page, writes who they are and what they want to know, and sends it. The next session opens with it — after a word about last time:
+
+> こんにちは、田中ハルさん。前回伺ったお父様の織物の工場のお話を、今もよく覚えています。今日はお孫さんのゆかさんが、結婚式のときのお着物のことを知りたがっていらっしゃいましたよ。どんなお着物でしたか?
+
+Afterwards, extraction reports which family questions were put to her and which stories hold the answer. The family page shows the question as asked, and her answer beneath it.
+
+**Who is asking is the point.** The interviewer always says who the question is from. That her granddaughter is thinking about her matters more than the kimono does, so the form asks for the relation as well as the name (孫のゆか, not ゆか).
+
+**It is asked in the opening line.** The first prompt said to ask "when the conversation allows" and that it could wait. Given the choice of topic, the interviewer ignored it and asked about memorable experiences in general. Making the family question the one topic the opening proposes fixed that — and then pushed the recall of last time out of the opening in 3 runs of 3, which is a demo must-have. The opening now has an order: a word about last time, then the family question. 6 of 6 since, three first sessions and three second ones.
+
+**At most two per session, oldest first.** A session is five to ten minutes and it is her story, not a queue to get through. The session records which questions it carried, and only those are judged afterwards: a question sent while she was talking never reached the interviewer, and "asked" must mean the interviewer asked it.
+
+**Nothing she refused is asked, even by family.** Relatives do not know what she has declined to talk about. Each question is screened against the avoid list before it is stored, and everything still waiting is screened again whenever she refuses something new. If screening cannot run, the question is not taken at all rather than stored unchecked. A question that is held back looks exactly like one still waiting, since saying anything else would tell them what she refused. One leak remains: a question that stays waiting while newer ones get asked says something by its silence.
+
+**The answer is linked, not copied.** A question points at the stories that answer it, and the family page shows only those that are shared. If she answered and kept it private, the relative sees "asked, no reply has been shared" — which is also exactly what they see if she declined. They learn that it was asked and nothing about what she said.
+
+Measured against the real models, three runs each: screening held a question about the war and one about evacuation — the obvious road there — and passed the kimono and the first salary, 3 of 3. Extraction reported an answered question with its answer, a question never put as not raised even when she talked about the same subject unprompted, and one she let pass as raised with no answer: 9 of 9.
+
+For the native speaker, two things from these runs. 「とても心に残っております」 in a recall is an impression of the kind the planning prompt forbids; whether it is warm or presumptuous is theirs to say. And one opening came out as 「知りたがるといらっしゃいました」, which is not Japanese — it is not yet known whether that was the voice or the transcript.
+
+**Not done:**
+
+- Correcting the spelling of names. The page is where a relative could fix 佐藤繁 to 佐藤茂 in one tap, as proposed below; it has not been built.
+- Telling the family when an answer lands. They have to come back and look.
+- The page's own chrome is still English, and the new form made more of it.
 
 ## The interviewer speaks first
 

@@ -7,7 +7,7 @@ what is here and nothing above it.
 import json
 import sqlite3
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -49,6 +49,17 @@ CREATE TABLE IF NOT EXISTS stories (
     created_at    TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS family_questions (
+    id               TEXT PRIMARY KEY,
+    senior_id        TEXT NOT NULL,
+    asked_by         TEXT NOT NULL,
+    text             TEXT NOT NULL,
+    status           TEXT NOT NULL DEFAULT 'pending',
+    asked_in_session TEXT,
+    answer_story_ids TEXT NOT NULL DEFAULT '[]',
+    created_at       TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS plans (
     senior_id      TEXT PRIMARY KEY,
     story_so_far   TEXT NOT NULL DEFAULT '',
@@ -70,6 +81,9 @@ LATER_COLUMNS = {
         "senior_id": "TEXT",
         "status": "TEXT NOT NULL DEFAULT 'recorded'",
         "processing_error": "TEXT",
+        # The family questions this session's interviewer was given. Only these
+        # can have been put to the person, so only these are judged afterwards.
+        "carried_questions": "TEXT NOT NULL DEFAULT '[]'",
     },
 }
 
@@ -121,6 +135,27 @@ class Senior:
 
 
 @dataclass(frozen=True)
+class FamilyQuestion:
+    """A question a relative wants put to the senior.
+
+    `status` is one of:
+      pending — waiting to be asked
+      held    — touches a topic the senior has refused, so it is never put to
+                them; relatives see it as pending, because saying otherwise
+                would reveal what was refused
+      asked   — the interviewer raised it in a session
+    """
+
+    id: str
+    senior_id: str
+    asked_by: str
+    text: str
+    status: str
+    asked_in_session: str | None
+    answer_story_ids: list[str]
+
+
+@dataclass(frozen=True)
 class Plan:
     story_so_far: str
     next_questions: list[str]
@@ -146,6 +181,7 @@ class Session:
     senior_id: str | None = None
     status: str = "recorded"
     processing_error: str | None = None
+    carried_questions: list[str] = field(default_factory=list)
 
 
 class Store:
@@ -228,12 +264,14 @@ class Store:
         silence_duration_ms: int,
         end_of_speech_sensitivity: str,
         senior_id: str | None = None,
+        carried_questions: list[str] | None = None,
     ) -> str:
         session_id = uuid.uuid4().hex[:12]
         with self._connect() as db:
             db.execute(
                 "INSERT INTO sessions (id, started_at, model, voice, silence_duration_ms,"
-                " end_of_speech_sensitivity, senior_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                " end_of_speech_sensitivity, senior_id, carried_questions)"
+                " VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                 (
                     session_id,
                     datetime.now(UTC).isoformat(),
@@ -242,6 +280,7 @@ class Store:
                     silence_duration_ms,
                     end_of_speech_sensitivity,
                     senior_id,
+                    json.dumps(carried_questions or []),
                 ),
             )
         return session_id
@@ -292,6 +331,55 @@ class Store:
     def audio_path(self, session_id: str) -> Path | None:
         path = self.recordings / f"{session_id}.wav"
         return path if path.exists() else None
+
+    # --- family questions ----------------------------------------------
+
+    def add_family_question(
+        self, senior_id: str, *, asked_by: str, text: str, status: str = "pending"
+    ) -> str:
+        question_id = uuid.uuid4().hex[:12]
+        with self._connect() as db:
+            db.execute(
+                "INSERT INTO family_questions (id, senior_id, asked_by, text, status, created_at)"
+                " VALUES (?, ?, ?, ?, ?, ?)",
+                (question_id, senior_id, asked_by, text, status, datetime.now(UTC).isoformat()),
+            )
+        return question_id
+
+    def family_questions(self, senior_id: str, status: str | None = None) -> list[FamilyQuestion]:
+        clause = " AND status = ?" if status else ""
+        params: tuple[str, ...] = (senior_id, status) if status else (senior_id,)
+        with self._connect() as db:
+            rows = db.execute(
+                f"SELECT * FROM family_questions WHERE senior_id = ?{clause} ORDER BY created_at",
+                params,
+            ).fetchall()
+        return [
+            FamilyQuestion(
+                id=row["id"],
+                senior_id=row["senior_id"],
+                asked_by=row["asked_by"],
+                text=row["text"],
+                status=row["status"],
+                asked_in_session=row["asked_in_session"],
+                answer_story_ids=json.loads(row["answer_story_ids"]),
+            )
+            for row in rows
+        ]
+
+    def set_question_status(self, question_id: str, status: str) -> None:
+        with self._connect() as db:
+            db.execute("UPDATE family_questions SET status = ? WHERE id = ?", (status, question_id))
+
+    def mark_question_asked(
+        self, question_id: str, session_id: str, answer_story_ids: list[str]
+    ) -> None:
+        with self._connect() as db:
+            db.execute(
+                "UPDATE family_questions SET status = 'asked', asked_in_session = ?,"
+                " answer_story_ids = ? WHERE id = ?",
+                (session_id, json.dumps(answer_story_ids), question_id),
+            )
 
     # --- stories and plans ---------------------------------------------
 
@@ -385,6 +473,9 @@ def _to_session(row: sqlite3.Row) -> Session:
         senior_id=row["senior_id"] if "senior_id" in keys else None,
         status=(row["status"] if "status" in keys else None) or "recorded",
         processing_error=row["processing_error"] if "processing_error" in keys else None,
+        carried_questions=json.loads(row["carried_questions"])
+        if "carried_questions" in keys
+        else [],
     )
 
 
@@ -408,6 +499,7 @@ def _to_story(row: sqlite3.Row) -> Story:
 
 __all__ = [
     "LIFE_STAGES",
+    "FamilyQuestion",
     "Plan",
     "Quote",
     "Senior",

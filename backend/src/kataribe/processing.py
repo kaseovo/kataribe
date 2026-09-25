@@ -29,7 +29,12 @@ def process_session(settings: Settings, store: Store, session_id: str) -> None:
 
     store.set_status(session_id, "processing")
     try:
-        extraction = brain.extract(settings, senior, session.turns)
+        # Only what this session's interviewer was given. Another question may
+        # have arrived since, and "asked" must mean the interviewer asked it.
+        carried = [
+            q for q in store.family_questions(senior.id) if q.id in session.carried_questions
+        ]
+        extraction = brain.extract(settings, senior, session.turns, family_questions=carried)
         stories, dropped = brain.verify(extraction, session.turns)
         if dropped:
             # Loud on purpose: a quote the person never said is the failure this
@@ -45,8 +50,24 @@ def process_session(settings: Settings, store: Store, session_id: str) -> None:
         stored = [replace(story, senior_id=senior.id, session_id=session_id) for story in stories]
         store.replace_stories(session_id, senior.id, stored)
 
+        # Close the loop on whatever the family asked. The answer is linked, not
+        # copied: the family view shows it only if that story was shared.
+        # `verify` keeps every story it is given, so extraction's indexes hold.
+        for raised in extraction.raised:
+            if not 0 <= raised.question < len(carried):
+                continue
+            answers = [stored[i].id for i in raised.stories if 0 <= i < len(stored)]
+            store.mark_question_asked(carried[raised.question].id, session_id, answers)
+
         previous = store.get_plan(senior.id)
         avoid = sorted(set(previous.avoid_topics) | set(extraction.refused_topics))
+
+        # Something refused today may make a question sent last week unaskable.
+        if set(avoid) != set(previous.avoid_topics):
+            still_waiting = store.family_questions(senior.id, status="pending")
+            for question_id in brain.screen(settings, still_waiting, avoid):
+                store.set_question_status(question_id, "held")
+
         everything = store.stories_for_senior(senior.id)
         planned = brain.plan_next(settings, senior, everything, avoid)
 
