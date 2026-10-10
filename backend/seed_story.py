@@ -21,8 +21,9 @@ import argparse
 import uuid
 from pathlib import Path
 
-from kataribe.store import Quote, Store, Story, Turn
 from tests.wavs import conversation_wav
+
+from kataribe.store import Quote, Store, Story, Turn
 
 
 def main() -> None:
