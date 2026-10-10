@@ -1,0 +1,174 @@
+/* The senior's own screen. Large, calm, and readable from a chair across the
+   room: nothing smaller than about 28px, one thing to press at a time. */
+
+.talk {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(1rem, 4vh, 3rem);
+  padding: clamp(1rem, 4vh, 3rem) 1rem;
+  text-align: center;
+  /* Japanese breaks between phrases, not mid-word ("ございまし / た"). Needs the
+     page's lang, which the screen sets from the person's language. */
+  word-break: auto-phrase;
+  text-wrap: pretty;
+}
+
+.talk-name {
+  margin: 0;
+  font-size: clamp(2.2rem, 6vw, 3.6rem);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.talk-start,
+.talk-live,
+.talk-done {
+  width: min(100%, 44rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(1rem, 3vh, 2rem);
+}
+
+/* Most to fit while talking, and a landscape tablet is short. */
+.talk-live {
+  gap: clamp(0.75rem, 2.5vh, 1.75rem);
+}
+
+.talk-button {
+  min-width: min(80vw, 22rem);
+  padding: 1.1em 2.2em;
+  border: none;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #1a1206;
+  font: inherit;
+  font-size: clamp(1.9rem, 5vw, 2.6rem);
+  font-weight: 700;
+}
+
+.talk-again {
+  font-size: clamp(1.6rem, 4vw, 2.1rem);
+}
+
+.talk-button:disabled {
+  opacity: 0.75;
+}
+
+.talk-stop {
+  padding: 0.8em 2.4em;
+  border: 2px solid #a8503f;
+  border-radius: 999px;
+  background: transparent;
+  color: #e08573;
+  font: inherit;
+  font-size: clamp(1.6rem, 3.5vw, 1.9rem);
+  font-weight: 600;
+}
+
+.talk button:focus-visible,
+.talk a:focus-visible {
+  outline: 4px solid var(--text);
+  outline-offset: 4px;
+}
+
+.talk-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: clamp(1.75rem, 3vw, 1.9rem);
+  line-height: 1.6;
+}
+
+.talk-message {
+  max-width: 36rem;
+  margin: 0;
+  font-size: clamp(1.75rem, 3.5vw, 2.1rem);
+  line-height: 1.6;
+}
+
+/* Breathes with the room while listening, glows while the interviewer speaks.
+   It shows a working session from a broken one at a glance. */
+.talk-presence {
+  width: clamp(7rem, 24vmin, 14rem);
+  aspect-ratio: 1;
+  border: 3px solid var(--accent);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(217 143 78 / 0.22), transparent 70%);
+  transform: scale(calc(1 + var(--level, 0) * 0.18));
+  transition:
+    transform 120ms linear,
+    background 300ms ease;
+}
+
+.talk.speaking .talk-presence {
+  background: radial-gradient(circle, rgb(217 143 78 / 0.7), rgb(217 143 78 / 0.12) 70%);
+  animation: talk-speak 1.6s ease-in-out infinite;
+}
+
+.talk.thinking .talk-presence {
+  animation: talk-breathe 2.4s ease-in-out infinite;
+}
+
+@keyframes talk-speak {
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+@keyframes talk-breathe {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.talk-phase {
+  min-height: 1.4em;
+  margin: 0;
+  color: var(--accent);
+  font-size: clamp(1.75rem, 4vw, 2.1rem);
+}
+
+/* What the interviewer is saying, for anyone who did not quite hear it. Dims
+   while they answer, and stays up so the question can be read again. */
+.talk-caption {
+  min-height: 3.2em;
+  margin: 0;
+  font-size: clamp(1.9rem, 4.5vw, 2.6rem);
+  line-height: 1.6;
+  transition: opacity 300ms ease;
+}
+
+.talk.listening .talk-caption {
+  opacity: 0.6;
+}
+
+.talk-thanks {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 2.8rem);
+  line-height: 1.5;
+}
+
+.talk-unsaved {
+  max-width: 36rem;
+  margin: 0;
+  color: #e08573;
+  font-size: 1.75rem;
+  line-height: 1.6;
+}
+
+.talk-unsaved a {
+  color: var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .talk-presence,
+  .talk.speaking .talk-presence,
+  .talk.thinking .talk-presence {
+    transform: none;
+    transition: none;
+    animation: none;
+  }
+}

@@ -16,6 +16,10 @@ import secrets
 
 PUBLIC = [
     re.compile(r"/family/[\w-]+/?"),  # the family page itself
+    # The senior's screen. The page is open; its API lets a visitor through only
+    # for demo personas, and checks that itself (api/talk.py).
+    re.compile(r"/talk/[\w-]+/?"),
+    re.compile(r"/api/talk/[\w-]+(?:/.*)?"),
     re.compile(r"/api/family/.+"),  # what it reads, the questions it sends, the quote clips
     re.compile(r"/api/health"),
     re.compile(r"/assets/[\w.-]+"),  # the built page's scripts and styles

@@ -524,3 +524,9 @@ button:disabled {
 .line.quoted .said {
   box-shadow: inset 0 -0.6em 0 rgba(217, 143, 78, 0.16);
 }
+
+.talk-link {
+  align-self: flex-start;
+  color: var(--accent);
+  font-size: 0.9rem;
+}

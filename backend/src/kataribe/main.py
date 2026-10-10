@@ -6,7 +6,7 @@ from fastapi.responses import FileResponse
 
 from kataribe import __version__
 from kataribe.access import is_public, is_team
-from kataribe.api import sessions
+from kataribe.api import sessions, talk
 from kataribe.config import Settings, get_settings
 
 
@@ -29,8 +29,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         async def team_only(
             request: Request, call_next: Callable[[Request], Awaitable[Response]]
         ) -> Response:
-            authorization = request.headers.get("authorization")
-            if is_public(request.url.path) or is_team(authorization, password):
+            # Remembered for routes that serve both, such as the talk screen.
+            request.state.team = is_team(request.headers.get("authorization"), password)
+            if request.state.team or is_public(request.url.path):
                 return await call_next(request)
             return Response(
                 status_code=401, headers={"WWW-Authenticate": 'Basic realm="kataribe team"'}
@@ -41,6 +42,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return {"status": "ok", "version": __version__}
 
     app.include_router(sessions.router)
+    app.include_router(talk.router)
 
     if settings.static_dir:
         pages = settings.static_dir.resolve()

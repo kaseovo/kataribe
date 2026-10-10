@@ -16,7 +16,12 @@ The app runs on Cloud Run in Tokyo, from one image that serves both the API and 
 
 ## Who can reach what
 
-Everything sits behind the team password except what a family page needs. A relative opens `/family/{senior_id}` with nothing to sign in to, and sees only stories that were agreed to be shared. The console, every transcript and every recording need the password.
+Everything sits behind the team password except what a family page needs, and the screens of demo personas.
+
+- **Family page**, `/family/{senior_id}`: open to anyone with the link. It shows only stories that were agreed to be shared.
+- **A senior's own screen**, `/talk/{senior_id}`: the page is open, but talking needs the team password, which the browser asks for. A tablet in someone's home stays signed in. A stranger able to talk as someone could put invented stories into their life story, which their family reads.
+- **Demo personas**, listed in `VISITORS` in the Makefile: their screen works for anyone, up to 20 conversations a day each, counted in Japan time. Never list a real person.
+- **The console**, every transcript and every recording: the team password.
 
 To sign in, open the URL and enter any user name and the password:
 

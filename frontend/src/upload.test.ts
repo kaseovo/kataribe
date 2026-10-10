@@ -28,9 +28,9 @@ describe('keep', () => {
       return new Response(null, { status: 204 });
     });
 
-    const outcome = await keep('s1', new Blob(['RIFFfake!!']), [], 12, 'microphone', 4);
+    const outcome = await keep('s1', new Blob(['RIFFfake!!']), [], 12, 'microphone', { part: 4 });
 
-    expect(outcome).toBe('Saved');
+    expect(outcome).toEqual({ saved: true, message: 'Saved' });
     expect(sent).toEqual([
       { url: '/api/sessions/s1/recording/parts/0', method: 'PUT', body: 'RIFF' },
       { url: '/api/sessions/s1/recording/parts/1', method: 'PUT', body: 'fake' },
@@ -48,10 +48,10 @@ describe('keep', () => {
       return new Response(null, { status: 204 });
     });
 
-    const outcome = keep('s1', new Blob(['RIFF']), [], 1, 'microphone', 4);
+    const outcome = keep('s1', new Blob(['RIFF']), [], 1, 'microphone', { part: 4 });
     await vi.runAllTimersAsync();
 
-    expect(await outcome).toBe('Saved');
+    expect((await outcome).saved).toBe(true);
     expect(calls).toBe(3);
     vi.useRealTimers();
   });
@@ -63,9 +63,10 @@ describe('keep', () => {
       return new Response('Session s1 is already kept', { status: 409 });
     });
 
-    const outcome = await keep('s1', new Blob(['RIFF']), [], 1, 'microphone', 4);
+    const outcome = await keep('s1', new Blob(['RIFF']), [], 1, 'microphone', { part: 4 });
 
-    expect(outcome).toMatch(/^Saved locally only — upload failed \(409/);
+    expect(outcome.saved).toBe(false);
+    expect(outcome.message).toMatch(/^Saved locally only — upload failed \(409/);
     expect(calls).toBe(1);
   });
 });

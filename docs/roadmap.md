@@ -73,7 +73,7 @@ Prototype deadline **2026-10-18**. A real senior tests from week 2.
 - [~] 4 — It notices you — **cut from the hackathon**, see below
 - [x] **5 — It asks permission** — consent asked in conversation, evidenced by the person's own words; family view shows only shared stories, with audio
 - [x] **6 — The family asks back** — relatives send questions from the family page; the interviewer opens with one, saying who asked; the answer links back to the story, if she shared it
-- [~] **7 — Ready to judge** — deployed on Cloud Run in Tokyo, with Firestore and Cloud Storage, and checked end to end by `make smoke` (see [deploy.md](deploy.md)); the demo video, the deck and the senior-facing screen are still to do
+- [~] **7 — Ready to judge** — deployed on Cloud Run in Tokyo, with Firestore and Cloud Storage, and checked end to end by `make smoke` (see [deploy.md](deploy.md)); the senior's own screen is at `/talk/{senior_id}`; the demo video and the deck are still to do
 
 ## Running the week-1 test
 

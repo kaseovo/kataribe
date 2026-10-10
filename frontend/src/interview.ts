@@ -28,6 +28,20 @@ export interface InterviewCallbacks {
    *  regardless: `saved` settles once the upload has been tried, with the
    *  recording to offer for download. */
   onClosed: (reason: string, saved: Promise<Blob>) => void;
+  /** Whether the recording reached the server. Until it has, the browser holds
+   *  the only copy, and whoever is in front of it should be told. */
+  onSaved?: (saved: boolean) => void;
+}
+
+/** The server would not start a conversation, with its HTTP status: 429 means
+ *  enough for today, 401 that this screen needs signing in. */
+export class StartRefused extends Error {
+  readonly status: number;
+
+  constructor(status: number, detail: string) {
+    super(`Could not start a session (${status}): ${detail}`);
+    this.status = status;
+  }
 }
 
 export interface Interview {
@@ -43,15 +57,19 @@ interface SessionResponse {
   opening: string;
 }
 
+/** `tuning` left out falls back to the person's own language defaults. `api`
+ *  is where the session lives: the console's `/api`, or `/api/talk/{id}` for a
+ *  senior's own screen, which decides who it is from the path. */
 export async function startInterview(
-  tuning: Tuning,
+  tuning: Partial<Tuning>,
   callbacks: InterviewCallbacks,
   replay?: File,
   seniorId?: string | null,
+  api = '/api',
 ): Promise<Interview> {
   callbacks.onStatus('Requesting a session token');
 
-  const response = await fetch('/api/sessions', {
+  const response = await fetch(`${api}/sessions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -61,9 +79,7 @@ export async function startInterview(
       end_of_speech_sensitivity: tuning.endOfSpeechSensitivity,
     }),
   });
-  if (!response.ok) {
-    throw new Error(`Could not start a session (${response.status}): ${await response.text()}`);
-  }
+  if (!response.ok) throw new StartRefused(response.status, await response.text());
   const {
     session_id: sessionId,
     token,
@@ -112,14 +128,16 @@ export async function startInterview(
       await playback.close();
 
       const wav = buildConversationWav(mic, spoken, micStartSec);
-      const outcome = await keep(
+      const kept = await keep(
         sessionId,
         wav,
         transcript,
         (performance.now() - openedAt) / 1000,
         inputLabel,
+        { api },
       );
-      callbacks.onStatus(reason ? `Connection lost (${reason}). ${outcome}` : outcome);
+      callbacks.onStatus(reason ? `Connection lost (${reason}). ${kept.message}` : kept.message);
+      callbacks.onSaved?.(kept.saved);
       return wav;
     })();
     return finished;

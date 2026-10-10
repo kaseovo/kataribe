@@ -46,13 +46,17 @@ PROJECT ?= gen-lang-client-0821244556
 REGION ?= asia-northeast1
 SERVICE ?= kataribe
 BUCKET ?= kataribe-recordings-0821244556
+# Demo personas strangers may talk to from /talk/{id}, comma-separated. Never a
+# real person: whoever talks there adds to that person's story. Kept here, since
+# every deploy replaces the service's environment.
+VISITORS ?=
 
 # Built remotely by Cloud Build from the Dockerfile; nothing git-ignored is sent.
 deploy:
 	gcloud run deploy $(SERVICE) --source . --region $(REGION) --project $(PROJECT) \
 		--service-account kataribe-run@$(PROJECT).iam.gserviceaccount.com \
 		--allow-unauthenticated --no-cpu-throttling --max-instances 2 --memory 1Gi \
-		--set-env-vars KATARIBE_STORAGE=cloud,KATARIBE_GCP_PROJECT=$(PROJECT),KATARIBE_RECORDINGS_BUCKET=$(BUCKET) \
+		--set-env-vars "^;^KATARIBE_STORAGE=cloud;KATARIBE_GCP_PROJECT=$(PROJECT);KATARIBE_RECORDINGS_BUCKET=$(BUCKET);KATARIBE_VISITOR_SENIORS=$(VISITORS)" \
 		--set-secrets KATARIBE_GEMINI_API_KEY=kataribe-gemini-api-key:latest,KATARIBE_TEAM_PASSWORD=kataribe-team-password:latest
 
 # A real conversation on the deployed service, checked in the cloud, then

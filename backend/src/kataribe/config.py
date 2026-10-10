@@ -25,6 +25,15 @@ class Settings(BaseSettings):
     development, where Vite serves it and proxies /api here."""
     team_password: str = ""
     """Closes everything but the family pages. Unset, everything is open."""
+    visitor_seniors: str = ""
+    """Comma-separated ids of demo personas whose talk screen strangers may use.
+    Never a real person: whoever talks there adds to that person's story."""
+    visitor_sessions_per_day: int = 20
+    """Per persona, counted in Japan time. Each conversation is paid for."""
+
+    @property
+    def visitors(self) -> set[str]:
+        return {s.strip() for s in self.visitor_seniors.split(",") if s.strip()}
 
 
 @lru_cache

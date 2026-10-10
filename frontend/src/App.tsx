@@ -183,6 +183,11 @@ export default function App() {
         <>
           <section className="controls">
             <Seniors selected={senior?.id ?? null} onSelect={setSenior} disabled={live || busy} />
+            {senior && (
+              <a className="talk-link" href={`/talk/${senior.id}`} target="_blank" rel="noreferrer">
+                Open {senior.name}’s own screen ↗
+              </a>
+            )}
 
             <label>
               <span>Voice</span>

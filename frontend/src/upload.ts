@@ -12,21 +12,28 @@ export function partsOf(size: number, part = PART_BYTES): [number, number][] {
   return ranges;
 }
 
+export interface Kept {
+  saved: boolean;
+  /** What to tell whoever is at the console. */
+  message: string;
+}
+
 /** Uploading must not lose the recording: the browser copy is the only one
  *  until this succeeds, so a failure is reported rather than swallowed.
- *  Returns what to tell the person. */
+ *  `api` is where the session lives: the console's `/api`, or a senior's own
+ *  screen, `/api/talk/{id}`. */
 export async function keep(
   sessionId: string,
   wav: Blob,
   transcript: unknown[],
   seconds: number,
   inputLabel: string,
-  part = PART_BYTES,
-): Promise<string> {
+  { api = '/api', part = PART_BYTES }: { api?: string; part?: number } = {},
+): Promise<Kept> {
   try {
     const parts = partsOf(wav.size, part);
     for (const [index, [start, end]] of parts.entries()) {
-      await send(`/api/sessions/${sessionId}/recording/parts/${index}`, {
+      await send(`${api}/sessions/${sessionId}/recording/parts/${index}`, {
         method: 'PUT',
         body: wav.slice(start, end),
       });
@@ -37,13 +44,15 @@ export async function keep(
     form.append('duration_seconds', String(seconds));
     form.append('input_label', inputLabel);
     form.append('audio_parts', String(parts.length));
-    await send(`/api/sessions/${sessionId}/recording`, { method: 'POST', body: form });
-    return 'Saved';
+    await send(`${api}/sessions/${sessionId}/recording`, { method: 'POST', body: form });
+    return { saved: true, message: 'Saved' };
   } catch (error) {
-    return (
-      `Saved locally only — upload failed (${error instanceof Error ? error.message : error}). ` +
-      'Download the recording before starting another session.'
-    );
+    return {
+      saved: false,
+      message:
+        `Saved locally only — upload failed (${error instanceof Error ? error.message : error}). ` +
+        'Download the recording before starting another session.',
+    };
   }
 }
 
