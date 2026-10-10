@@ -47,6 +47,11 @@ export class Playback {
     return this.played;
   }
 
+  /** Seconds since playback began, on the clock the recorded chunks are placed by. */
+  elapsed(): number {
+    return this.context.currentTime - this.startedAt;
+  }
+
   async close(): Promise<void> {
     this.flush();
     await this.context.close();

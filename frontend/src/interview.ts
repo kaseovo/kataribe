@@ -79,6 +79,9 @@ export async function startInterview(
   let session: Session | undefined;
   let capture: Capture | undefined;
   let heartbeat: ReturnType<typeof setInterval> | undefined;
+  // When the microphone opened, on the playback clock, so both sides of the
+  // recording share one timeline.
+  let micStartSec = 0;
   let playedAnything = false;
   // Set once the session is being wound down. A close after that is ours and
   // expected, and reporting it would overwrite what the upload says —
@@ -107,7 +110,7 @@ export async function startInterview(
       session?.close();
       await playback.close();
 
-      const wav = buildConversationWav(mic, spoken);
+      const wav = buildConversationWav(mic, spoken, micStartSec);
       const outcome = await keep(
         sessionId,
         wav,
@@ -220,6 +223,8 @@ export async function startInterview(
       audio: { data: encodeBase64(pcm), mimeType: `audio/pcm;rate=${CAPTURE_RATE}` },
     });
   });
+
+  micStartSec = playback.elapsed();
 
   // The socket closes if audio arrives faster than real time, so the mic rate
   // we actually got is the first thing worth seeing when a session misbehaves.

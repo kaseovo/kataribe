@@ -5,15 +5,23 @@ import { PLAYBACK_RATE, type PlayedChunk } from './playback';
  * Stereo WAV of the whole conversation: senior on the left, AI on the right.
  * The AI chunks are placed at the time they were actually played, so the two
  * sides line up and the file can be reviewed as a conversation.
+ *
+ * `micStartSec` is when the microphone opened, on the same timeline as the AI
+ * chunks. It opens only once the connection is up, so without it the person's
+ * side would sit early by however long connecting took — and whether the
+ * interviewer cut someone off could no longer be heard from the file.
  */
-export function buildConversationWav(mic: Int16Array, ai: PlayedChunk[]): Blob {
-  const left = resample(mic, CAPTURE_RATE, PLAYBACK_RATE);
+export function buildConversationWav(mic: Int16Array, ai: PlayedChunk[], micStartSec = 0): Blob {
+  const lead = Math.round(micStartSec * PLAYBACK_RATE);
+  const voice = resample(mic, CAPTURE_RATE, PLAYBACK_RATE);
 
-  let frames = left.length;
+  let frames = lead + voice.length;
   for (const chunk of ai) {
     frames = Math.max(frames, Math.round(chunk.offsetSec * PLAYBACK_RATE) + chunk.pcm.length);
   }
 
+  const left = new Int16Array(frames);
+  left.set(voice, lead);
   const right = new Int16Array(frames);
   for (const chunk of ai) {
     const start = Math.round(chunk.offsetSec * PLAYBACK_RATE);
