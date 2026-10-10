@@ -18,6 +18,16 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      # Without the key the live Python tests skip and the browser tests fail
+      # for that reason alone. From 2026-09-22 to 2026-10-09 every nightly run
+      # did exactly that, and the skips read as a suite that had run.
+      - name: Require the Gemini key
+        run: |
+          if [ -z "$KATARIBE_GEMINI_API_KEY" ]; then
+            echo "::error::The KATARIBE_GEMINI_API_KEY secret is not set, so nothing here can talk to Gemini."
+            exit 1
+          fi
+
       - uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
