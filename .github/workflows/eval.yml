@@ -45,13 +45,19 @@ jobs:
       - run: pnpm install --frozen-lockfile
         working-directory: frontend
       - run: pnpm exec playwright install --with-deps chromium
+        id: setup
         working-directory: frontend
 
+      # Each suite runs whatever the one before it did. A model judged to have
+      # lapsed once in a conversation says nothing about the browser path, and
+      # stopping there would hide whether that works too.
       - run: make eval-api
       - run: make eval-browser
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
       # Six minutes of real conversation. Too slow for the on-demand run, but
       # the only thing that covers the session length the product needs.
       - run: pnpm test:endurance
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         working-directory: frontend
 
       - uses: actions/upload-artifact@v4
