@@ -108,9 +108,18 @@ export default function App() {
           onStatus: setStatus,
           onLevel: setLevel,
           onPhase: setTurn,
-          onClosed: (reason) => {
-            setStatus(reason);
-            setPhase('idle');
+          onClosed: (reason, saved) => {
+            setPhase('stopping');
+            setStatus(`Connection lost (${reason}) — keeping what was said`);
+            void saved
+              .then((wav) => setRecordingUrl(URL.createObjectURL(wav)))
+              .catch((error: unknown) =>
+                setStatus(error instanceof Error ? error.message : String(error)),
+              )
+              .finally(() => {
+                interview.current = null;
+                setPhase('idle');
+              });
           },
         },
         replay ?? undefined,
@@ -127,9 +136,10 @@ export default function App() {
     setPhase('stopping');
     setStatus('Saving the recording');
     try {
+      // The interview reports how the upload went. Saying anything after it
+      // would bury "upload failed", the one message that must be seen.
       const wav = await interview.current?.stop();
       if (wav) setRecordingUrl(URL.createObjectURL(wav));
-      setStatus('Finished');
     } catch (error) {
       setStatus(error instanceof Error ? error.message : String(error));
     }

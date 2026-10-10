@@ -23,7 +23,10 @@ export interface InterviewCallbacks {
   onStatus: (status: string) => void;
   onLevel: (level: number) => void;
   onPhase: (phase: Phase) => void;
-  onClosed: (reason: string) => void;
+  /** The connection ended without stop() being called. What was said is kept
+   *  regardless: `saved` settles once the upload has been tried, with the
+   *  recording to offer for download. */
+  onClosed: (reason: string, saved: Promise<Blob>) => void;
 }
 
 export interface Interview {
@@ -75,13 +78,54 @@ export async function startInterview(
 
   let session: Session | undefined;
   let capture: Capture | undefined;
+  let heartbeat: ReturnType<typeof setInterval> | undefined;
   let playedAnything = false;
-  // Set once stop() closes the socket. That close is ours and expected, and
-  // reporting it would overwrite what the upload says — including a failure.
+  // Set once the session is being wound down. A close after that is ours and
+  // expected, and reporting it would overwrite what the upload says —
+  // including a failure.
   let stopping = false;
+  // Until startInterview returns there is no caller to tell, so a connection
+  // lost while setting up is only noted here and thrown at the end.
+  let ready = false;
+  let lost: string | null = null;
+  let finished: Promise<Blob> | undefined;
 
   const openedAt = performance.now();
   const transcript: { speaker: Speaker; text: string; started_at: number }[] = [];
+  const inputLabel = replay ? replay.name : 'microphone';
+
+  /** Stops the microphone and keeps what was said, once, however the session
+   *  ends. A dropped connection must not cost the conversation: the browser
+   *  holds the only copy until the upload succeeds. */
+  const finish = (reason?: string): Promise<Blob> => {
+    finished ??= (async () => {
+      stopping = true;
+      clearInterval(heartbeat);
+      const mic = capture?.recorded() ?? new Int16Array(0);
+      const spoken = playback.recorded();
+      await capture?.stop();
+      session?.close();
+      await playback.close();
+
+      const wav = buildConversationWav(mic, spoken);
+      const outcome = await keep(
+        sessionId,
+        wav,
+        transcript,
+        (performance.now() - openedAt) / 1000,
+        inputLabel,
+      );
+      callbacks.onStatus(reason ? `Connection lost (${reason}). ${outcome}` : outcome);
+      return wav;
+    })();
+    return finished;
+  };
+
+  const closed = (reason: string) => {
+    if (stopping || lost) return;
+    lost = reason;
+    if (ready) callbacks.onClosed(reason, finish(reason));
+  };
 
   // Turns are stamped with when they began, so a stored transcript can be
   // lined up against the recording later.
@@ -138,11 +182,9 @@ export async function startInterview(
 
         if (content.turnComplete) callbacks.onPhase('listening');
       },
-      onerror: (event: ErrorEvent) => callbacks.onClosed(event.message || 'Connection error'),
-      onclose: (event: CloseEvent) => {
-        if (stopping) return;
-        callbacks.onClosed(`Closed ${event.code}: ${event.reason || 'no reason given'}`);
-      },
+      onerror: (event: ErrorEvent) => closed(event.message || 'Connection error'),
+      onclose: (event: CloseEvent) =>
+        closed(`Closed ${event.code}: ${event.reason || 'no reason given'}`),
     },
   });
 
@@ -161,6 +203,9 @@ export async function startInterview(
   let sent = 0;
   let peak = 0;
   capture = await startCapture(source, (pcm) => {
+    // Still recorded by the capture, but there is no socket left to send to
+    // in the moment between a close and the microphone stopping.
+    if (stopping || lost) return;
     sent += pcm.length;
     let loudest = 0;
     for (let i = 0; i < pcm.length; i++) {
@@ -187,35 +232,24 @@ export async function startInterview(
         : 'Listening',
   );
 
-  const heartbeat = setInterval(() => {
+  heartbeat = setInterval(() => {
     const level = ((peak / 0x8000) * 100).toFixed(0);
     console.info(`[kataribe] sent ${(sent / CAPTURE_RATE).toFixed(1)}s, peak ${level}%`);
     peak = 0;
   }, 5000);
 
-  return {
-    sessionId,
-    stop: async () => {
-      clearInterval(heartbeat);
-      const mic = capture?.recorded() ?? new Int16Array(0);
-      const spoken = playback.recorded();
-      await capture?.stop();
-      stopping = true;
-      session?.close();
-      await playback.close();
+  if (lost) {
+    // Closed before anyone could speak: the microphone only opened just now,
+    // so there is nothing of theirs to keep. It must not be left listening.
+    stopping = true;
+    clearInterval(heartbeat);
+    await capture.stop();
+    await playback.close();
+    throw new Error(`Connection lost before the conversation started (${lost})`);
+  }
+  ready = true;
 
-      const wav = buildConversationWav(mic, spoken);
-      await keep(
-        sessionId,
-        wav,
-        transcript,
-        (performance.now() - openedAt) / 1000,
-        source.label,
-        callbacks,
-      );
-      return wav;
-    },
-  };
+  return { sessionId, stop: () => finish() };
 }
 
 /** Uploading must not lose the recording: the browser copy is the only one
@@ -226,8 +260,7 @@ async function keep(
   transcript: unknown[],
   seconds: number,
   inputLabel: string,
-  callbacks: InterviewCallbacks,
-): Promise<void> {
+): Promise<string> {
   const form = new FormData();
   form.append('audio', wav, `${sessionId}.wav`);
   form.append('transcript', JSON.stringify(transcript));
@@ -240,11 +273,11 @@ async function keep(
       body: form,
     });
     if (!response.ok) throw new Error(`${response.status} ${await response.text()}`);
-    callbacks.onStatus('Saved');
+    return 'Saved';
   } catch (error) {
-    callbacks.onStatus(
+    return (
       `Saved locally only — upload failed (${error instanceof Error ? error.message : error}). ` +
-        'Download the recording before starting another session.',
+      'Download the recording before starting another session.'
     );
   }
 }
