@@ -1,0 +1,15 @@
+.git
+**/.env
+**/.env.*
+**/node_modules
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+**/var
+frontend/dist
+frontend/e2e/.audio-cache
+frontend/test-results
+frontend/playwright-report
+backend/tests/live/.audio-cache
