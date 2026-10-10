@@ -10,6 +10,8 @@ interface Summary {
   input_label: string;
   turns: number;
   has_audio: boolean;
+  /** Its reading failed or stalled, and may be started again. */
+  can_process: boolean;
 }
 
 interface Turn {
@@ -81,6 +83,15 @@ export default function Sessions() {
     setOpen(await (await fetch(`/api/sessions/${id}`)).json());
   };
 
+  const processAgain = async (id: string) => {
+    // Refused only if it is already being read, which the refreshed status
+    // then shows. Otherwise it is back to queued, and the polling below
+    // follows it from there.
+    await fetch(`/api/sessions/${id}/process`, { method: 'POST' });
+    setOpen(await (await fetch(`/api/sessions/${id}`)).json());
+    await load();
+  };
+
   // The open session is fetched once when it is opened. A story that arrives
   // after that — which is the normal case, since extraction runs behind the
   // upload — would otherwise never appear without closing and reopening.
@@ -120,6 +131,11 @@ export default function Sessions() {
           {open?.id === session.id && (
             <div className="detail">
               {open.processing_error && <p className="failure">{open.processing_error}</p>}
+              {open.can_process && (
+                <button className="process-again" onClick={() => processAgain(open.id)}>
+                  Process again
+                </button>
+              )}
               {session.has_audio && (
                 <audio controls preload="none" src={`/api/sessions/${session.id}/audio`} />
               )}

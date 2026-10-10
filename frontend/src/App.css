@@ -456,6 +456,13 @@ button:disabled {
   font-size: 0.85rem;
 }
 
+.process-again {
+  align-self: flex-start;
+  background: transparent;
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .stories {
   display: flex;
   flex-direction: column;

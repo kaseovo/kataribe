@@ -84,6 +84,9 @@ LATER_COLUMNS = {
         # The family questions this session's interviewer was given. Only these
         # can have been put to the person, so only these are judged afterwards.
         "carried_questions": "TEXT NOT NULL DEFAULT '[]'",
+        # When the status last changed, so a reading that stalled can be told
+        # from one still going.
+        "status_at": "TEXT",
     },
 }
 
@@ -182,6 +185,7 @@ class Session:
     status: str = "recorded"
     processing_error: str | None = None
     carried_questions: list[str] = field(default_factory=list)
+    status_at: datetime | None = None
 
 
 class Store:
@@ -312,8 +316,8 @@ class Store:
     def set_status(self, session_id: str, status: str, error: str | None = None) -> None:
         with self._connect() as db:
             db.execute(
-                "UPDATE sessions SET status = ?, processing_error = ? WHERE id = ?",
-                (status, error, session_id),
+                "UPDATE sessions SET status = ?, processing_error = ?, status_at = ? WHERE id = ?",
+                (status, error, datetime.now(UTC).isoformat(), session_id),
             )
 
     def list_sessions(self, limit: int = 100) -> list[Session]:
@@ -476,6 +480,9 @@ def _to_session(row: sqlite3.Row) -> Session:
         carried_questions=json.loads(row["carried_questions"])
         if "carried_questions" in keys
         else [],
+        status_at=datetime.fromisoformat(row["status_at"])
+        if "status_at" in keys and row["status_at"]
+        else None,
     )
 
 

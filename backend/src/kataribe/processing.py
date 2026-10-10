@@ -4,14 +4,42 @@ Kept apart from the API so it can move to its own Cloud Run job later without
 anything above it changing.
 """
 
+import datetime
 import logging
 from dataclasses import replace
 
 from kataribe import brain
 from kataribe.config import Settings
-from kataribe.store import Plan, Store
+from kataribe.store import Plan, Session, Store
 
 log = logging.getLogger(__name__)
+
+STALLED_AFTER = datetime.timedelta(minutes=5)
+"""Reading a session takes seconds. One still queued or processing this long
+after it was queued was lost, most likely to a restart: processing runs inside
+the server, and a restart drops it without a word."""
+
+
+def can_retry(session: Session, now: datetime.datetime) -> bool:
+    """Whether reading this session may be started again.
+
+    Never while a run may still be going, since two would race to write the same
+    stories. Never for one already processed: its stories may be shared and
+    asked about by now, and a second reading would replace them. And not for a
+    session with nothing said in it, or nobody to attach stories to.
+
+    Stalled sessions are not picked up again on startup. Once deployed there may
+    be several servers, and each would claim the same session.
+    """
+    if not session.turns or not session.senior_id:
+        return False
+    if session.status in ("queued", "processing"):
+        # Timed from the status itself, not from the end of the session: a
+        # session from last week queued again a second ago is not stalled.
+        # Rows from before the status was timed fall back to the end.
+        since = session.status_at or session.ended_at
+        return since is not None and now - since > STALLED_AFTER
+    return session.status in ("recorded", "failed")
 
 
 def process_session(settings: Settings, store: Store, session_id: str) -> None:

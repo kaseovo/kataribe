@@ -469,3 +469,35 @@ def test_a_session_remembers_which_questions_it_carried(
     session = store.get(session_id)
     assert session is not None
     assert session.carried_questions == ids[:2]
+
+
+def test_a_session_whose_reading_failed_can_be_read_again(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    read: list[str] = []
+    monkeypatch.setattr(
+        "kataribe.api.sessions.process_session",
+        lambda settings, store, session_id: read.append(session_id),
+    )
+    client, _, session_id = story_for(tmp_path, visibility="private")
+    Store(tmp_path).set_status(session_id, "failed", "RuntimeError: quota exhausted")
+    assert client.get(f"/api/sessions/{session_id}").json()["can_process"] is True
+
+    response = client.post(f"/api/sessions/{session_id}/process")
+
+    assert response.status_code == 202
+    assert read == [session_id]
+    assert client.get(f"/api/sessions/{session_id}").json()["status"] == "queued"
+    # And not a second time while that reading may still be going.
+    assert client.post(f"/api/sessions/{session_id}/process").status_code == 409
+    assert read == [session_id]
+
+
+def test_a_session_being_read_is_not_started_twice(tmp_path: Path) -> None:
+    client, _, session_id = story_for(tmp_path, visibility="private")
+    Store(tmp_path).set_status(session_id, "processing")
+
+    response = client.post(f"/api/sessions/{session_id}/process")
+
+    assert response.status_code == 409
+    assert client.get("/api/sessions").json()[0]["can_process"] is False

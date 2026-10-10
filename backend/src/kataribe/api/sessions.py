@@ -13,7 +13,7 @@ from kataribe import brain, clips
 from kataribe.config import Settings, get_settings
 from kataribe.gemini import VOICES, InterviewTuning, mint_session_credentials
 from kataribe.languages import LANGUAGES, get
-from kataribe.processing import process_session
+from kataribe.processing import can_retry, process_session
 from kataribe.store import LIFE_STAGES, FamilyQuestion, Store, Turn
 
 router = APIRouter(prefix="/api", tags=["sessions"])
@@ -171,6 +171,8 @@ class SessionSummary(BaseModel):
     input_label: str
     turns: int
     has_audio: bool
+    can_process: bool
+    """Whether reading it may be started again: it failed, or it stalled."""
 
 
 class SessionDetail(SessionSummary):
@@ -301,8 +303,28 @@ async def upload_recording(
     background.add_task(process_session, settings, store, session_id)
 
 
+@router.post("/sessions/{session_id}/process", status_code=202)
+def process_again(
+    session_id: str,
+    background: BackgroundTasks,
+    settings: Annotated[Settings, Depends(get_settings)],
+    store: Annotated[Store, Depends(get_store)],
+) -> None:
+    """Reads a session again whose reading failed, or was lost to a restart."""
+    session = store.get(session_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail=f"No session {session_id}")
+    if not can_retry(session, datetime.datetime.now(tz=datetime.UTC)):
+        raise HTTPException(
+            status_code=409, detail=f"Session {session_id} cannot be read again ({session.status})"
+        )
+    store.set_status(session_id, "queued")
+    background.add_task(process_session, settings, store, session_id)
+
+
 @router.get("/sessions")
 def list_sessions(store: Annotated[Store, Depends(get_store)]) -> list[SessionSummary]:
+    now = datetime.datetime.now(tz=datetime.UTC)
     return [
         SessionSummary(
             id=session.id,
@@ -314,6 +336,7 @@ def list_sessions(store: Annotated[Store, Depends(get_store)]) -> list[SessionSu
             input_label=session.input_label,
             turns=len(session.turns),
             has_audio=store.audio_path(session.id) is not None,
+            can_process=can_retry(session, now),
         )
         for session in store.list_sessions()
     ]
@@ -334,6 +357,7 @@ def read_session(session_id: str, store: Annotated[Store, Depends(get_store)]) -
         input_label=session.input_label,
         turns=len(session.turns),
         has_audio=store.audio_path(session.id) is not None,
+        can_process=can_retry(session, datetime.datetime.now(tz=datetime.UTC)),
         model=session.model,
         end_of_speech_sensitivity=session.end_of_speech_sensitivity,
         transcript=[TurnView(**turn.__dict__) for turn in session.turns],

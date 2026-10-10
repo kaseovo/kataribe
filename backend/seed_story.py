@@ -83,6 +83,9 @@ def main() -> None:
             args.senior_id, asked_by=args.asked_by, text=args.question
         )
         store.mark_question_asked(question_id, session_id, [story_id])
+    # As processing leaves it. A session left "recorded" looks never read, and
+    # reading it again would replace the story seeded here.
+    store.set_status(session_id, "processed")
     print(session_id)
 
 

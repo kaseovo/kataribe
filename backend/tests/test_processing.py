@@ -5,6 +5,7 @@ which questions count as asked, what their answer points at, and what is held
 back — not the model's judgement, which `tests/live/test_family.py` measures.
 """
 
+import datetime
 from pathlib import Path
 
 import pytest
@@ -12,8 +13,8 @@ import pytest
 from kataribe import brain
 from kataribe.brain import ExtractedStory, Extraction, NextPlan, RaisedQuestion
 from kataribe.config import Settings
-from kataribe.processing import process_session
-from kataribe.store import FamilyQuestion, Plan, Senior, Store, Turn
+from kataribe.processing import STALLED_AFTER, can_retry, process_session
+from kataribe.store import FamilyQuestion, Plan, Senior, Session, Store, Turn
 
 TOLD = ExtractedStory(
     title="結婚式のお着物",
@@ -159,3 +160,66 @@ def test_nothing_is_rescreened_when_nothing_new_was_refused(
     process_session(Settings(), store, session_id)
 
     assert "screened" not in seen
+
+
+ENDED = datetime.datetime(2026, 10, 10, 12, 0, tzinfo=datetime.UTC)
+
+
+def ended_session(
+    status: str,
+    *,
+    said: bool = True,
+    senior_id: str | None = "s1",
+    status_at: datetime.datetime | None = None,
+) -> Session:
+    return Session(
+        id="s",
+        started_at=ENDED - datetime.timedelta(minutes=6),
+        ended_at=ENDED,
+        model="m",
+        voice="Sulafat",
+        silence_duration_ms=5000,
+        end_of_speech_sensitivity="LOW",
+        input_label="test",
+        duration_seconds=360.0,
+        turns=[Turn(speaker="senior", text="長野で生まれました。", started_at=5)] if said else [],
+        senior_id=senior_id,
+        status=status,
+        status_at=status_at,
+    )
+
+
+@pytest.mark.parametrize("status", ["failed", "recorded"])
+def test_a_session_that_was_never_read_can_be_read_again(status: str) -> None:
+    assert can_retry(ended_session(status), ENDED + datetime.timedelta(seconds=1))
+
+
+@pytest.mark.parametrize("status", ["queued", "processing"])
+def test_a_session_still_being_read_is_not_started_twice(status: str) -> None:
+    assert not can_retry(ended_session(status), ENDED + datetime.timedelta(minutes=1))
+
+
+@pytest.mark.parametrize("status", ["queued", "processing"])
+def test_a_session_lost_to_a_restart_can_be_read_again(status: str) -> None:
+    assert can_retry(ended_session(status), ENDED + STALLED_AFTER + datetime.timedelta(seconds=1))
+
+
+def test_a_processed_session_is_not_read_again() -> None:
+    # Its stories may already be shared, and answers linked to them.
+    assert not can_retry(ended_session("processed"), ENDED + datetime.timedelta(days=1))
+
+
+def test_there_must_be_something_said_and_someone_to_say_it() -> None:
+    later = ENDED + datetime.timedelta(seconds=1)
+    assert not can_retry(ended_session("failed", said=False), later)
+    assert not can_retry(ended_session("failed", senior_id=None), later)
+
+
+def test_an_old_session_queued_again_just_now_is_not_stalled() -> None:
+    # Ended last week, so timing from the end would call it stalled, and a
+    # second click would start a second reading alongside the first.
+    queued = ENDED + datetime.timedelta(days=7)
+    session = ended_session("queued", status_at=queued)
+
+    assert not can_retry(session, queued + datetime.timedelta(seconds=1))
+    assert can_retry(session, queued + STALLED_AFTER + datetime.timedelta(seconds=1))
