@@ -10,6 +10,9 @@ processing pipeline uses.
 Given `--question`, the story is also recorded as the answer to a question from
 the family, as processing does when the interviewer put one to her.
 
+The session gets a synthetic recording, a tone where each voice would be, so the
+family page has a clip of the quote to play.
+
     uv run python seed_story.py --senior-id abc --visibility family ...
     uv run python seed_story.py ... --asked-by 孫のゆか --question 工場のことを教えて
 """
@@ -19,6 +22,7 @@ import uuid
 from pathlib import Path
 
 from kataribe.store import Quote, Store, Story, Turn
+from tests.wavs import conversation_wav
 
 
 def main() -> None:
@@ -48,7 +52,7 @@ def main() -> None:
             Turn(speaker="ai", text="こんにちは。", started_at=2.0),
             Turn(speaker="senior", text=args.quote, started_at=14.0),
         ],
-        audio=None,
+        audio=conversation_wav(15.0, left=[(4.0, 13.0)], right=[(0.5, 2.0)]),
         duration_seconds=15.0,
         input_label="seeded",
     )

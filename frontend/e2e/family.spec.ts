@@ -61,9 +61,19 @@ test('a shared story reaches the family, with her voice behind it', async ({ pag
   await expect(page.locator('.chapter h2')).toContainText('子供時代');
   await expect(page.locator('.told h3')).toContainText('織物工場のこと');
   await expect(page.locator('.told blockquote')).toContainText('織物の工場');
-  // Her own voice one tap away is the whole claim.
-  await expect(page.locator('.listen')).toBeVisible();
   await expect(page.locator('.withheld')).toHaveCount(0);
+
+  // Her own voice one tap away is the whole claim — her voice saying this,
+  // not the session it came from.
+  const [clip] = await Promise.all([
+    page.waitForResponse(/\/stories\/[\w-]+\/quotes\/0\/audio$/),
+    page.locator('.listen').click(),
+  ]);
+  expect(clip.status()).toBe(200);
+  expect(clip.headers()['content-type']).toBe('audio/wav');
+  // The whole recording also holds whatever she kept private. Nothing on the
+  // page may lead to it.
+  expect(await page.content()).not.toContain('/api/sessions/');
 });
 
 test('a story she did not agree to share never appears', async ({ page, request }) => {

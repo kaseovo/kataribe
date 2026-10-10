@@ -215,9 +215,11 @@ The family page is `/family/{senior_id}`. Filtering happens in the query, so the
 
 There is deliberately no endpoint that writes stories. The browser tests seed the store through `backend/seed_story.py`, which uses the same code as the processing pipeline, rather than through a test-only route into the one part of the API whose job is to keep things out.
 
-Each quote has a play button. Word-level offsets are not returned by the model, so it seeks to where the previous turn ended — close to where she began speaking, not exact.
+Each quote has a play button, and it plays a clip, never the session. The whole recording holds every story told in it, private ones included, so the family page is not told where it is. The server cuts the turn the quote came from out of the left channel, where only she speaks, and serves it only for a shared story. Word-level offsets are not returned by the model, so the clip runs from the interviewer's turn before to the one after, with the silence trimmed off: her whole answer, not just the quoted words.
 
-**Not yet done:** the family page's chrome is in English, over Japanese content. For a Japanese family, and for the demo, the page should follow the person's language.
+The session list in the console still plays whole recordings. That is the team's view; it must not be reachable from a public URL.
+
+**Not yet done:** the family page's chrome is in English, over Japanese content. That stays for the hackathon, whose rules want everything in English; for a Japanese family the page should follow the person's language.
 
 ## The family asks back
 

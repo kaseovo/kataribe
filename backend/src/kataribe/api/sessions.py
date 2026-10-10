@@ -1,14 +1,15 @@
 import datetime
 import json
 import logging
+import wave
 from functools import lru_cache
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, ConfigDict, Field
 
-from kataribe import brain
+from kataribe import brain, clips
 from kataribe.config import Settings, get_settings
 from kataribe.gemini import VOICES, InterviewTuning, mint_session_credentials
 from kataribe.languages import LANGUAGES, get
@@ -71,11 +72,10 @@ class StoryView(BaseModel):
 
 
 class FamilyQuoteView(QuoteView):
-    session_id: str
-    # Roughly where in the recording this turn began. Transcripts arrive at the
-    # end of a turn, so the previous turn's timestamp is the closest thing we
-    # have to a start. Word-level offsets are not returned by the model.
-    seek_seconds: float
+    audio: str | None
+    """Their voice saying it, and nothing else from the session. Neither the
+    session nor its full recording is named anywhere on the family page, since
+    the recording also holds whatever they chose not to share."""
 
 
 class FamilyStoryView(BaseModel):
@@ -369,17 +369,7 @@ def read_family_view(senior_id: str, store: Annotated[Store, Depends(get_store)]
 
     shared = store.stories_for_senior(senior_id, shared_only=True)
     everything = store.stories_for_senior(senior_id)
-
-    # Turn starts, per session, so a quote can be played rather than only read.
-    starts: dict[str, list[float]] = {}
-    for story in shared:
-        if story.session_id in starts:
-            continue
-        session = store.get(story.session_id)
-        turns = session.turns if session else []
-        starts[story.session_id] = [
-            turns[i - 1].started_at if i > 0 else 0.0 for i in range(len(turns))
-        ]
+    recorded = {s.session_id for s in shared if store.audio_path(s.session_id) is not None}
 
     chapters = []
     for stage in LIFE_STAGES:
@@ -402,10 +392,11 @@ def read_family_view(senior_id: str, store: Annotated[Store, Depends(get_store)]
                             FamilyQuoteView(
                                 text=quote.text,
                                 turn=quote.turn,
-                                session_id=story.session_id,
-                                seek_seconds=_seek(starts, story.session_id, quote.turn),
+                                audio=f"/api/family/{senior_id}/stories/{story.id}/quotes/{i}/audio"
+                                if story.session_id in recorded
+                                else None,
                             )
-                            for quote in story.quotes
+                            for i, quote in enumerate(story.quotes)
                         ],
                     )
                     for story in in_stage
@@ -472,9 +463,31 @@ def ask_a_question(
     return _family_safe(stored, set())
 
 
-def _seek(starts: dict[str, list[float]], session_id: str, turn: int) -> float:
-    marks = starts.get(session_id, [])
-    return marks[turn] if 0 <= turn < len(marks) else 0.0
+@router.get("/family/{senior_id}/stories/{story_id}/quotes/{index}/audio")
+def read_quote_audio(
+    senior_id: str, story_id: str, index: int, store: Annotated[Store, Depends(get_store)]
+) -> Response:
+    """Their voice saying one shared quote: the turn it came from, their channel
+    only. The story is looked up among the shared ones, so a private story has
+    no audio here to find, any more than it has text on the family page."""
+    story = next(
+        (s for s in store.stories_for_senior(senior_id, shared_only=True) if s.id == story_id),
+        None,
+    )
+    if story is None or not 0 <= index < len(story.quotes):
+        raise HTTPException(status_code=404, detail="No such quote")
+    session = store.get(story.session_id)
+    path = store.audio_path(story.session_id)
+    turn = story.quotes[index].turn
+    if session is None or path is None or not 0 <= turn < len(session.turns):
+        raise HTTPException(status_code=404, detail="No recording of this quote")
+
+    try:
+        audio = clips.clip(path, *clips.turn_window(session.turns, turn))
+    except (wave.Error, EOFError, ValueError) as error:
+        log.exception("could not cut a clip from %s", story.session_id)
+        raise HTTPException(status_code=404, detail="No recording of this quote") from error
+    return Response(content=audio, media_type="audio/wav")
 
 
 @router.get("/sessions/{session_id}/audio")

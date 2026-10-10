@@ -7,10 +7,12 @@ from fastapi.testclient import TestClient
 from google.genai import types
 
 from kataribe import brain
+from kataribe.clips import PAD_SECONDS
 from kataribe.config import Settings, get_settings
 from kataribe.gemini import InterviewTuning, SessionCredentials, build_live_config
 from kataribe.main import create_app
 from kataribe.store import FamilyQuestion, Plan, Quote, Store, Story, Turn
+from tests.wavs import channels_and_seconds, conversation_wav
 
 
 def client_with(settings: Settings) -> TestClient:
@@ -151,7 +153,9 @@ def test_uploading_to_an_unknown_session_is_rejected(tmp_path: Path) -> None:
     assert response.status_code == 404
 
 
-def story_for(store_dir: Path, *, visibility: str) -> tuple[TestClient, str, str]:
+def story_for(
+    store_dir: Path, *, visibility: str, audio: bytes | None = None
+) -> tuple[TestClient, str, str]:
     """A senior with one story at the given visibility, plus a session to play."""
     store = Store(store_dir)
     senior_id = store.add_senior(name="田中ハル", birth_year=1947, birthplace="長野")
@@ -168,7 +172,7 @@ def story_for(store_dir: Path, *, visibility: str) -> tuple[TestClient, str, str
             Turn(speaker="ai", text="こんにちは。", started_at=2.0),
             Turn(speaker="senior", text="長野で生まれました。", started_at=11.0),
         ],
-        audio=None,
+        audio=audio,
         duration_seconds=12.0,
         input_label="test",
     )
@@ -215,14 +219,51 @@ def test_the_family_never_sees_a_story_that_was_not(tmp_path: Path) -> None:
     assert "生まれた村" not in json.dumps(view, ensure_ascii=False)
 
 
-def test_a_quote_carries_where_to_start_playing(tmp_path: Path) -> None:
-    client, senior_id, session_id = story_for(tmp_path, visibility="family")
+def test_a_quote_plays_their_voice_and_not_the_session(tmp_path: Path) -> None:
+    # The interviewer greets at 0.5–2 s; she answers at 4–9 s.
+    audio = conversation_wav(12.0, left=[(4.0, 9.0)], right=[(0.5, 2.0)])
+    client, senior_id, session_id = story_for(tmp_path, visibility="family", audio=audio)
+
+    view = client.get(f"/api/family/{senior_id}").json()
+    quote = view["chapters"][0]["stories"][0]["quotes"][0]
+    played = client.get(quote["audio"])
+
+    assert played.status_code == 200
+    assert played.headers["content-type"] == "audio/wav"
+    channels, seconds = channels_and_seconds(played.content)
+    assert channels == 1
+    assert seconds == pytest.approx(5.0 + 2 * PAD_SECONDS, abs=0.05)
+    # Nothing on the page leads to the whole recording, which also holds
+    # whatever she kept to herself.
+    assert session_id not in json.dumps(view)
+
+
+def test_a_story_she_kept_private_has_no_voice_to_play(tmp_path: Path) -> None:
+    audio = conversation_wav(12.0, left=[(4.0, 9.0)])
+    client, senior_id, _ = story_for(tmp_path, visibility="private", audio=audio)
+
+    played = client.get(f"/api/family/{senior_id}/stories/story1/quotes/0/audio")
+
+    assert played.status_code == 404
+
+
+def test_a_quote_plays_only_under_its_own_person(tmp_path: Path) -> None:
+    audio = conversation_wav(12.0, left=[(4.0, 9.0)])
+    client, _, _ = story_for(tmp_path, visibility="family", audio=audio)
+    other = client.post("/api/seniors", json={"name": "佐藤茂"}).json()["id"]
+
+    played = client.get(f"/api/family/{other}/stories/story1/quotes/0/audio")
+
+    assert played.status_code == 404
+
+
+def test_a_quote_with_no_recording_offers_nothing_to_play(tmp_path: Path) -> None:
+    client, senior_id, _ = story_for(tmp_path, visibility="family")
 
     quote = client.get(f"/api/family/{senior_id}").json()["chapters"][0]["stories"][0]["quotes"][0]
 
-    assert quote["session_id"] == session_id
-    # Turn 1 begins roughly where turn 0 ended.
-    assert quote["seek_seconds"] == 2.0
+    assert quote["audio"] is None
+    assert client.get(f"/api/family/{senior_id}/stories/story1/quotes/0/audio").status_code == 404
 
 
 def test_a_relative_can_ask_and_sees_it_waiting(tmp_path: Path) -> None:

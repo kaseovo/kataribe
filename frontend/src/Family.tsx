@@ -6,8 +6,10 @@ import './Family.css';
 interface Quote {
   text: string;
   turn: number;
-  session_id: string;
-  seek_seconds: number;
+  /** Their voice saying this, cut from the session on the server. The page
+   *  never learns where the whole recording is: it also holds whatever they
+   *  chose not to share. Null when the session was not recorded. */
+  audio: string | null;
 }
 
 interface Story {
@@ -85,10 +87,9 @@ export default function Family({ seniorId }: { seniorId: string }) {
 
   const play = (quote: Quote) => {
     const audio = player.current;
-    if (!audio) return;
-    const src = `/api/sessions/${quote.session_id}/audio`;
-    if (!audio.src.endsWith(src)) audio.src = src;
-    audio.currentTime = quote.seek_seconds;
+    if (!audio || !quote.audio) return;
+    if (!audio.src.endsWith(quote.audio)) audio.src = quote.audio;
+    audio.currentTime = 0;
     void audio.play();
   };
 
@@ -136,9 +137,11 @@ export default function Family({ seniorId }: { seniorId: string }) {
               <p>{story.summary}</p>
               {story.quotes.map((quote, i) => (
                 <blockquote key={i}>
-                  <button className="listen" onClick={() => play(quote)} aria-label="Listen">
-                    ▶
-                  </button>
+                  {quote.audio && (
+                    <button className="listen" onClick={() => play(quote)} aria-label="Listen">
+                      ▶
+                    </button>
+                  )}
                   <span>「{quote.text}」</span>
                 </blockquote>
               ))}
