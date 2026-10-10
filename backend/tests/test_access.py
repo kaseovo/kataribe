@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 
 from kataribe.config import Settings, get_settings
 from kataribe.main import create_app
-from kataribe.store import Store
+from kataribe.store import LocalStore
 
 
 def deployed(tmp_path: Path, password: str = "pw") -> tuple[TestClient, str]:
@@ -22,7 +22,7 @@ def deployed(tmp_path: Path, password: str = "pw") -> tuple[TestClient, str]:
     settings = Settings(data_dir=tmp_path / "data", static_dir=pages, team_password=password)
     app = create_app(settings)
     app.dependency_overrides[get_settings] = lambda: settings
-    senior_id = Store(tmp_path / "data").add_senior(name="田中ハル")
+    senior_id = LocalStore(tmp_path / "data").add_senior(name="田中ハル")
     return TestClient(app), senior_id
 
 

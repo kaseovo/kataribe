@@ -14,7 +14,7 @@ from kataribe import brain
 from kataribe.brain import ExtractedStory, Extraction, NextPlan, RaisedQuestion
 from kataribe.config import Settings
 from kataribe.processing import STALLED_AFTER, can_retry, process_session
-from kataribe.store import FamilyQuestion, Plan, Senior, Session, Store, Turn
+from kataribe.store import FamilyQuestion, LocalStore, Plan, Senior, Session, Store, Turn
 
 TOLD = ExtractedStory(
     title="結婚式のお着物",
@@ -80,7 +80,7 @@ def seen(monkeypatch: pytest.MonkeyPatch) -> dict[str, object]:
 def test_an_answered_question_is_marked_asked_and_points_at_its_answer(
     tmp_path: Path, seen: dict[str, object]
 ) -> None:
-    store = Store(tmp_path)
+    store = LocalStore(tmp_path)
     senior_id = store.add_senior(name="田中ハル")
     question_id = store.add_family_question(senior_id, asked_by="孫のゆか", text="お着物は?")
     session_id = session_carrying(store, senior_id, [question_id])
@@ -98,7 +98,7 @@ def test_an_answered_question_is_marked_asked_and_points_at_its_answer(
 def test_a_question_she_did_not_answer_is_still_asked(
     tmp_path: Path, seen: dict[str, object]
 ) -> None:
-    store = Store(tmp_path)
+    store = LocalStore(tmp_path)
     senior_id = store.add_senior(name="田中ハル")
     question_id = store.add_family_question(senior_id, asked_by="孫のゆか", text="お着物は?")
     session_id = session_carrying(store, senior_id, [question_id])
@@ -116,7 +116,7 @@ def test_only_the_questions_the_session_carried_can_be_marked_asked(
 ) -> None:
     # A question sent while she was talking never reached the interviewer. If
     # she happened to talk about the same thing, it still was not asked.
-    store = Store(tmp_path)
+    store = LocalStore(tmp_path)
     senior_id = store.add_senior(name="田中ハル")
     carried = store.add_family_question(senior_id, asked_by="孫のゆか", text="お着物は?")
     later = store.add_family_question(senior_id, asked_by="息子の健", text="結婚式の場所は?")
@@ -133,7 +133,7 @@ def test_only_the_questions_the_session_carried_can_be_marked_asked(
 def test_a_topic_refused_today_holds_a_question_already_waiting(
     tmp_path: Path, seen: dict[str, object]
 ) -> None:
-    store = Store(tmp_path)
+    store = LocalStore(tmp_path)
     senior_id = store.add_senior(name="田中ハル")
     war = store.add_family_question(senior_id, asked_by="孫のゆか", text="戦争のころは?")
     kimono = store.add_family_question(senior_id, asked_by="孫のゆか", text="お着物は?")
@@ -151,7 +151,7 @@ def test_a_topic_refused_today_holds_a_question_already_waiting(
 def test_nothing_is_rescreened_when_nothing_new_was_refused(
     tmp_path: Path, seen: dict[str, object]
 ) -> None:
-    store = Store(tmp_path)
+    store = LocalStore(tmp_path)
     senior_id = store.add_senior(name="田中ハル")
     store.save_plan(senior_id, Plan(story_so_far="", next_questions=[], avoid_topics=["戦争"]))
     store.add_family_question(senior_id, asked_by="孫のゆか", text="お着物は?")

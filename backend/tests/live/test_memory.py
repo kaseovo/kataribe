@@ -12,7 +12,7 @@ import pytest
 from kataribe import brain
 from kataribe.config import Settings
 from kataribe.processing import process_session
-from kataribe.store import Store, Turn
+from kataribe.store import LocalStore, Turn
 from tests.live import checks, session
 from tests.live.session import Speech
 
@@ -25,7 +25,7 @@ FATHER = "父は、村で小さな織物の工場をやっておりました。"
 async def test_the_second_session_opens_by_recalling_the_first(
     settings: Settings, tmp_path: Path
 ) -> None:
-    store = Store(tmp_path)
+    store = LocalStore(tmp_path)
     senior_id = store.add_senior(
         name="田中ハル", name_reading="たなかはる", birth_year=1947, birthplace="長野"
     )

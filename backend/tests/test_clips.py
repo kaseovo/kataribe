@@ -20,6 +20,11 @@ def recording(tmp_path: Path, **spans: list[tuple[float, float]]) -> Path:
     return path
 
 
+def cut(path: Path, start: float, end: float | None) -> bytes:
+    with path.open("rb") as recording:
+        return clip(recording, start, end)
+
+
 def test_a_turn_runs_from_the_turn_before_to_the_turn_after() -> None:
     assert turn_window(TURNS, 1) == (2.0, 12.0)
 
@@ -39,7 +44,7 @@ def test_a_clip_is_their_voice_alone_with_the_silence_trimmed(tmp_path: Path) ->
     # the window. Only their side may come back.
     path = recording(tmp_path, left=[(6.0, 10.0)], right=[(2.0, 5.0)])
 
-    channels, seconds = channels_and_seconds(clip(path, 2.0, 12.0))
+    channels, seconds = channels_and_seconds(cut(path, 2.0, 12.0))
 
     assert channels == 1
     assert seconds == pytest.approx(4.0 + 2 * PAD_SECONDS, abs=0.05)
@@ -49,7 +54,7 @@ def test_a_clip_holds_nothing_said_after_its_turn(tmp_path: Path) -> None:
     # What they said next may be a story they kept to themselves.
     path = recording(tmp_path, left=[(6.0, 10.0), (14.0, 19.0)])
 
-    _, seconds = channels_and_seconds(clip(path, 2.0, 12.0))
+    _, seconds = channels_and_seconds(cut(path, 2.0, 12.0))
 
     assert seconds == pytest.approx(4.0 + 2 * PAD_SECONDS, abs=0.05)
 
@@ -57,7 +62,7 @@ def test_a_clip_holds_nothing_said_after_its_turn(tmp_path: Path) -> None:
 def test_the_last_turn_runs_to_the_end_of_the_recording(tmp_path: Path) -> None:
     path = recording(tmp_path, left=[(14.0, 19.0)])
 
-    _, seconds = channels_and_seconds(clip(path, 12.0, None))
+    _, seconds = channels_and_seconds(cut(path, 12.0, None))
 
     assert seconds == pytest.approx(5.0 + 2 * PAD_SECONDS, abs=0.05)
 
@@ -65,6 +70,6 @@ def test_the_last_turn_runs_to_the_end_of_the_recording(tmp_path: Path) -> None:
 def test_a_window_with_no_voice_in_it_comes_back_whole(tmp_path: Path) -> None:
     path = recording(tmp_path)
 
-    _, seconds = channels_and_seconds(clip(path, 2.0, 12.0))
+    _, seconds = channels_and_seconds(cut(path, 2.0, 12.0))
 
     assert seconds == pytest.approx(10.0, abs=0.05)

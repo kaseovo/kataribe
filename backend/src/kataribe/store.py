@@ -1,7 +1,13 @@
-"""Session storage: SQLite for the records, plain files for the audio.
+"""Where sessions, stories, plans and recordings live.
 
-This module is the seam. Moving to Firestore and Cloud Storage means rewriting
-what is here and nothing above it.
+`Store` is the seam: nothing above this module knows where anything is kept.
+`LocalStore`, here, keeps records in SQLite and recordings on disk, for
+development and tests. The deployed app keeps them in Firestore and Cloud
+Storage, behind the same interface.
+
+Recordings are handed out as open files rather than paths, so they can live
+somewhere that is not a disk, and be read a range at a time: a ten-minute
+session is close to 60 MB, and a quote needs a few seconds of it.
 """
 
 import json
@@ -10,6 +16,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import BinaryIO, Protocol
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS seniors (
@@ -188,7 +195,78 @@ class Session:
     status_at: datetime | None = None
 
 
-class Store:
+class Store(Protocol):
+    # --- seniors
+    def add_senior(
+        self,
+        *,
+        name: str,
+        name_reading: str = "",
+        birth_year: int | None = None,
+        birthplace: str = "",
+        family: list[str] | None = None,
+        language: str = "ja",
+    ) -> str: ...
+    def get_senior(self, senior_id: str) -> Senior | None: ...
+    def list_seniors(self) -> list[Senior]: ...
+
+    # --- sessions
+    def start(
+        self,
+        *,
+        model: str,
+        voice: str,
+        silence_duration_ms: int,
+        end_of_speech_sensitivity: str,
+        senior_id: str | None = None,
+        carried_questions: list[str] | None = None,
+    ) -> str: ...
+    def finish(
+        self,
+        session_id: str,
+        *,
+        turns: list[Turn],
+        audio: bytes | None,
+        duration_seconds: float,
+        input_label: str,
+    ) -> None: ...
+    def set_status(self, session_id: str, status: str, error: str | None = None) -> None: ...
+    def list_sessions(self, limit: int = 100) -> list[Session]: ...
+    def get(self, session_id: str) -> Session | None: ...
+    def has_audio(self, session_id: str) -> bool: ...
+    def open_audio(self, session_id: str) -> BinaryIO | None:
+        """The session's recording, open for reading and seekable. The caller closes it."""
+        ...
+
+    # --- family questions
+    def add_family_question(
+        self, senior_id: str, *, asked_by: str, text: str, status: str = "pending"
+    ) -> str: ...
+    def family_questions(
+        self, senior_id: str, status: str | None = None
+    ) -> list[FamilyQuestion]: ...
+    def set_question_status(self, question_id: str, status: str) -> None: ...
+    def mark_question_asked(
+        self, question_id: str, session_id: str, answer_story_ids: list[str]
+    ) -> None: ...
+
+    # --- stories and plans
+    def replace_stories(self, session_id: str, senior_id: str, stories: list[Story]) -> None:
+        """A session's stories are rewritten wholesale, so re-processing is safe."""
+        ...
+
+    def stories_for_session(self, session_id: str) -> list[Story]: ...
+    def stories_for_senior(self, senior_id: str, shared_only: bool = False) -> list[Story]:
+        """With `shared_only`, filtered where they are stored, never by the caller."""
+        ...
+
+    def save_plan(self, senior_id: str, plan: Plan) -> None: ...
+    def get_plan(self, senior_id: str) -> Plan: ...
+
+
+class LocalStore:
+    """SQLite for the records, plain files for the audio."""
+
     def __init__(self, data_dir: Path) -> None:
         self.data_dir = data_dir
         self.recordings = data_dir / "recordings"
@@ -332,9 +410,12 @@ class Store:
             row = db.execute("SELECT * FROM sessions WHERE id = ?", (session_id,)).fetchone()
         return _to_session(row) if row else None
 
-    def audio_path(self, session_id: str) -> Path | None:
+    def has_audio(self, session_id: str) -> bool:
+        return (self.recordings / f"{session_id}.wav").exists()
+
+    def open_audio(self, session_id: str) -> BinaryIO | None:
         path = self.recordings / f"{session_id}.wav"
-        return path if path.exists() else None
+        return path.open("rb") if path.exists() else None
 
     # --- family questions ----------------------------------------------
 
@@ -507,6 +588,7 @@ def _to_story(row: sqlite3.Row) -> Story:
 __all__ = [
     "LIFE_STAGES",
     "FamilyQuestion",
+    "LocalStore",
     "Plan",
     "Quote",
     "Senior",

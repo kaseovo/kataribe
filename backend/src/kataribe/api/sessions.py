@@ -2,11 +2,12 @@ import datetime
 import json
 import logging
 import wave
+from collections.abc import Iterator
 from functools import lru_cache
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
 
 from kataribe import brain, clips
@@ -14,7 +15,7 @@ from kataribe.config import Settings, get_settings
 from kataribe.gemini import VOICES, InterviewTuning, mint_session_credentials
 from kataribe.languages import LANGUAGES, get
 from kataribe.processing import can_retry, process_session
-from kataribe.store import LIFE_STAGES, FamilyQuestion, Store, Turn
+from kataribe.store import LIFE_STAGES, FamilyQuestion, LocalStore, Store, Turn
 
 router = APIRouter(prefix="/api", tags=["sessions"])
 log = logging.getLogger(__name__)
@@ -24,7 +25,7 @@ log = logging.getLogger(__name__)
 def _store(data_dir: str) -> Store:
     from pathlib import Path
 
-    return Store(Path(data_dir))
+    return LocalStore(Path(data_dir))
 
 
 def get_store(settings: Annotated[Settings, Depends(get_settings)]) -> Store:
@@ -335,7 +336,7 @@ def list_sessions(store: Annotated[Store, Depends(get_store)]) -> list[SessionSu
             silence_duration_ms=session.silence_duration_ms,
             input_label=session.input_label,
             turns=len(session.turns),
-            has_audio=store.audio_path(session.id) is not None,
+            has_audio=store.has_audio(session.id),
             can_process=can_retry(session, now),
         )
         for session in store.list_sessions()
@@ -356,7 +357,7 @@ def read_session(session_id: str, store: Annotated[Store, Depends(get_store)]) -
         silence_duration_ms=session.silence_duration_ms,
         input_label=session.input_label,
         turns=len(session.turns),
-        has_audio=store.audio_path(session.id) is not None,
+        has_audio=store.has_audio(session.id),
         can_process=can_retry(session, datetime.datetime.now(tz=datetime.UTC)),
         model=session.model,
         end_of_speech_sensitivity=session.end_of_speech_sensitivity,
@@ -393,7 +394,7 @@ def read_family_view(senior_id: str, store: Annotated[Store, Depends(get_store)]
 
     shared = store.stories_for_senior(senior_id, shared_only=True)
     everything = store.stories_for_senior(senior_id)
-    recorded = {s.session_id for s in shared if store.audio_path(s.session_id) is not None}
+    recorded = {s.session_id for s in shared if store.has_audio(s.session_id)}
 
     chapters = []
     for stage in LIFE_STAGES:
@@ -501,13 +502,16 @@ def read_quote_audio(
     if story is None or not 0 <= index < len(story.quotes):
         raise HTTPException(status_code=404, detail="No such quote")
     session = store.get(story.session_id)
-    path = store.audio_path(story.session_id)
     turn = story.quotes[index].turn
-    if session is None or path is None or not 0 <= turn < len(session.turns):
+    if session is None or not 0 <= turn < len(session.turns):
+        raise HTTPException(status_code=404, detail="No recording of this quote")
+    recording = store.open_audio(story.session_id)
+    if recording is None:
         raise HTTPException(status_code=404, detail="No recording of this quote")
 
     try:
-        audio = clips.clip(path, *clips.turn_window(session.turns, turn))
+        with recording:
+            audio = clips.clip(recording, *clips.turn_window(session.turns, turn))
     except (wave.Error, EOFError, ValueError) as error:
         log.exception("could not cut a clip from %s", story.session_id)
         raise HTTPException(status_code=404, detail="No recording of this quote") from error
@@ -515,8 +519,20 @@ def read_quote_audio(
 
 
 @router.get("/sessions/{session_id}/audio")
-def read_audio(session_id: str, store: Annotated[Store, Depends(get_store)]) -> FileResponse:
-    path = store.audio_path(session_id)
-    if path is None:
+def read_audio(session_id: str, store: Annotated[Store, Depends(get_store)]) -> StreamingResponse:
+    """Streamed, not sent whole: a long session is bigger than Cloud Run lets a
+    single unstreamed response be."""
+    recording = store.open_audio(session_id)
+    if recording is None:
         raise HTTPException(status_code=404, detail=f"No recording for {session_id}")
-    return FileResponse(path, media_type="audio/wav", filename=f"kataribe-{session_id}.wav")
+
+    def chunks() -> Iterator[bytes]:
+        with recording:
+            while chunk := recording.read(1 << 20):
+                yield chunk
+
+    return StreamingResponse(
+        chunks(),
+        media_type="audio/wav",
+        headers={"Content-Disposition": f'attachment; filename="kataribe-{session_id}.wav"'},
+    )

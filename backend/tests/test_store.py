@@ -1,10 +1,10 @@
 from pathlib import Path
 
-from kataribe.store import Store, Turn
+from kataribe.store import LocalStore, Store, Turn
 
 
 def make_store(tmp_path: Path) -> Store:
-    return Store(tmp_path)
+    return LocalStore(tmp_path)
 
 
 def test_a_started_session_has_no_recording_yet(tmp_path: Path) -> None:
@@ -21,7 +21,7 @@ def test_a_started_session_has_no_recording_yet(tmp_path: Path) -> None:
     assert session is not None
     assert session.ended_at is None
     assert session.turns == []
-    assert store.audio_path(session_id) is None
+    assert not store.has_audio(session_id)
 
 
 def test_finishing_keeps_the_transcript_and_the_audio(tmp_path: Path) -> None:
@@ -47,7 +47,7 @@ def test_finishing_keeps_the_transcript_and_the_audio(tmp_path: Path) -> None:
     assert [turn.speaker for turn in session.turns] == ["senior", "ai"]
     assert session.turns[0].text == "長野で生まれました"
     assert session.turns[1].started_at == 9.0
-    assert store.audio_path(session_id) is not None
+    assert store.has_audio(session_id)
 
 
 def test_a_session_without_audio_is_still_recorded(tmp_path: Path) -> None:
@@ -58,7 +58,7 @@ def test_a_session_without_audio_is_still_recorded(tmp_path: Path) -> None:
 
     store.finish(session_id, turns=[], audio=None, duration_seconds=3.0, input_label="microphone")
 
-    assert store.audio_path(session_id) is None
+    assert not store.has_audio(session_id)
     session = store.get(session_id)
     assert session is not None
     assert session.duration_seconds == 3.0
@@ -81,3 +81,18 @@ def test_sessions_are_listed_newest_first(tmp_path: Path) -> None:
         key=lambda i: next(s.started_at for s in store.list_sessions() if s.id == i),
         reverse=True,
     )
+
+
+def test_a_recording_reads_back_as_it_was_kept(tmp_path: Path) -> None:
+    store = make_store(tmp_path)
+    session_id = store.start(
+        model="m", voice="Sulafat", silence_duration_ms=5000, end_of_speech_sensitivity="LOW"
+    )
+    store.finish(session_id, turns=[], audio=b"RIFFfake", duration_seconds=1.0, input_label="mic")
+
+    recording = store.open_audio(session_id)
+
+    assert recording is not None
+    with recording:
+        assert recording.read() == b"RIFFfake"
+    assert store.open_audio("nobody") is None

@@ -17,7 +17,7 @@ import math
 import sys
 import wave
 from array import array
-from pathlib import Path
+from typing import BinaryIO
 
 from kataribe.store import Turn
 
@@ -36,9 +36,10 @@ def turn_window(turns: list[Turn], index: int) -> tuple[float, float | None]:
     return start, end
 
 
-def clip(recording: Path, start: float, end: float | None) -> bytes:
-    """A mono WAV of the left channel between `start` and `end`, silence trimmed."""
-    with wave.open(str(recording)) as source:
+def clip(recording: BinaryIO, start: float, end: float | None) -> bytes:
+    """A mono WAV of the left channel between `start` and `end`, silence trimmed.
+    Only that window is read, so a long recording need not be held whole."""
+    with wave.open(recording) as source:
         if source.getsampwidth() != 2:
             raise ValueError(f"Expected 16-bit audio, got {8 * source.getsampwidth()}-bit")
         rate = source.getframerate()

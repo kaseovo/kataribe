@@ -23,7 +23,7 @@ from pathlib import Path
 
 from tests.wavs import conversation_wav
 
-from kataribe.store import Quote, Store, Story, Turn
+from kataribe.store import LocalStore, Quote, Story, Turn
 
 
 def main() -> None:
@@ -39,7 +39,7 @@ def main() -> None:
     parser.add_argument("--asked-by", default="孫のゆか")
     args = parser.parse_args()
 
-    store = Store(args.data_dir)
+    store = LocalStore(args.data_dir)
     session_id = store.start(
         model="seeded",
         voice="Sulafat",

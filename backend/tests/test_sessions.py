@@ -11,7 +11,7 @@ from kataribe.clips import PAD_SECONDS
 from kataribe.config import Settings, get_settings
 from kataribe.gemini import InterviewTuning, SessionCredentials, build_live_config
 from kataribe.main import create_app
-from kataribe.store import FamilyQuestion, Plan, Quote, Store, Story, Turn
+from kataribe.store import FamilyQuestion, LocalStore, Plan, Quote, Story, Turn
 from tests.wavs import channels_and_seconds, conversation_wav
 
 
@@ -157,7 +157,7 @@ def story_for(
     store_dir: Path, *, visibility: str, audio: bytes | None = None
 ) -> tuple[TestClient, str, str]:
     """A senior with one story at the given visibility, plus a session to play."""
-    store = Store(store_dir)
+    store = LocalStore(store_dir)
     senior_id = store.add_senior(name="田中ハル", birth_year=1947, birthplace="長野")
     session_id = store.start(
         model="m",
@@ -283,7 +283,7 @@ def test_a_held_question_looks_exactly_like_a_waiting_one(tmp_path: Path) -> Non
     # Held means it touches something she refused. Saying so to the family would
     # tell them what she refused, so to them it is simply still waiting.
     client, senior_id, _ = story_for(tmp_path, visibility="family")
-    store = Store(tmp_path)
+    store = LocalStore(tmp_path)
     store.add_family_question(senior_id, asked_by="孫のゆか", text="戦争のころは?", status="held")
 
     question = client.get(f"/api/family/{senior_id}").json()["questions"][0]
@@ -294,7 +294,7 @@ def test_a_held_question_looks_exactly_like_a_waiting_one(tmp_path: Path) -> Non
 
 def test_an_answer_she_shared_comes_back_with_the_question(tmp_path: Path) -> None:
     client, senior_id, session_id = story_for(tmp_path, visibility="family")
-    store = Store(tmp_path)
+    store = LocalStore(tmp_path)
     question_id = store.add_family_question(senior_id, asked_by="孫のゆか", text="生まれた村は?")
     store.mark_question_asked(question_id, session_id, ["story1"])
 
@@ -306,7 +306,7 @@ def test_an_answer_she_shared_comes_back_with_the_question(tmp_path: Path) -> No
 
 def test_an_answer_is_shown_only_if_that_story_was_shared(tmp_path: Path) -> None:
     client, senior_id, session_id = story_for(tmp_path, visibility="private")
-    store = Store(tmp_path)
+    store = LocalStore(tmp_path)
     question_id = store.add_family_question(senior_id, asked_by="孫のゆか", text="生まれた村は?")
     private_story = store.stories_for_senior(senior_id)[0].id
     store.mark_question_asked(question_id, session_id, [private_story])
@@ -322,7 +322,7 @@ def test_a_question_touching_a_refused_topic_is_held_yet_looks_waiting(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     client, senior_id, _ = story_for(tmp_path, visibility="family")
-    store = Store(tmp_path)
+    store = LocalStore(tmp_path)
     store.save_plan(senior_id, Plan(story_so_far="", next_questions=[], avoid_topics=["戦争"]))
     monkeypatch.setattr(
         brain, "screen", lambda settings, questions, avoid: {q.id for q in questions}
@@ -342,7 +342,7 @@ def test_a_question_that_cannot_be_screened_is_not_taken(
 ) -> None:
     # Taking it anyway would leave it waiting, unchecked, to be put to her.
     client, senior_id, _ = story_for(tmp_path, visibility="family")
-    store = Store(tmp_path)
+    store = LocalStore(tmp_path)
     store.save_plan(senior_id, Plan(story_so_far="", next_questions=[], avoid_topics=["戦争"]))
 
     def unreachable(
@@ -440,7 +440,7 @@ def test_a_session_carries_at_most_the_two_oldest_waiting_questions(
 
     monkeypatch.setattr("kataribe.api.sessions.mint_session_credentials", mint)
     client, senior_id, _ = story_for(tmp_path, visibility="family")
-    store = Store(tmp_path)
+    store = LocalStore(tmp_path)
     for i in range(3):
         store.add_family_question(senior_id, asked_by="孫のゆか", text=f"質問{i}")
     store.add_family_question(senior_id, asked_by="孫のゆか", text="戦争のころは?", status="held")
@@ -459,7 +459,7 @@ def test_a_session_remembers_which_questions_it_carried(
     # Processing judges only these, so that "asked" means the interviewer had it.
     fake_credentials(monkeypatch)
     client, senior_id, _ = story_for(tmp_path, visibility="family")
-    store = Store(tmp_path)
+    store = LocalStore(tmp_path)
     ids = [
         store.add_family_question(senior_id, asked_by="孫のゆか", text=f"質問{i}") for i in range(3)
     ]
@@ -480,7 +480,7 @@ def test_a_session_whose_reading_failed_can_be_read_again(
         lambda settings, store, session_id: read.append(session_id),
     )
     client, _, session_id = story_for(tmp_path, visibility="private")
-    Store(tmp_path).set_status(session_id, "failed", "RuntimeError: quota exhausted")
+    LocalStore(tmp_path).set_status(session_id, "failed", "RuntimeError: quota exhausted")
     assert client.get(f"/api/sessions/{session_id}").json()["can_process"] is True
 
     response = client.post(f"/api/sessions/{session_id}/process")
@@ -495,7 +495,7 @@ def test_a_session_whose_reading_failed_can_be_read_again(
 
 def test_a_session_being_read_is_not_started_twice(tmp_path: Path) -> None:
     client, _, session_id = story_for(tmp_path, visibility="private")
-    Store(tmp_path).set_status(session_id, "processing")
+    LocalStore(tmp_path).set_status(session_id, "processing")
 
     response = client.post(f"/api/sessions/{session_id}/process")
 
