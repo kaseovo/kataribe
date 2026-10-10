@@ -16,7 +16,7 @@ See [plan.md](plan.md) for the product thinking behind this.
 | Interviewer prompt | Full first draft, Japanese source with an English gloss | A test session with a toy prompt tells us nothing about whether the interview *feels* right. The Japanese file ships; the English one exists so the team can review changes and the dev view can show them. |
 | Session recording | Stereo WAV built in the browser | Senior left, AI right, aligned on a shared timeline. Without it the first real session is unreviewable after the fact. |
 | Token security | Config locked server-side into the ephemeral token | The interviewer persona is the product; the browser gets a token that cannot rewrite it. Tuning values are requested by the client but validated and locked by the backend. |
-| Japanese review | Resumes 2026-10-11, with a native speaker on the team | Postponed on 2026-09-30, when nobody was free, and French stayed the working language meanwhile (see *French and English are for testing*). A native Japanese speaker joins the team on 2026-10-10, so the review moves ahead of the demo take rather than after it. |
+| Japanese review | With the demo take, Oct 14–15, by a native speaker on the team | Postponed on 2026-09-30, when nobody was free, and French stayed the working language meanwhile (see *French and English are for testing*). A native Japanese speaker joined the team on 2026-10-10; decided the same day that the review waits for the final part rather than coming ahead of it. |
 
 ## Demo must-haves
 
@@ -38,7 +38,7 @@ The Talk button stays, and presence becomes a line in the pitch: today a button,
 
 ### Japanese validation is deferred, deliberately
 
-Everything stays testable in French so the work is not blocked on a Japanese speaker being free. The cost is real and worth naming: the interviewer prompt now carries changes nobody has judged in the language that ships, and the naturalness change made that worse rather than better — the warmer reactions it produces are close to the restatements rule 3 forbids. This is a debt. From 2026-09-30 it had no due date; it is now due on 2026-10-11, when a native speaker on the team settles the pause length and the voice, and judges every prompt change made in French since.
+Everything stays testable in French so the work is not blocked on a Japanese speaker being free. The cost is real and worth naming: the interviewer prompt now carries changes nobody has judged in the language that ships, and the naturalness change made that worse rather than better — the warmer reactions it produces are close to the restatements rule 3 forbids. This is a debt. From 2026-09-30 it had no due date; it is now due with the demo take on Oct 14–15, when a native speaker on the team settles the pause length and the voice, and judges every prompt change made in French since. Whatever that finds has to be fixed and retaken before the deadline.
 
 ## Slices
 
@@ -67,7 +67,7 @@ Prototype deadline **2026-10-18**. A real senior tests from week 2.
 ## Status
 
 - [x] **0 — Walking skeleton**
-- [~] **1 — It talks** — built; the live test with a Japanese speaker is on 2026-10-11, see *Japanese validation is deferred*
+- [~] **1 — It talks** — built; the live test with a Japanese speaker is with the demo take on Oct 14–15, see *Japanese validation is deferred*
 - [x] **2 — It remembers the session** — sessions, transcripts and audio stored and replayable
 - [x] **3 — It has a brain** — stories extracted and verified, timeline, gaps, next questions, context carried into the following session
 - [~] 4 — It notices you — **cut from the hackathon**, see below

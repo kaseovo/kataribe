@@ -244,7 +244,7 @@ Risks:
 
 - **Crowded category, and Tell Mel already works in Japanese:** lead with the person's control over sharing, faithfulness, and Japanese built in rather than translated. Not with the interviewer itself.
 - **Seen as an AI companion:** show the family view and the "call her and ask more" moment in the demo.
-- **Japanese quality hard to judge in-house:** native-speaker review was planned every week, then postponed on 2026-09-30 with testing continuing in French. It resumes on 2026-10-11 with a native speaker on the team, and covers every prompt change made since.
+- **Japanese quality hard to judge in-house:** native-speaker review was planned every week, then postponed on 2026-09-30 with testing continuing in French. A native speaker is now on the team, and the review happens with the demo take on Oct 14–15, covering every prompt change made since. Anything it finds has to be fixed and retaken in the time left.
 - **Scope creep:** phone, printed books, robots and bilingual output stay out until after the deadline.
 
 ## Sources
