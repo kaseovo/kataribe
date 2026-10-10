@@ -195,6 +195,12 @@ class Session:
     status_at: datetime | None = None
 
 
+class MissingAudioParts(ValueError):
+    def __init__(self, missing: list[int]) -> None:
+        super().__init__(f"Recording parts never arrived: {missing}")
+        self.missing = missing
+
+
 class Store(Protocol):
     # --- seniors
     def add_senior(
@@ -236,6 +242,15 @@ class Store(Protocol):
     def has_audio(self, session_id: str) -> bool: ...
     def open_audio(self, session_id: str) -> BinaryIO | None:
         """The session's recording, open for reading and seekable. The caller closes it."""
+        ...
+
+    def save_audio_part(self, session_id: str, index: int, data: bytes) -> None:
+        """One piece of a recording too big to arrive in one request."""
+        ...
+
+    def join_audio_parts(self, session_id: str, count: int) -> None:
+        """Parts 0 to count-1 become the recording, in order, and are discarded.
+        Raises MissingAudioParts, and changes nothing, if any never arrived."""
         ...
 
     # --- family questions
@@ -417,6 +432,20 @@ class LocalStore:
         path = self.recordings / f"{session_id}.wav"
         return path.open("rb") if path.exists() else None
 
+    def save_audio_part(self, session_id: str, index: int, data: bytes) -> None:
+        (self.recordings / f"{session_id}.part{index}").write_bytes(data)
+
+    def join_audio_parts(self, session_id: str, count: int) -> None:
+        parts = [self.recordings / f"{session_id}.part{i}" for i in range(count)]
+        missing = [i for i, part in enumerate(parts) if not part.exists()]
+        if missing:
+            raise MissingAudioParts(missing)
+        with (self.recordings / f"{session_id}.wav").open("wb") as recording:
+            for part in parts:
+                recording.write(part.read_bytes())
+        for part in parts:
+            part.unlink()
+
     # --- family questions ----------------------------------------------
 
     def add_family_question(
@@ -589,6 +618,7 @@ __all__ = [
     "LIFE_STAGES",
     "FamilyQuestion",
     "LocalStore",
+    "MissingAudioParts",
     "Plan",
     "Quote",
     "Senior",

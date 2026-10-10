@@ -3,6 +3,7 @@ import { GoogleGenAI, type LiveServerMessage, type Session } from '@google/genai
 import { CAPTURE_RATE, microphone, recording, startCapture, type Capture } from './audio/capture';
 import { Playback } from './audio/playback';
 import { buildConversationWav } from './audio/wav';
+import { keep } from './upload';
 
 export type Speaker = 'senior' | 'ai';
 
@@ -255,36 +256,6 @@ export async function startInterview(
   ready = true;
 
   return { sessionId, stop: () => finish() };
-}
-
-/** Uploading must not lose the recording: the browser copy is the only one
- *  until this succeeds, so a failure is reported rather than swallowed. */
-async function keep(
-  sessionId: string,
-  wav: Blob,
-  transcript: unknown[],
-  seconds: number,
-  inputLabel: string,
-): Promise<string> {
-  const form = new FormData();
-  form.append('audio', wav, `${sessionId}.wav`);
-  form.append('transcript', JSON.stringify(transcript));
-  form.append('duration_seconds', String(seconds));
-  form.append('input_label', inputLabel);
-
-  try {
-    const response = await fetch(`/api/sessions/${sessionId}/recording`, {
-      method: 'POST',
-      body: form,
-    });
-    if (!response.ok) throw new Error(`${response.status} ${await response.text()}`);
-    return 'Saved';
-  } catch (error) {
-    return (
-      `Saved locally only — upload failed (${error instanceof Error ? error.message : error}). ` +
-      'Download the recording before starting another session.'
-    );
-  }
 }
 
 function encodeBase64(pcm: Int16Array): string {

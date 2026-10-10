@@ -501,3 +501,70 @@ def test_a_session_being_read_is_not_started_twice(tmp_path: Path) -> None:
 
     assert response.status_code == 409
     assert client.get("/api/sessions").json()[0]["can_process"] is False
+
+
+def started(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[TestClient, str]:
+    fake_credentials(monkeypatch)
+    client = stored(tmp_path, gemini_api_key="k")
+    monkeypatch.setattr("kataribe.api.sessions.process_session", lambda *a: None)
+    return client, client.post("/api/sessions", json={}).json()["session_id"]
+
+
+def keep(client: TestClient, session_id: str, parts: int) -> int:
+    return client.post(
+        f"/api/sessions/{session_id}/recording",
+        data={"transcript": "[]", "duration_seconds": "600", "audio_parts": str(parts)},
+    ).status_code
+
+
+def test_a_recording_too_big_for_one_request_arrives_in_parts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    client, session_id = started(tmp_path, monkeypatch)
+    recording = conversation_wav(3.0, left=[(0.5, 2.5)])
+    cuts = [0, 1000, 70_001, len(recording)]
+
+    # Sent out of order, and one sent twice, as a retry would.
+    for index in (2, 0, 1, 1):
+        part = recording[cuts[index] : cuts[index + 1]]
+        put = client.put(f"/api/sessions/{session_id}/recording/parts/{index}", content=part)
+        assert put.status_code == 204
+
+    assert keep(client, session_id, parts=3) == 204
+    assert client.get(f"/api/sessions/{session_id}/audio").content == recording
+
+
+def test_nothing_is_kept_while_a_part_is_missing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    client, session_id = started(tmp_path, monkeypatch)
+    client.put(f"/api/sessions/{session_id}/recording/parts/0", content=b"RIFF")
+
+    assert keep(client, session_id, parts=2) == 422
+    # Not marked finished: the browser can send the missing part and try again.
+    assert client.get(f"/api/sessions/{session_id}").json()["duration_seconds"] is None
+    client.put(f"/api/sessions/{session_id}/recording/parts/1", content=b"fake")
+    assert keep(client, session_id, parts=2) == 204
+    assert client.get(f"/api/sessions/{session_id}/audio").content == b"RIFFfake"
+
+
+def test_a_kept_recording_takes_no_more_parts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    client, session_id = started(tmp_path, monkeypatch)
+    client.put(f"/api/sessions/{session_id}/recording/parts/0", content=b"RIFFfake")
+    keep(client, session_id, parts=1)
+
+    late = client.put(f"/api/sessions/{session_id}/recording/parts/0", content=b"other")
+
+    assert late.status_code == 409
+    assert client.get(f"/api/sessions/{session_id}/audio").content == b"RIFFfake"
+
+
+def test_a_part_over_the_limit_is_refused(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    client, session_id = started(tmp_path, monkeypatch)
+    monkeypatch.setattr("kataribe.api.sessions.PART_LIMIT", 4)
+
+    put = client.put(f"/api/sessions/{session_id}/recording/parts/0", content=b"RIFFfake")
+
+    assert put.status_code == 413

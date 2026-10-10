@@ -6,7 +6,16 @@ from collections.abc import Iterator
 from functools import lru_cache
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Request,
+    UploadFile,
+)
 from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -15,7 +24,14 @@ from kataribe.config import Settings, get_settings
 from kataribe.gemini import VOICES, InterviewTuning, mint_session_credentials
 from kataribe.languages import LANGUAGES, get
 from kataribe.processing import can_retry, process_session
-from kataribe.store import LIFE_STAGES, FamilyQuestion, LocalStore, Store, Turn
+from kataribe.store import (
+    LIFE_STAGES,
+    FamilyQuestion,
+    LocalStore,
+    MissingAudioParts,
+    Store,
+    Turn,
+)
 
 router = APIRouter(prefix="/api", tags=["sessions"])
 log = logging.getLogger(__name__)
@@ -272,6 +288,32 @@ def create_session(
     )
 
 
+PART_LIMIT = 30 * 1024 * 1024
+"""Bytes in one part of a recording. Cloud Run refuses any request over 32 MiB;
+the browser sends 16 MiB."""
+MAX_PARTS = 64
+
+
+@router.put("/sessions/{session_id}/recording/parts/{index}", status_code=204)
+async def upload_recording_part(
+    session_id: str, index: int, request: Request, store: Annotated[Store, Depends(get_store)]
+) -> None:
+    """One piece of a recording. A ten-minute session is nearly twice what Cloud
+    Run accepts in a request, so it arrives in parts, joined when the
+    transcript follows. A PUT, so a part that failed can simply be sent again."""
+    session = store.get(session_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail=f"No session {session_id}")
+    if session.ended_at is not None:
+        raise HTTPException(status_code=409, detail=f"Session {session_id} is already kept")
+    if not 0 <= index < MAX_PARTS:
+        raise HTTPException(status_code=422, detail=f"Part {index} is out of range")
+    data = await request.body()
+    if len(data) > PART_LIMIT:
+        raise HTTPException(status_code=413, detail=f"A part may be at most {PART_LIMIT} bytes")
+    store.save_audio_part(session_id, index, data)
+
+
 @router.post("/sessions/{session_id}/recording", status_code=204)
 async def upload_recording(
     session_id: str,
@@ -282,7 +324,11 @@ async def upload_recording(
     duration_seconds: Annotated[float, Form()],
     input_label: Annotated[str, Form()] = "microphone",
     audio: Annotated[UploadFile | None, File()] = None,
+    audio_parts: Annotated[int, Form(ge=0, le=MAX_PARTS)] = 0,
 ) -> None:
+    """The transcript, and either the recording itself or the number of parts
+    it was sent in. Parts are joined first: if any is missing nothing is kept
+    yet, and the browser, which still holds everything, can send it again."""
     if store.get(session_id) is None:
         raise HTTPException(status_code=404, detail=f"No session {session_id}")
 
@@ -290,6 +336,12 @@ async def upload_recording(
         turns = [Turn(**turn) for turn in json.loads(transcript)]
     except (TypeError, ValueError) as error:
         raise HTTPException(status_code=422, detail=f"Bad transcript: {error}") from error
+
+    if audio is None and audio_parts:
+        try:
+            store.join_audio_parts(session_id, audio_parts)
+        except MissingAudioParts as error:
+            raise HTTPException(status_code=422, detail=str(error)) from error
 
     store.finish(
         session_id,
