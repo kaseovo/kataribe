@@ -10,6 +10,8 @@ dependencies = [
     "pydantic-settings>=2.6",
     "google-genai>=1.0",
     "python-multipart>=0.0.12",
+    "google-cloud-firestore>=2.34.1",
+    "google-cloud-storage>=3.17.0",
 ]
 
 [dependency-groups]
@@ -46,3 +48,8 @@ markers = ["live: streams real audio at the Gemini Live API; run with `make eval
 python_version = "3.13"
 strict = true
 files = ["src"]
+
+# Ships no type information.
+[[tool.mypy.overrides]]
+module = ["google.cloud.storage", "google.cloud.storage.*"]
+ignore_missing_imports = true

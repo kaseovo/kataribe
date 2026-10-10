@@ -1,34 +1,92 @@
+"""What any store must do, run against each of them.
+
+LocalStore always. CloudStore against a real Firestore and Cloud Storage when
+KATARIBE_TEST_GCP_PROJECT and KATARIBE_TEST_BUCKET are set, every run under its
+own prefix and cleaned up afterwards; otherwise those cases skip.
+"""
+
+import os
+import uuid
+from collections.abc import Iterator
 from pathlib import Path
 
-from kataribe.store import LocalStore, Store, Turn
+import pytest
+
+from kataribe.store import LocalStore, MissingAudioParts, Plan, Quote, Store, Story, Turn
+
+COLLECTIONS = ("seniors", "sessions", "stories", "family_questions", "plans")
 
 
-def make_store(tmp_path: Path) -> Store:
-    return LocalStore(tmp_path)
+@pytest.fixture(params=["local", "cloud"])
+def store(request: pytest.FixtureRequest, tmp_path: Path) -> Iterator[Store]:
+    if request.param == "local":
+        yield LocalStore(tmp_path)
+        return
+
+    project = os.environ.get("KATARIBE_TEST_GCP_PROJECT")
+    bucket = os.environ.get("KATARIBE_TEST_BUCKET")
+    if not (project and bucket):
+        pytest.skip("set KATARIBE_TEST_GCP_PROJECT and KATARIBE_TEST_BUCKET to test CloudStore")
+    from kataribe.cloud_store import CloudStore
+
+    prefix = f"test-{uuid.uuid4().hex[:8]}-"
+    cloud = CloudStore(
+        project=project,
+        database=os.environ.get("KATARIBE_TEST_FIRESTORE_DATABASE", "(default)"),
+        bucket=bucket,
+        prefix=prefix,
+    )
+    yield cloud
+    for name in COLLECTIONS:
+        for document in cloud.db.collection(prefix + name).stream():
+            document.reference.delete()
+    for blob in cloud.bucket.list_blobs(prefix=prefix):
+        blob.delete()
 
 
-def test_a_started_session_has_no_recording_yet(tmp_path: Path) -> None:
-    store = make_store(tmp_path)
-
-    session_id = store.start(
-        model="gemini-3.8-live",
+def started(store: Store, senior_id: str | None = None) -> str:
+    return store.start(
+        model="m",
         voice="Sulafat",
         silence_duration_ms=5000,
         end_of_speech_sensitivity="LOW",
+        senior_id=senior_id,
     )
+
+
+def story(story_id: str, title: str, visibility: str = "private") -> Story:
+    return Story(
+        id=story_id,
+        senior_id="",
+        session_id="",
+        title=title,
+        summary=f"{title}のこと。",
+        life_stage="子供時代",
+        approx_period="",
+        people=["父"],
+        places=["長野"],
+        quotes=[Quote(text="父は工場をやっておりました。", turn=1)],
+        visibility=visibility,
+    )
+
+
+# --- sessions and recordings ---------------------------------------------
+
+
+def test_a_started_session_has_no_recording_yet(store: Store) -> None:
+    session_id = started(store)
 
     session = store.get(session_id)
     assert session is not None
     assert session.ended_at is None
     assert session.turns == []
+    assert session.status == "recorded"
     assert not store.has_audio(session_id)
+    assert store.open_audio(session_id) is None
 
 
-def test_finishing_keeps_the_transcript_and_the_audio(tmp_path: Path) -> None:
-    store = make_store(tmp_path)
-    session_id = store.start(
-        model="m", voice="Sulafat", silence_duration_ms=5000, end_of_speech_sensitivity="LOW"
-    )
+def test_finishing_keeps_the_transcript_and_the_audio(store: Store) -> None:
+    session_id = started(store)
 
     store.finish(
         session_id,
@@ -43,6 +101,7 @@ def test_finishing_keeps_the_transcript_and_the_audio(tmp_path: Path) -> None:
 
     session = store.get(session_id)
     assert session is not None
+    assert session.ended_at is not None
     assert session.duration_seconds == 12.5
     assert [turn.speaker for turn in session.turns] == ["senior", "ai"]
     assert session.turns[0].text == "長野で生まれました"
@@ -50,11 +109,8 @@ def test_finishing_keeps_the_transcript_and_the_audio(tmp_path: Path) -> None:
     assert store.has_audio(session_id)
 
 
-def test_a_session_without_audio_is_still_recorded(tmp_path: Path) -> None:
-    store = make_store(tmp_path)
-    session_id = store.start(
-        model="m", voice="Sulafat", silence_duration_ms=5000, end_of_speech_sensitivity="LOW"
-    )
+def test_a_session_without_audio_is_still_recorded(store: Store) -> None:
+    session_id = started(store)
 
     store.finish(session_id, turns=[], audio=None, duration_seconds=3.0, input_label="microphone")
 
@@ -64,30 +120,8 @@ def test_a_session_without_audio_is_still_recorded(tmp_path: Path) -> None:
     assert session.duration_seconds == 3.0
 
 
-def test_sessions_are_listed_newest_first(tmp_path: Path) -> None:
-    store = make_store(tmp_path)
-    ids = [
-        store.start(
-            model="m", voice="Sulafat", silence_duration_ms=5000, end_of_speech_sensitivity="LOW"
-        )
-        for _ in range(3)
-    ]
-
-    listed = [session.id for session in store.list_sessions()]
-
-    assert set(listed) == set(ids)
-    assert listed == sorted(
-        listed,
-        key=lambda i: next(s.started_at for s in store.list_sessions() if s.id == i),
-        reverse=True,
-    )
-
-
-def test_a_recording_reads_back_as_it_was_kept(tmp_path: Path) -> None:
-    store = make_store(tmp_path)
-    session_id = store.start(
-        model="m", voice="Sulafat", silence_duration_ms=5000, end_of_speech_sensitivity="LOW"
-    )
+def test_a_recording_reads_back_as_it_was_kept(store: Store) -> None:
+    session_id = started(store)
     store.finish(session_id, turns=[], audio=b"RIFFfake", duration_seconds=1.0, input_label="mic")
 
     recording = store.open_audio(session_id)
@@ -95,4 +129,183 @@ def test_a_recording_reads_back_as_it_was_kept(tmp_path: Path) -> None:
     assert recording is not None
     with recording:
         assert recording.read() == b"RIFFfake"
+        # Seekable, since a clip reads one window of a long recording.
+        recording.seek(4)
+        assert recording.read(2) == b"fa"
     assert store.open_audio("nobody") is None
+
+
+def test_a_recording_sent_in_parts_is_joined_in_order(store: Store) -> None:
+    session_id = started(store)
+    for index, part in [(2, b"!!"), (0, b"RIFF"), (1, b"fake")]:
+        store.save_audio_part(session_id, index, part)
+
+    store.join_audio_parts(session_id, 3)
+
+    recording = store.open_audio(session_id)
+    assert recording is not None
+    with recording:
+        assert recording.read() == b"RIFFfake!!"
+
+
+def test_parts_are_not_joined_while_one_is_missing(store: Store) -> None:
+    session_id = started(store)
+    store.save_audio_part(session_id, 0, b"RIFF")
+
+    with pytest.raises(MissingAudioParts) as refused:
+        store.join_audio_parts(session_id, 3)
+
+    assert refused.value.missing == [1, 2]
+    assert not store.has_audio(session_id)
+
+
+def test_sessions_are_listed_newest_first(store: Store) -> None:
+    ids = [started(store) for _ in range(3)]
+
+    listed = store.list_sessions()
+
+    assert {s.id for s in listed} == set(ids)
+    assert [s.started_at for s in listed] == sorted((s.started_at for s in listed), reverse=True)
+    assert len(store.list_sessions(limit=2)) == 2
+
+
+def test_a_status_change_says_when_it_happened(store: Store) -> None:
+    session_id = started(store)
+
+    store.set_status(session_id, "failed", "RuntimeError: quota")
+
+    session = store.get(session_id)
+    assert session is not None
+    assert (session.status, session.processing_error) == ("failed", "RuntimeError: quota")
+    assert session.status_at is not None
+
+
+def test_a_session_remembers_who_it_was_with_and_what_it_carried(store: Store) -> None:
+    senior_id = store.add_senior(name="田中ハル")
+    session_id = store.start(
+        model="m",
+        voice="Sulafat",
+        silence_duration_ms=5000,
+        end_of_speech_sensitivity="LOW",
+        senior_id=senior_id,
+        carried_questions=["q1", "q2"],
+    )
+
+    session = store.get(session_id)
+    assert session is not None
+    assert session.senior_id == senior_id
+    assert session.carried_questions == ["q1", "q2"]
+
+
+# --- seniors ---------------------------------------------------------------
+
+
+def test_a_senior_reads_back_as_entered(store: Store) -> None:
+    senior_id = store.add_senior(
+        name="田中ハル",
+        name_reading="たなかはる",
+        birth_year=1947,
+        birthplace="長野",
+        family=["孫のゆか"],
+        language="ja",
+    )
+
+    senior = store.get_senior(senior_id)
+
+    assert senior is not None
+    assert (senior.name, senior.name_reading, senior.birth_year) == ("田中ハル", "たなかはる", 1947)
+    assert (senior.birthplace, senior.family, senior.language) == ("長野", ["孫のゆか"], "ja")
+    assert store.get_senior("nobody") is None
+
+
+def test_seniors_are_listed_in_the_order_they_were_added(store: Store) -> None:
+    first = store.add_senior(name="田中ハル")
+    second = store.add_senior(name="Jean Dupont", language="fr")
+
+    assert [s.id for s in store.list_seniors()] == [first, second]
+
+
+# --- family questions --------------------------------------------------------
+
+
+def test_family_questions_come_oldest_first_and_filter_by_status(store: Store) -> None:
+    senior_id = store.add_senior(name="田中ハル")
+    other = store.add_senior(name="佐藤茂")
+    first = store.add_family_question(senior_id, asked_by="孫のゆか", text="お着物は?")
+    held = store.add_family_question(senior_id, asked_by="孫のゆか", text="戦争は?", status="held")
+    second = store.add_family_question(senior_id, asked_by="娘", text="初任給は?")
+    store.add_family_question(other, asked_by="息子", text="釣りは?")
+
+    assert [q.id for q in store.family_questions(senior_id)] == [first, held, second]
+    assert [q.id for q in store.family_questions(senior_id, status="pending")] == [first, second]
+
+
+def test_a_question_asked_points_at_its_answer(store: Store) -> None:
+    senior_id = store.add_senior(name="田中ハル")
+    question_id = store.add_family_question(senior_id, asked_by="孫のゆか", text="お着物は?")
+
+    store.mark_question_asked(question_id, "session1", ["story1"])
+
+    [question] = store.family_questions(senior_id)
+    assert (question.status, question.asked_in_session) == ("asked", "session1")
+    assert question.answer_story_ids == ["story1"]
+
+
+def test_a_question_can_be_held_back(store: Store) -> None:
+    senior_id = store.add_senior(name="田中ハル")
+    question_id = store.add_family_question(senior_id, asked_by="孫のゆか", text="戦争は?")
+
+    store.set_question_status(question_id, "held")
+
+    assert store.family_questions(senior_id, status="pending") == []
+
+
+# --- stories and plans -----------------------------------------------------
+
+
+def test_a_sessions_stories_are_replaced_whole_and_keep_their_order(store: Store) -> None:
+    senior_id = store.add_senior(name="田中ハル")
+    session_id = started(store, senior_id)
+    store.replace_stories(session_id, senior_id, [story("a", "工場"), story("b", "学校")])
+
+    store.replace_stories(
+        session_id, senior_id, [story("c", "結婚式"), story("d", "初任給"), story("e", "引越し")]
+    )
+
+    told = store.stories_for_session(session_id)
+    assert [s.id for s in told] == ["c", "d", "e"]
+    assert told[0].senior_id == senior_id
+    assert told[0].session_id == session_id
+    assert told[0].quotes == [Quote(text="父は工場をやっておりました。", turn=1)]
+    assert (told[0].people, told[0].places) == (["父"], ["長野"])
+
+
+def test_only_shared_stories_come_back_when_only_shared_are_asked_for(store: Store) -> None:
+    senior_id = store.add_senior(name="田中ハル")
+    other = store.add_senior(name="佐藤茂")
+    store.replace_stories(
+        started(store, senior_id),
+        senior_id,
+        [story("a", "工場", "family"), story("b", "話したくないこと", "private")],
+    )
+    store.replace_stories(started(store, senior_id), senior_id, [story("c", "結婚式", "family")])
+    store.replace_stories(started(store, other), other, [story("d", "釣り", "family")])
+
+    assert {s.id for s in store.stories_for_senior(senior_id)} == {"a", "b", "c"}
+    shared = store.stories_for_senior(senior_id, shared_only=True)
+    assert {s.id for s in shared} == {"a", "c"}
+    assert all(s.shared for s in shared)
+
+
+def test_a_plan_is_empty_until_one_is_saved(store: Store) -> None:
+    senior_id = store.add_senior(name="田中ハル")
+    assert store.get_plan(senior_id).is_empty
+
+    store.save_plan(
+        senior_id,
+        Plan(story_so_far="工場のお話。", next_questions=["初任給は?"], avoid_topics=["戦争"]),
+    )
+
+    plan = store.get_plan(senior_id)
+    assert plan.story_so_far == "工場のお話。"
+    assert (plan.next_questions, plan.avoid_topics) == (["初任給は?"], ["戦争"])

@@ -38,14 +38,25 @@ log = logging.getLogger(__name__)
 
 
 @lru_cache
-def _store(data_dir: str) -> Store:
+def _store(kind: str, data_dir: str, project: str | None, database: str, bucket: str) -> Store:
+    if kind == "cloud":
+        # Imported only when used, so local development never loads the clients.
+        from kataribe.cloud_store import CloudStore
+
+        return CloudStore(project=project, database=database, bucket=bucket)
     from pathlib import Path
 
     return LocalStore(Path(data_dir))
 
 
 def get_store(settings: Annotated[Settings, Depends(get_settings)]) -> Store:
-    return _store(str(settings.data_dir))
+    return _store(
+        settings.storage,
+        str(settings.data_dir),
+        settings.gcp_project,
+        settings.firestore_database,
+        settings.recordings_bucket,
+    )
 
 
 class LanguageView(BaseModel):
@@ -291,7 +302,8 @@ def create_session(
 PART_LIMIT = 30 * 1024 * 1024
 """Bytes in one part of a recording. Cloud Run refuses any request over 32 MiB;
 the browser sends 16 MiB."""
-MAX_PARTS = 64
+MAX_PARTS = 32
+"""Cloud Storage joins at most 32 objects in one go: 512 MiB, an hour and a half."""
 
 
 @router.put("/sessions/{session_id}/recording/parts/{index}", status_code=204)
