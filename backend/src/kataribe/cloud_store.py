@@ -280,6 +280,28 @@ class CloudStore:
             avoid_topics=list(data.get("avoid_topics", [])),
         )
 
+    # --- forgetting ----------------------------------------------------
+
+    def forget_senior(self, senior_id: str) -> dict[str, int]:
+        sessions = self._where("sessions", senior_id=senior_id)
+        gone: dict[str, int] = {}
+        batch = self.db.batch()
+        for name in ("sessions", "stories", "family_questions"):
+            documents = sessions if name == "sessions" else self._where(name, senior_id=senior_id)
+            gone[name] = len(documents)
+            for document in documents:
+                batch.delete(document.reference)
+        batch.delete(self._collection("plans").document(senior_id))
+        batch.delete(self._collection("seniors").document(senior_id))
+        batch.commit()
+
+        gone["recordings"] = 0
+        for session in sessions:
+            for blob in self.bucket.list_blobs(prefix=f"{self.prefix}recordings/{session.id}."):
+                blob.delete()
+                gone["recordings"] += 1
+        return gone
+
     def _where(self, collection: str, **equal: str) -> list[Any]:
         query: Any = self._collection(collection)
         for field, value in equal.items():

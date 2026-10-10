@@ -17,6 +17,7 @@ def deployed(tmp_path: Path, password: str = "pw") -> tuple[TestClient, str]:
     (pages / "assets").mkdir(parents=True)
     (pages / "index.html").write_text("<html>kataribe</html>")
     (pages / "assets" / "index-abc.js").write_text("console.log('kataribe')")
+    (pages / "capture-processor.js").write_text("registerProcessor('capture-processor', class {})")
     (tmp_path / "secret.txt").write_text("not for anyone")
 
     settings = Settings(data_dir=tmp_path / "data", static_dir=pages, team_password=password)
@@ -68,6 +69,8 @@ def test_a_relative_reaches_the_family_page_with_nothing_to_sign_in_to(tmp_path:
 
     assert client.get(f"/family/{senior_id}").text == "<html>kataribe</html>"
     assert client.get("/assets/index-abc.js").status_code == 200
+    # Loaded by the browser without the password, for any page that listens.
+    assert client.get("/capture-processor.js").status_code == 200
     assert client.get(f"/api/family/{senior_id}").json()["senior"]["name"] == "田中ハル"
 
 

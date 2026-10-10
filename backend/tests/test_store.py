@@ -309,3 +309,34 @@ def test_a_plan_is_empty_until_one_is_saved(store: Store) -> None:
     plan = store.get_plan(senior_id)
     assert plan.story_so_far == "工場のお話。"
     assert (plan.next_questions, plan.avoid_topics) == (["初任給は?"], ["戦争"])
+
+
+# --- forgetting --------------------------------------------------------------
+
+
+def test_a_person_can_be_forgotten_entirely(store: Store) -> None:
+    senior_id = store.add_senior(name="田中ハル")
+    kept = store.add_senior(name="佐藤茂")
+    session_id = started(store, senior_id)
+    store.finish(session_id, turns=[], audio=b"RIFFfake", duration_seconds=1.0, input_label="mic")
+    store.save_audio_part(session_id, 0, b"left over")
+    store.replace_stories(session_id, senior_id, [story("a", "工場", "family")])
+    store.add_family_question(senior_id, asked_by="孫のゆか", text="お着物は?")
+    store.save_plan(
+        senior_id, Plan(story_so_far="工場。", next_questions=[], avoid_topics=["戦争"])
+    )
+    other_session = started(store, kept)
+    store.replace_stories(other_session, kept, [story("b", "釣り")])
+
+    gone = store.forget_senior(senior_id)
+
+    assert gone == {"sessions": 1, "stories": 1, "family_questions": 1, "recordings": 2}
+    assert store.get_senior(senior_id) is None
+    assert store.get(session_id) is None
+    assert not store.has_audio(session_id)
+    assert store.stories_for_senior(senior_id) == []
+    assert store.family_questions(senior_id) == []
+    assert store.get_plan(senior_id).is_empty
+    # Nobody else is touched.
+    assert [s.id for s in store.list_seniors()] == [kept]
+    assert [s.id for s in store.stories_for_senior(kept)] == ["b"]

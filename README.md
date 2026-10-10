@@ -15,7 +15,7 @@ Many Japanese seniors spend a lot of time alone, and their families never find t
 
 ## How it differs
 
-- **Japanese, zero effort for the senior.** Nothing to install, open, or tap. A tablet on the shelf notices them sitting nearby and asks.
+- **Japanese, zero effort for the senior.** Nothing to install or learn: the interviewer speaks first. Today a Talk button; a tablet that notices them sitting nearby is on the roadmap.
 - **Faithful by design.** Every passage links back to the real audio. The AI never speaks for the person and never invents a detail.
 - **A family loop, not a companion.** Relatives read new stories and send back questions the AI asks next time. It is a bridge between people, not a replacement for one.
 - **Affordable.** A self-history for every family, not a one-off for the few.
@@ -38,11 +38,11 @@ The device is only a channel. The product is the loop: every conversation become
 
 | Part | Tech |
 | --- | --- |
-| Kiosk + family view | React, Vite, TypeScript; MediaPipe face detection on-device |
+| Kiosk + family view | React, Vite, TypeScript |
 | Voice | Gemini Live API, native audio with built-in transcription |
 | Backend | FastAPI (Python 3.13, uv) |
 | Processing | Gemini text model — extraction, timeline, gap analysis, question planning |
-| Storage | SQLite and local disk for now; Firestore and Cloud Storage when deployed |
+| Storage | Firestore and Cloud Storage on Cloud Run (Tokyo); SQLite and local files in development |
 
 ## Getting started
 
@@ -83,6 +83,8 @@ Note that the judge and the personas both consume API quota; the free tier's dai
 Synthesized speech is clean and evenly paced, so it proves correctness rather than robustness. Drop a real session recording into `backend/tests/live/recordings/` and the same harness will replay it.
 
 ## Project status
+
+**Live:** <https://kataribe-uxxefqeqqq-an.a.run.app>. Family pages open to anyone with their link; the console is behind a team password. See [docs/deploy.md](docs/deploy.md).
 
 Prototype, built in the open over four weeks. See [docs/plan.md](docs/plan.md) for the full plan and [docs/roadmap.md](docs/roadmap.md) for what is built and what is next.
 

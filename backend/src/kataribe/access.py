@@ -20,6 +20,11 @@ PUBLIC = [
     re.compile(r"/api/health"),
     re.compile(r"/assets/[\w.-]+"),  # the built page's scripts and styles
     re.compile(r"/[\w-]+\.(?:svg|ico|png)"),  # icons at the root
+    # The microphone's audio worklet: public code, and needed by any page that
+    # listens. A worklet module is fetched apart from the page's other requests;
+    # in the deployed smoke test it went without the password, got 401, and the
+    # microphone never opened.
+    re.compile(r"/capture-processor\.js"),
 ]
 
 

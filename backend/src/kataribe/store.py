@@ -278,6 +278,12 @@ class Store(Protocol):
     def save_plan(self, senior_id: str, plan: Plan) -> None: ...
     def get_plan(self, senior_id: str) -> Plan: ...
 
+    # --- forgetting
+    def forget_senior(self, senior_id: str) -> dict[str, int]:
+        """Everything kept about one person: their sessions and every recording,
+        stories, plan and family questions. Returns how many of each went."""
+        ...
+
 
 class LocalStore:
     """SQLite for the records, plain files for the audio."""
@@ -569,6 +575,28 @@ class LocalStore:
             next_questions=json.loads(row["next_questions"]),
             avoid_topics=json.loads(row["avoid_topics"]),
         )
+
+    # --- forgetting ----------------------------------------------------
+
+    def forget_senior(self, senior_id: str) -> dict[str, int]:
+        gone: dict[str, int] = {}
+        with self._connect() as db:
+            sessions = [
+                row["id"]
+                for row in db.execute("SELECT id FROM sessions WHERE senior_id = ?", (senior_id,))
+            ]
+            for table in ("sessions", "stories", "family_questions"):
+                gone[table] = db.execute(
+                    f"DELETE FROM {table} WHERE senior_id = ?", (senior_id,)
+                ).rowcount
+            db.execute("DELETE FROM plans WHERE senior_id = ?", (senior_id,))
+            db.execute("DELETE FROM seniors WHERE id = ?", (senior_id,))
+        gone["recordings"] = 0
+        for session_id in sessions:
+            for path in self.recordings.glob(f"{session_id}.*"):
+                path.unlink()
+                gone["recordings"] += 1
+        return gone
 
 
 def _to_session(row: sqlite3.Row) -> Session:

@@ -1,4 +1,4 @@
-.PHONY: install dev dev-api dev-web check check-api check-web eval eval-api eval-browser spar fmt
+.PHONY: install dev dev-api dev-web check check-api check-web eval eval-api eval-browser spar fmt deploy smoke
 
 install:
 	cd backend && uv sync
@@ -40,3 +40,26 @@ spar:
 
 fmt:
 	cd backend && uv run ruff format . && uv run ruff check --fix .
+
+# --- The deployed service (Cloud Run, Tokyo). See docs/deploy.md. ------------
+PROJECT ?= gen-lang-client-0821244556
+REGION ?= asia-northeast1
+SERVICE ?= kataribe
+BUCKET ?= kataribe-recordings-0821244556
+
+# Built remotely by Cloud Build from the Dockerfile; nothing git-ignored is sent.
+deploy:
+	gcloud run deploy $(SERVICE) --source . --region $(REGION) --project $(PROJECT) \
+		--service-account kataribe-run@$(PROJECT).iam.gserviceaccount.com \
+		--allow-unauthenticated --no-cpu-throttling --max-instances 2 --memory 1Gi \
+		--set-env-vars KATARIBE_STORAGE=cloud,KATARIBE_GCP_PROJECT=$(PROJECT),KATARIBE_RECORDINGS_BUCKET=$(BUCKET) \
+		--set-secrets KATARIBE_GEMINI_API_KEY=kataribe-gemini-api-key:latest,KATARIBE_TEAM_PASSWORD=kataribe-team-password:latest
+
+# A real conversation on the deployed service, checked in the cloud, then
+# forgotten. Costs a few cents of Gemini.
+smoke:
+	cd frontend && \
+		KATARIBE_URL=$$(gcloud run services describe $(SERVICE) --region $(REGION) --project $(PROJECT) --format='value(status.url)') \
+		KATARIBE_TEAM_PASSWORD=$$(gcloud secrets versions access latest --secret=kataribe-team-password --project $(PROJECT)) \
+		KATARIBE_STORAGE=cloud KATARIBE_GCP_PROJECT=$(PROJECT) KATARIBE_RECORDINGS_BUCKET=$(BUCKET) \
+		pnpm exec playwright test -c playwright.smoke.config.ts
