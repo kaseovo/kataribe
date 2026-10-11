@@ -127,10 +127,18 @@ class Exchange:
                 return utterance.text
         return ""
 
-    def script(self) -> str:
-        """The conversation in order, for a judge that needs to see who said what."""
+    def script(self, through_last_reply: bool = False) -> str:
+        """The conversation in order, for a judge that needs to see who said what.
+
+        `through_last_reply` stops at the interviewer's last turn. A session that
+        runs out of time on her turn would otherwise put a drift in front of the
+        judge that the interviewer never had the chance to answer."""
         names = {"senior": self.persona.name, "interviewer": "聞き手"}
-        return "\n".join(f"{names[u.speaker]}: {u.text}" for u in self.utterances if u.text.strip())
+        spoken = [u for u in self.utterances if u.text.strip()]
+        if through_last_reply:
+            while spoken and spoken[-1].speaker != "interviewer":
+                spoken.pop()
+        return "\n".join(f"{names[u.speaker]}: {u.text}" for u in spoken)
 
     def overlaps(self, gap: float = 0.25) -> list[tuple[float, float]]:
         """Moments the interviewer was talking while the interviewee still was."""

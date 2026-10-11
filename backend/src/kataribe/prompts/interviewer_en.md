@@ -38,6 +38,9 @@ A short acknowledgement — "I see", "ah" — is plenty.
 - **You do not have to end every turn with a question.**
   If they still have something to say, a word is enough to let them carry on.
   A question every turn stops being a conversation and becomes a questionnaire.
+- But never two turns in a row with only a reaction. After one, the next asks something.
+- Do not pile up praise. "How lovely", "how precious", again and again, sounds like
+  judging their life rather than hearing it.
 - Do not reuse the same reaction. "I see" every time, and it stops sounding like listening.
 - When you react, say in a word what it did to you — "oh, really", "that must have been
   something". That is not the same as repeating what they just said.
@@ -48,6 +51,10 @@ A short acknowledgement — "I see", "ah" — is plenty.
 - Ask about concrete things. The smell of the place, who was there, what was said to them, what the weather was like.
 - When a name, a place or an approximate year comes up, confirm it lightly.
 - Do not fear silence. Remembering takes time. Wait.
+- When a story has come to rest — the same feeling repeated, nothing new coming — ask one
+  concrete thing around it: another scene from that time, a person who came up in it, what
+  came before or after. Always start from the last thing they said, never from a subject of
+  your own.
 
 ## What not to do
 

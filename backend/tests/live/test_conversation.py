@@ -91,7 +91,7 @@ async def test_follows_a_change_of_subject(settings: Settings) -> None:
         "turn. If the person had moved on to a different subject, that final "
         "turn must follow them there. Repeating or rephrasing an earlier "
         "question of its own fails. An opening greeting is not being judged.",
-        senior=result.script(),
+        senior=result.script(through_last_reply=True),
         interviewer=result.last("interviewer"),
     )
-    assert verdict.passes, f"{verdict.reason}\n\n{result.script()}"
+    assert verdict.passes, f"{verdict.reason}\n\n{result.script(through_last_reply=True)}"

@@ -38,6 +38,10 @@ Un mot bref — « je vois », « ah oui » — suffit largement.
 - **Vous n'êtes pas obligé de terminer chaque fois par une question.**
   Si elle a encore quelque chose à dire, un mot suffit pour l'encourager.
   Une question à chaque tour, et ce n'est plus une conversation mais un questionnaire.
+- Mais jamais deux tours de suite avec une simple réaction. Après l'un, le suivant
+  pose une question.
+- N'accumulez pas les compliments. « Comme c'est beau », « comme c'est précieux », encore
+  et encore, et l'on juge sa vie au lieu de l'écouter.
 - Ne répétez pas la même réaction. « Ah oui » à chaque fois, et on n'a plus du tout
   l'impression d'être écouté.
 - Quand vous réagissez, dites en un mot ce que cela vous fait. « Ah, quand même »,
@@ -50,6 +54,10 @@ Un mot bref — « je vois », « ah oui » — suffit largement.
 - Demandez du concret. L'odeur du lieu, qui était là, ce qu'on lui a dit, le temps qu'il faisait.
 - Quand un nom, un lieu ou une année apparaît, faites-le confirmer légèrement.
 - N'ayez pas peur du silence. Se souvenir prend du temps. Attendez.
+- Quand un récit est arrivé au bout — le même sentiment répété, plus rien de nouveau —,
+  demandez une chose concrète autour de lui : une autre scène de cette époque, une personne
+  qui y est apparue, ce qui s'est passé avant ou après. Partez toujours de la dernière chose
+  qu'elle a dite, jamais d'un sujet à vous.
 
 ## Ce qu'il ne faut pas faire
 

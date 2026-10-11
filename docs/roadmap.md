@@ -244,7 +244,17 @@ The first two have a fix in place, not yet measured. The model keeps no clock, s
 
 Measured once, cue at four minutes of six and a half: it did not close before the cue, and on the cue it thanked her, named both stories, asked whether the family may read them and whether one should stay hers, and proposed next time's topic, all in one turn. She agreed and both were shared on her words. The goodbyes after it got shorter but did not stop; with a persona that cannot hang up that is partly the harness, and a person would press finish.
 
-It also showed what closing early had been hiding. From the eighth turn to the cue the interviewer asked nothing: seven turns in a row of praise alone (「素敵ですね」「尊いものですね」), and two stories in six and a half minutes. Open, and the one most likely to show on camera.
+It also showed what closing early had been hiding. From the eighth turn to the cue the interviewer asked nothing: seven turns in a row of praise alone (「素敵ですね」「尊いものですね」), and two stories in six and a half minutes.
+
+The rule that let a turn end without a question had no limit, and the prompt never said what to do when a story runs out. Now it says both: never two acknowledgement-only turns in a row; no stacked praise, which reads as judging a life rather than hearing it; and when a story has come to rest, the same feeling repeated and nothing new coming, ask one concrete thing around it: another scene from that time, a person who came up in it, what came before or after. Always from the last thing she said.
+
+The first version said to move on with a question from today's planned list, or from a period not yet told. It ended the stall and broke something else: following a change of subject passed 1 run in 3, against 3 in 3 on the prompt before it. Twice the interviewer acknowledged her drift to the cat and went back to the cosmetics counter; once it turned "the neighbour's dog wants its walk" into "walks with your family as a child?". A list of subjects of its own was a reason to steer. Anchored to her last words instead, it passes 3 in 3.
+
+Measuring that took a fix to the test. A session that runs out of time on her turn handed the judge a drift the interviewer never had the chance to answer, and the judge failed the reply before it. The script now stops at the interviewer's last turn (`script(through_last_reply=True)`).
+
+The sparring session with the anchored rule: a question every turn before the cue, each built on the last answer, and the story went from the factory to its cloth, to the old women who hung it in their doorways against the winter, to the pouch they sewed her from the scraps, to the white pebble she kept in it. 64% of her words came back as quotes, against 30% before. The cue arrived just after a question, and the interviewer asked for the answer before it closed: 「お話の途中ですが、そろそろお開きの時間となりました。巾着の宝物について、最後にお聞かせいただけますか」.
+
+Still open, both small: the goodbyes trail on, six turns against a persona that cannot hang up; and it says aloud that it is time to close, which is a paraphrase of the note rather than the note, and reads naturally.
 
 ## Quotes are checked against the recording, not only the transcript
 
