@@ -240,7 +240,11 @@ The same seven-and-a-half-minute sparring session, rerun with the new prompt on 
 - It then traded goodbyes with the simulated interviewee for the rest of the session. Partly the harness, since the persona cannot hang up, but nothing tells the interviewer to stop once it has said goodbye.
 - The marriage story, which ends on her husband's death ten years ago, went into the general question rather than being asked about on its own. Told warmly, so arguably not a painful story; a judgement for the native-speaker review.
 
-The first two have a fix in place, not yet measured. The model keeps no clock, so the screen now says when: after `KATARIBE_CLOSE_AFTER_SECONDS` (six minutes) it sends a closing cue, a stage direction like the opening one, and the prompt closes only on that cue or when the person wants to stop, waits for a pause in their story, and answers a further goodbye with a word or two. Finishing before the cue still works; the stories are asked about next time. `make spar CLOSE=240` sends the cue in a sparring session. The rerun that would measure it was refused on 2026-10-11: the AI Studio prepayment credits had run out.
+The first two have a fix in place, not yet measured. The model keeps no clock, so the screen now says when: after `KATARIBE_CLOSE_AFTER_SECONDS` (six minutes) it sends a closing cue, a stage direction like the opening one, and the prompt closes only on that cue or when the person wants to stop, waits for a pause in their story, and answers a further goodbye with a word or two. Finishing before the cue still works; the stories are asked about next time. `make spar CLOSE=240` sends the cue in a sparring session.
+
+Measured once, cue at four minutes of six and a half: it did not close before the cue, and on the cue it thanked her, named both stories, asked whether the family may read them and whether one should stay hers, and proposed next time's topic, all in one turn. She agreed and both were shared on her words. The goodbyes after it got shorter but did not stop; with a persona that cannot hang up that is partly the harness, and a person would press finish.
+
+It also showed what closing early had been hiding. From the eighth turn to the cue the interviewer asked nothing: seven turns in a row of praise alone (「素敵ですね」「尊いものですね」), and two stories in six and a half minutes. Open, and the one most likely to show on camera.
 
 ## Quotes are checked against the recording, not only the transcript
 
