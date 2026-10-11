@@ -8,13 +8,15 @@ plausible-sounding paraphrase must not end up.
 
 import re
 import uuid
+from dataclasses import dataclass
+from typing import Literal
 
 from google import genai
 from google.genai import types
 from pydantic import BaseModel, Field
 
 from kataribe.config import Settings
-from kataribe.languages import Language, get
+from kataribe.languages import DEFAULT, Language, get
 from kataribe.store import LIFE_STAGES, FamilyQuestion, Plan, Quote, Senior, Story, Turn
 
 NOISE = re.compile(r"[\s、。「」『』・,.!?！？…ー]")
@@ -40,6 +42,13 @@ class ExtractedStory(BaseModel):
             "exactly as said. Empty unless they clearly agreed."
         ),
     )
+    asked_to_share: bool = Field(
+        default=False,
+        description=(
+            "Whether the interviewer asked if their family may read this story, on its "
+            "own or in a list, whatever the answer"
+        ),
+    )
 
 
 class RaisedQuestion(BaseModel):
@@ -50,6 +59,12 @@ class RaisedQuestion(BaseModel):
     )
 
 
+class EarlierAnswer(BaseModel):
+    story: int = Field(description="The number of the earlier story, as listed")
+    decision: Literal["agreed", "declined", "withdrawn"]
+    words: str = Field(default="", description="The speaker's own words, exactly as said")
+
+
 class Extraction(BaseModel):
     stories: list[ExtractedStory]
     refused_topics: list[str]
@@ -57,6 +72,20 @@ class Extraction(BaseModel):
         default_factory=list,
         description="Family questions the interviewer actually put to the speaker",
     )
+    earlier: list[EarlierAnswer] = Field(
+        default_factory=list,
+        description="What the speaker decided today about stories from earlier conversations",
+    )
+
+
+class Heard(BaseModel):
+    clip: int = Field(description="The number of the clip")
+    heard: str = Field(description="What the speaker says in the clip, written down as heard")
+    same: bool = Field(description="Whether they say the given words somewhere in the clip")
+
+
+class Hearing(BaseModel):
+    clips: list[Heard]
 
 
 class Screening(BaseModel):
@@ -91,6 +120,14 @@ def _who(senior: Senior) -> str:
     return "\n".join(facts)
 
 
+def _earlier(stories: list[Story] | None) -> str:
+    return "\n".join(
+        f"[{i}] ({'shared with their family' if s.shared else 'not yet asked'}) "
+        f"{s.title}: {s.summary}"
+        for i, s in enumerate(stories or [])
+    )
+
+
 def _listed(questions: list[FamilyQuestion]) -> str:
     return "\n".join(f"[{i}] {q.asked_by}: {q.text}" for i, q in enumerate(questions))
 
@@ -101,8 +138,13 @@ def extract(
     turns: list[Turn],
     language: Language | None = None,
     family_questions: list[FamilyQuestion] | None = None,
+    earlier: list[Story] | None = None,
 ) -> Extraction:
     """Instructions are in English; what it writes is in the language spoken.
+
+    `earlier` lists stories from other conversations that today's could decide
+    about: shared ones they might take back, and ones never asked about that the
+    interviewer may have asked about at the close.
 
     One set of instructions rather than one per language: the rules here are
     about not inventing things, which is the same rule everywhere, and three
@@ -122,6 +164,11 @@ def extract(
                 if family_questions
                 else ""
             )
+            + (
+                f"=== Stories from earlier conversations ===\n{_earlier(earlier)}\n\n"
+                if earlier
+                else ""
+            )
             + "=== How to do it ===\n"
             f"- Write everything in {spoken.label}, the language they spoke.\n"
             "- Only what the speaker actually said. Never the interviewer's words.\n"
@@ -138,15 +185,27 @@ def extract(
             "- If nothing has been told yet, leave stories empty.\n"
             "- consent_quote: if they were asked whether their family may read\n"
             "  this and clearly agreed, put their own words here, exactly as\n"
-            "  said. Leave it empty if they were not asked, if they declined, if\n"
-            "  they hesitated, or if the answer is at all unclear. A polite noise\n"
-            "  that is not an answer is not agreement.\n"
+            "  said. One answer can cover several stories: if they were asked\n"
+            "  about several at once and agreed, give each story they agreed to\n"
+            "  the same words. A story they kept out ('but not the one about...')\n"
+            "  gets none. Leave it empty if they were not asked, if they declined,\n"
+            "  if they hesitated, if they agreed and then took it back, or if the\n"
+            "  answer is at all unclear. A polite noise that is not an answer is\n"
+            "  not agreement.\n"
+            "- asked_to_share: true if the interviewer asked whether their family\n"
+            "  may read this story, on its own or in a list, whatever the answer.\n"
             "- refused_topics: anything they said they did not want to discuss.\n"
             "- raised: for each family question listed above that the interviewer\n"
             "  actually put to them in this conversation, its number, and the\n"
             "  indexes of the stories that hold their answer. Leave a question out\n"
             "  if it was not asked. If it was asked but they did not answer, list\n"
-            "  it with no stories."
+            "  it with no stories.\n"
+            "- earlier: for the stories from earlier conversations listed above.\n"
+            "  One marked shared that they asked to take back, or not to show their\n"
+            "  family: decision 'withdrawn', with their words. One marked not yet\n"
+            "  asked that the interviewer asked about today: 'agreed', with their\n"
+            "  words exactly as said, only if they clearly agreed; otherwise\n"
+            "  'declined'. Leave out every story nothing was said about."
         ),
         config=types.GenerateContentConfig(
             response_mime_type="application/json",
@@ -160,21 +219,48 @@ def extract(
     return result
 
 
-def verify(extraction: Extraction, turns: list[Turn]) -> tuple[list[Story], list[str]]:
-    """Keep only quotes that the person actually said. Returns stories and what was dropped."""
-    spoken = {i: NOISE.sub("", t.text) for i, t in enumerate(turns) if t.speaker == "senior"}
+def where_said(text: str, turns: list[Turn]) -> int | None:
+    """The turn in which the person said `text`, ignoring punctuation and spacing."""
+    needle = NOISE.sub("", text)
+    if not needle:
+        return None
+    return next(
+        (
+            i
+            for i, turn in enumerate(turns)
+            if turn.speaker == "senior" and needle in NOISE.sub("", turn.text)
+        ),
+        None,
+    )
+
+
+def foreign(text: str, language: Language) -> str:
+    """Characters in `text` that its language is never written in, if any."""
+    return "".join(sorted(set(re.sub(f"[{language.alphabet}\\s]", "", text))))
+
+
+def verify(
+    extraction: Extraction, turns: list[Turn], language: Language = DEFAULT
+) -> tuple[list[Story], list[str]]:
+    """Keep only quotes that the person actually said. Returns stories and what was dropped.
+
+    Said means found in their own turns of the transcript, and written only in
+    their language: a transcript can glitch, and a quote copied from the glitch
+    would be found in it all the same."""
     stories: list[Story] = []
     dropped: list[str] = []
 
     for extracted in extraction.stories:
         kept: list[Quote] = []
         for quote in extracted.quotes:
-            needle = NOISE.sub("", quote.text)
-            if not needle:
+            if not NOISE.sub("", quote.text):
                 continue
-            where = next((i for i, said in spoken.items() if needle in said), None)
+            where = where_said(quote.text, turns)
+            odd = foreign(quote.text, language)
             if where is None:
                 dropped.append(quote.text)
+            elif odd:
+                dropped.append(f"(not {language.label}: {odd}) {quote.text}")
             else:
                 kept.append(Quote(text=quote.text, turn=where))
 
@@ -183,10 +269,14 @@ def verify(extraction: Extraction, turns: list[Turn]) -> tuple[list[Story], list
         # Sharing a life story with a family is not something to infer. It
         # counts only when the person said so and we still have the words: an
         # agreement the model reports but cannot evidence is no agreement.
-        consent = NOISE.sub("", extracted.consent_quote)
-        agreed = bool(consent) and any(consent in said for said in spoken.values())
-        if extracted.consent_quote and not agreed:
-            dropped.append(f"(consent) {extracted.consent_quote}")
+        consent = extracted.consent_quote
+        agreed = (
+            bool(NOISE.sub("", consent))
+            and where_said(consent, turns) is not None
+            and not foreign(consent, language)
+        )
+        if consent and not agreed:
+            dropped.append(f"(consent) {consent}")
 
         stories.append(
             Story(
@@ -201,10 +291,143 @@ def verify(extraction: Extraction, turns: list[Turn]) -> tuple[list[Story], list
                 places=extracted.places,
                 quotes=kept,
                 visibility="family" if agreed else "private",
-                consent_quote=extracted.consent_quote if agreed else "",
+                consent_quote=consent if agreed else "",
+                # Words of agreement that cannot be evidenced may be a misheard
+                # yes, or one that never happened: either way, ask again.
+                asked_to_share=agreed or (extracted.asked_to_share and not consent),
             )
         )
     return stories, dropped
+
+
+@dataclass(frozen=True)
+class Answer:
+    """What today's conversation decided about one earlier story."""
+
+    story_id: str
+    decision: str
+    """agreed, declined or withdrawn"""
+    words: str
+    turn: int | None
+
+
+def verify_earlier(
+    answers: list[EarlierAnswer],
+    earlier: list[Story],
+    turns: list[Turn],
+    language: Language = DEFAULT,
+) -> tuple[list[Answer], list[str]]:
+    """Today's decisions about earlier stories, held to the same terms as today's.
+
+    Taking a story back needs no evidence: when in doubt, it stays private.
+    Sharing one needs their words, found in the transcript like any consent, and
+    an agreement that cannot be evidenced changes nothing, so the story is asked
+    about again. Only a shared story can be taken back, and only one never asked
+    about can be agreed to."""
+    decided: list[Answer] = []
+    dropped: list[str] = []
+    for answer in answers:
+        if not 0 <= answer.story < len(earlier):
+            continue
+        story = earlier[answer.story]
+        turn = where_said(answer.words, turns)
+        if answer.decision == "withdrawn":
+            if story.shared:
+                decided.append(Answer(story.id, "withdrawn", answer.words, turn))
+        elif story.shared or story.asked_to_share:
+            continue
+        elif answer.decision == "agreed":
+            if turn is None or foreign(answer.words, language):
+                dropped.append(f"(consent) {answer.words}")
+            else:
+                decided.append(Answer(story.id, "agreed", answer.words, turn))
+        else:
+            decided.append(Answer(story.id, "declined", "", None))
+    return decided, dropped
+
+
+CONFIRM_BATCH_BYTES = 12_000_000
+"""Audio sent in one request. The API takes 20 MB, and base64 adds a third."""
+
+
+def confirm(
+    settings: Settings,
+    senior: Senior,
+    claims: list[tuple[str, bytes]],
+    language: Language | None = None,
+) -> list[tuple[bool, str]]:
+    """Whether each clip says the words a quote claims, and what was heard in it.
+
+    A second opinion from the recording itself, after the transcript has had its
+    say. The clip is the one the family would play, so a quote that passes reads
+    the way it sounds. Spelling is not judged, since kana and kanji, or 十八 and
+    18, are the same words; a different name, place or number is not. A clip too
+    long to send is not confirmed: it is held back rather than waved through."""
+    spoken = language or get(senior.language)
+    verdicts: list[tuple[bool, str]] = [(False, "")] * len(claims)
+    batch: list[int] = []
+    size = 0
+    for index, (_, audio) in enumerate(claims):
+        if len(audio) > CONFIRM_BATCH_BYTES:
+            verdicts[index] = (False, "(clip too long to check)")
+            continue
+        if batch and size + len(audio) > CONFIRM_BATCH_BYTES:
+            _hear(settings, senior, spoken, claims, batch, verdicts)
+            batch, size = [], 0
+        batch.append(index)
+        size += len(audio)
+    if batch:
+        _hear(settings, senior, spoken, claims, batch, verdicts)
+    return verdicts
+
+
+def _hear(
+    settings: Settings,
+    senior: Senior,
+    spoken: Language,
+    claims: list[tuple[str, bytes]],
+    batch: list[int],
+    verdicts: list[tuple[bool, str]],
+) -> None:
+    parts: list[types.Part] = []
+    for number, index in enumerate(batch):
+        text, audio = claims[index]
+        parts.append(types.Part.from_text(text=f"[{number}] Words to check: 「{text}」"))
+        parts.append(types.Part.from_bytes(data=audio, mime_type="audio/wav"))
+
+    client = genai.Client(api_key=settings.gemini_api_key)
+    response = client.models.generate_content(
+        model=settings.text_model,
+        contents=[
+            types.Part.from_text(
+                text=(
+                    f"Each numbered clip below is an elderly person speaking {spoken.label}. "
+                    "Before each clip are the words a live transcript says they spoke in "
+                    "it. For each clip, write down what they say (heard), then decide "
+                    "whether they say the given words somewhere in it (same).\n"
+                    "- The clip may hold more than the given words. That is fine.\n"
+                    "- The same spoken words written differently are the same: kana or\n"
+                    "  kanji, figures or written numbers, punctuation, spacing.\n"
+                    "- Different words are not the same: another name, place, number or\n"
+                    "  date, a word added or left out, a character from another language.\n"
+                    "- If you cannot make the words out, they are not the same.\n\n"
+                    f"Known facts about the speaker, for names and places:\n{_who(senior)}"
+                )
+            ),
+            *parts,
+        ],
+        config=types.GenerateContentConfig(
+            response_mime_type="application/json",
+            response_schema=Hearing,
+            temperature=0.0,
+        ),
+    )
+    result = response.parsed
+    if not isinstance(result, Hearing):
+        raise RuntimeError(f"Hearing returned nothing usable: {response.text!r}")
+    for heard in result.clips:
+        if 0 <= heard.clip < len(batch):
+            verdicts[batch[heard.clip]] = (heard.same, heard.heard)
 
 
 def screen(settings: Settings, questions: list[FamilyQuestion], avoid: list[str]) -> set[str]:
@@ -294,11 +517,16 @@ def plan_next(
 
 
 def context_for(
-    senior: Senior, plan: Plan, family_questions: list[FamilyQuestion] | None = None
+    senior: Senior,
+    plan: Plan,
+    family_questions: list[FamilyQuestion] | None = None,
+    unasked: list[Story] | None = None,
 ) -> str:
     """The part of the interviewer's prompt that changes between sessions.
 
     `family_questions` must already be screened: anything here may be asked.
+    `unasked` are earlier stories nobody has yet asked whether the family may
+    read, most often because the last conversation ended before its close.
     """
     lines = [
         "## お相手について",
@@ -335,6 +563,16 @@ def context_for(
             "どなたからのご質問かを、かならず添えて。答えたくなさそうなら、すぐに引いてください。",
             "",
             *(f"- {q.asked_by}より: {q.text}" for q in family_questions),
+        ]
+    if unasked:
+        lines += [
+            "",
+            "## ご家族にお伝えしてよいか、まだ伺っていないお話",
+            "",
+            "前回までに伺ったお話のうち、まだお尋ねしていないものです。",
+            "今日のおしまいに、今日のお話とあわせてお尋ねください。",
+            "",
+            *(f"- {s.title}" for s in unasked),
         ]
     if plan.avoid_topics:
         lines += [

@@ -78,24 +78,35 @@ raconter quelque chose.
 
 ## Si sa famille peut le lire
 
-Quand elle a fini de raconter quelque chose, demandez-lui discrètement si sa
-famille peut le lire.
+Ne posez pas la question au milieu d'un récit. Posez-la une seule fois, au moment de conclure.
 
-- « Est-ce que votre famille peut lire ce que vous venez de me raconter ? »
+- Nommez en quelques mots les histoires qu'elle vous a racontées aujourd'hui, puis
+  demandez-lui si sa famille peut les lire, et s'il y en a une qu'elle préfère garder pour elle.
+  « Aujourd'hui, vous m'avez parlé de l'usine de votre père et de la rivière en été. Est-ce que votre famille peut les lire ? S'il y en a une que vous préférez garder pour vous, dites-le-moi. »
+- Si des histoires d'une fois précédente n'ont pas encore fait l'objet de la question,
+  nommez-les aussi.
+- Ne mettez pas une histoire douloureuse (la perte d'un proche, la guerre, une relation
+  terminée) avec les autres. Demandez pour celle-là seule, doucement, de sorte que la garder
+  pour elle soit la réponse facile. « Ce que vous m'avez dit de votre mari, on le garde entre nous ? »
 - Si elle dit oui, remerciez-la brièvement. N'insistez pas davantage.
 - Si elle dit non, retirez-vous aussitôt. Ne demandez pas pourquoi.
 - Si elle hésite, ou si sa réponse n'est pas claire, n'insistez pas.
   Cette histoire restera la sienne seule.
-- Ne le redemandez pas plusieurs fois dans la même conversation. Se faire
-  redemander sans cesse n'a rien d'agréable.
+- Si elle vous demande de ne pas montrer quelque chose à sa famille, une histoire
+  d'aujourd'hui ou d'avant, acceptez aussitôt. Ne demandez pas pourquoi.
+  « Bien sûr. Je ne la montrerai pas à votre famille. »
 
 ## Pour conclure
 
-Terminez au bout de cinq à dix minutes. Au moment de conclure :
+Terminez au bout de cinq à dix minutes. Si elle semble vouloir s'arrêter, concluez, quelle
+que soit l'heure. Au moment de conclure :
 
 1. Remerciez-la brièvement de ce qu'elle vous a raconté aujourd'hui.
-2. Nommez une seule chose que vous aimeriez lui demander la prochaine fois.
-3. Dites-lui que vous aimeriez l'écouter encore.
+2. Demandez-lui si sa famille peut lire les histoires du jour, comme ci-dessus.
+   Si vous concluez parce qu'elle est bouleversée, sautez cette étape : la question sera
+   posée une autre fois.
+3. Nommez une seule chose que vous aimeriez lui demander la prochaine fois.
+4. Dites-lui que vous aimeriez l'écouter encore.
 
 ## Pour commencer
 

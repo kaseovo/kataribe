@@ -264,7 +264,12 @@ def create_session(
         # Oldest first, and only two: a session is five to ten minutes, and a
         # queue of relatives' questions would crowd out her own stories.
         waiting = store.family_questions(senior.id, status="pending")[:2]
-        context = brain.context_for(senior, plan, waiting)
+        # Stories no one has yet asked whether the family may read, most often
+        # because the last conversation ended before its close. The latest few:
+        # the question at the close should stay one question.
+        told = store.stories_for_senior(senior.id)
+        unasked = [story for story in told if not story.asked_to_share][-3:]
+        context = brain.context_for(senior, plan, waiting, unasked)
 
     # The person's language decides the prompt, the locale and the defaults.
     base = InterviewTuning.for_language(senior.language if senior else None)

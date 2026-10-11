@@ -34,6 +34,14 @@ class Language:
     first rather than waiting to be spoken to. Nobody should have to work out
     that they are meant to start."""
 
+    alphabet: str
+    """Every character this language is written in, as the body of a regex class.
+    A quote holding anything else is a recognition glitch, such as a Korean
+    particle in the middle of Japanese, and is not shown as the person's words."""
+
+
+LATIN = r"\u0020-\u007e\u00a0-\u017f\u2000-\u206f"
+"""ASCII, Latin-1 and Latin Extended-A (é, ç, œ), and typographic punctuation."""
 
 LANGUAGES: dict[str, Language] = {
     "ja": Language(
@@ -48,6 +56,12 @@ LANGUAGES: dict[str, Language] = {
         silence_duration_ms=5000,
         measured=True,
         opening="（その方が席につかれました。こちらから、やさしく声をかけてください。）",
+        # Kana, kanji, Japanese and full-width punctuation, and plain ASCII for
+        # the odd number or acronym.
+        alphabet=(
+            r"\u0020-\u007e\u00a0\u2000-\u206f\u3000-\u303f\u3040-\u309f\u30a0-\u30ff"
+            r"\u31f0-\u31ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff00-\uffef"
+        ),
     ),
     "fr": Language(
         code="fr",
@@ -62,6 +76,7 @@ LANGUAGES: dict[str, Language] = {
         silence_duration_ms=1500,
         measured=False,
         opening="(La personne vient de s'asseoir. Adressez-lui la parole doucement.)",
+        alphabet=LATIN,
     ),
     "en": Language(
         code="en",
@@ -73,6 +88,7 @@ LANGUAGES: dict[str, Language] = {
         silence_duration_ms=2500,
         measured=False,
         opening="(They have just sat down. Speak to them gently, first.)",
+        alphabet=LATIN,
     ),
 }
 

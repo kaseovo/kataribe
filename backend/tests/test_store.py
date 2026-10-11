@@ -8,6 +8,7 @@ own prefix and cleaned up afterwards; otherwise those cases skip.
 import os
 import uuid
 from collections.abc import Iterator
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -295,6 +296,22 @@ def test_only_shared_stories_come_back_when_only_shared_are_asked_for(store: Sto
     shared = store.stories_for_senior(senior_id, shared_only=True)
     assert {s.id for s in shared} == {"a", "c"}
     assert all(s.shared for s in shared)
+
+
+def test_a_later_decision_changes_who_may_read_a_story(store: Store) -> None:
+    senior_id = store.add_senior(name="田中ハル")
+    session_id = started(store, senior_id)
+    waiting = replace(story("a", "工場"), asked_to_share=False)
+    store.replace_stories(session_id, senior_id, [waiting, story("b", "学校", "family")])
+    assert [s.asked_to_share for s in store.stories_for_session(session_id)] == [False, True]
+
+    store.set_sharing("a", visibility="family", consent_quote="ええ、どうぞ。")
+    store.set_sharing("b", visibility="private", consent_quote="")
+
+    a, b = store.stories_for_session(session_id)
+    assert (a.visibility, a.consent_quote, a.asked_to_share) == ("family", "ええ、どうぞ。", True)
+    assert (b.visibility, b.consent_quote, b.asked_to_share) == ("private", "", True)
+    assert [s.id for s in store.stories_for_senior(senior_id, shared_only=True)] == ["a"]
 
 
 def test_a_plan_is_empty_until_one_is_saved(store: Store) -> None:

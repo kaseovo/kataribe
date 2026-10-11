@@ -221,6 +221,38 @@ The session list in the console still plays whole recordings. That is the team's
 
 **Not yet done:** the family page's chrome is in English, over Japanese content. That stays for the hackathon, whose rules want everything in English; for a Japanese family the page should follow the person's language.
 
+## Asked once, at the close, and taken back at any time
+
+The consent check held; the asking did not. The interviewer was told to ask after a story had been heard through, at most once a conversation. In a six-minute sparring session on 2026-10-10 the moment never came: it asked nothing, so both stories stayed private and the family would have received nothing. And the senior's own screen has a finish button, which can end a conversation before any close at all.
+
+So the question moved, and the bookkeeping grew to match:
+
+- **One question, at the close.** The interviewer names today's stories in a few words and asks whether the family may read them, and whether there is one to keep. One yes covers every story it names; a story kept out stays private. Nothing is asked in the middle of a memory.
+- **A painful story is asked about on its own,** worded so that keeping it is the easy answer: 「ご主人のお話は、ここだけのお話にしておきましょうか」. Closing because they are upset skips the question entirely.
+- **A story never asked about waits.** Extraction records whether each story was asked about (`asked_to_share`). One that was not, because the session ended early, because of distress, or because the yes could not be evidenced, goes to the next conversation's close: the latest three, so the question stays one question. A story asked about and kept private is never offered again; that was the answer.
+- **Taking a story back works from any later conversation.** 「あの話は家族に見せないで」 makes it private when that session is processed. It needs no evidence, since the safe direction is private, and the interviewer agrees at once without asking why.
+
+Measured against the real model, three runs each: one yes at the close shared both stories it named; 「工場の話はいいですよ。でも川の話は、私だけのことにしておいてください」 shared the factory and kept the river; a story from last time was taken back; a story never asked about was agreed to at the next close. 12 of 12, alongside the original four consent cases, still 12 of 12.
+
+The same seven-and-a-half-minute sparring session, rerun with the new prompt on 2026-10-11: the interviewer closed by naming the three things it had heard and asking, she agreed, and both stories were shared on her words. One run, and three things came with it, all open:
+
+- It closed about a third of the way in, well short of five minutes, without being asked to.
+- It then traded goodbyes with the simulated interviewee for the rest of the session. Partly the harness, since the persona cannot hang up, but nothing tells the interviewer to stop once it has said goodbye.
+- The marriage story, which ends on her husband's death ten years ago, went into the general question rather than being asked about on its own. Told warmly, so arguably not a painful story; a judgement for the native-speaker review.
+
+## Quotes are checked against the recording, not only the transcript
+
+The word-for-word check compares a quote with the transcript, and the transcript can be wrong. A quote copied from a wrong transcript is found in it all the same. The same sparring session produced 「みんなで食卓를囲んでいるときが一番です」: a Korean particle in the middle of Japanese, and it passed.
+
+Two guards now sit after it:
+
+- **Script check.** A quote, or a yes, holding a character its language is never written in is held back. Each language carries its alphabet (`languages.py`): kana, kanji, Japanese punctuation and ASCII for Japanese; Latin for French and English.
+- **The recording's own say.** Every quote that survives, and every yes, is played to Gemini Flash as the clip the family would hear for it, with the words it claims. Spelling is not judged, so 十八 and 18 are the same words; a different name, place or number is not. A quote that fails is dropped. A yes that fails leaves the story private and still to be asked about. Several clips go in one request, batched under the API's size limit; a clip too long to send is held back, not waved through.
+
+Measured against synthesized speech, three runs each: the words said were confirmed, the same words written with figures were confirmed, a changed place (長野 to 新潟) was caught, and three clips in one request were each judged on their own. 12 of 12.
+
+What it cannot do: tell homophone kanji apart. 佐藤繁 and 佐藤茂 sound the same, so listening settles nothing; that remains the profile's job, and the family's. It does not give word timings either, so clips still run turn to turn (see *Linking a quote to its audio needs a separate pass*). And a session without a recording is not checked against one; there is no clip to play for it either, and processing logs it.
+
 ## The family asks back
 
 A relative opens the family page, writes who they are and what they want to know, and sends it. The next session opens with it — after a word about last time:

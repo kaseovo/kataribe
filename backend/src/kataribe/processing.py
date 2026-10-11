@@ -8,9 +8,11 @@ import datetime
 import logging
 from dataclasses import replace
 
-from kataribe import brain
+from kataribe import brain, clips
+from kataribe.brain import Answer
 from kataribe.config import Settings
-from kataribe.store import Plan, Session, Store
+from kataribe.languages import get
+from kataribe.store import Plan, Senior, Session, Store, Story
 
 log = logging.getLogger(__name__)
 
@@ -62,14 +64,32 @@ def process_session(settings: Settings, store: Store, session_id: str) -> None:
         carried = [
             q for q in store.family_questions(senior.id) if q.id in session.carried_questions
         ]
-        extraction = brain.extract(settings, senior, session.turns, family_questions=carried)
-        stories, dropped = brain.verify(extraction, session.turns)
+        # What today could decide about other conversations' stories: a shared
+        # one taken back, or one never asked about agreed to at the close.
+        earlier = [
+            story
+            for story in store.stories_for_senior(senior.id)
+            if story.session_id != session_id and (story.shared or not story.asked_to_share)
+        ]
+        spoken = get(senior.language)
+        extraction = brain.extract(
+            settings, senior, session.turns, family_questions=carried, earlier=earlier
+        )
+        stories, dropped = brain.verify(extraction, session.turns, spoken)
+        decisions, unproven = brain.verify_earlier(
+            extraction.earlier, earlier, session.turns, spoken
+        )
+        stories, decisions, unheard = _bear_out(
+            settings, store, senior, session, stories, decisions
+        )
+        dropped += unproven + unheard
         if dropped:
             # Loud on purpose: a quote the person never said is the failure this
             # product can least afford, and the guard existing is not the same
             # as the guard never firing.
             log.warning(
-                "session %s: dropped %d quote(s) not found in the transcript: %s",
+                "session %s: held back %d quote(s) the transcript or recording does not"
+                " bear out: %s",
                 session_id,
                 len(dropped),
                 dropped,
@@ -77,6 +97,15 @@ def process_session(settings: Settings, store: Store, session_id: str) -> None:
 
         stored = [replace(story, senior_id=senior.id, session_id=session_id) for story in stories]
         store.replace_stories(session_id, senior.id, stored)
+
+        for decision in decisions:
+            log.info("session %s: story %s %s", session_id, decision.story_id, decision.decision)
+            agreed = decision.decision == "agreed"
+            store.set_sharing(
+                decision.story_id,
+                visibility="family" if agreed else "private",
+                consent_quote=decision.words if agreed else "",
+            )
 
         # Close the loop on whatever the family asked. The answer is linked, not
         # copied: the family view shows it only if that story was shared.
@@ -111,3 +140,66 @@ def process_session(settings: Settings, store: Store, session_id: str) -> None:
     except Exception as error:  # noqa: BLE001
         log.exception("session %s could not be processed", session_id)
         store.set_status(session_id, "failed", f"{type(error).__name__}: {error}")
+
+
+def _bear_out(
+    settings: Settings,
+    store: Store,
+    senior: Senior,
+    session: Session,
+    stories: list[Story],
+    answers: list[Answer],
+) -> tuple[list[Story], list[Answer], list[str]]:
+    """Holds back what the recording does not bear out, after the transcript has.
+
+    Every quote is checked against the clip the family would play for it, and
+    every agreement to share against the clip of the turn it was said in. A
+    quote that fails is dropped; an agreement that fails leaves the story
+    private and still to be asked about. Without a recording there is nothing
+    to check against, and nothing for the family to play either.
+    """
+    if not store.has_audio(session.id):
+        log.warning("session %s: no recording, so nothing was checked against one", session.id)
+        return stories, answers, []
+
+    claims: list[tuple[str, int]] = []
+    for story in stories:
+        claims += [(quote.text, quote.turn) for quote in story.quotes]
+        if story.shared:
+            claims.append(_consent_claim(story, session))
+    claims += [(a.words, a.turn) for a in answers if a.decision == "agreed" and a.turn is not None]
+    if not claims:
+        return stories, answers, []
+
+    verdicts = brain.confirm(
+        settings, senior, [(text, _clip(store, session, turn)) for text, turn in claims]
+    )
+    borne = {claim for claim, (same, _) in zip(claims, verdicts, strict=True) if same}
+    unheard = [
+        f"(heard 「{heard}」) {text}"
+        for (text, _), (same, heard) in zip(claims, verdicts, strict=True)
+        if not same
+    ]
+
+    checked: list[Story] = []
+    for story in stories:
+        story = replace(story, quotes=[q for q in story.quotes if (q.text, q.turn) in borne])
+        if story.shared and _consent_claim(story, session) not in borne:
+            story = replace(story, visibility="private", consent_quote="", asked_to_share=False)
+        checked.append(story)
+    kept = [a for a in answers if a.decision != "agreed" or (a.words, a.turn) in borne]
+    return checked, kept, unheard
+
+
+def _consent_claim(story: Story, session: Session) -> tuple[str, int]:
+    turn = brain.where_said(story.consent_quote, session.turns)
+    assert turn is not None, "verify shares a story only with consent it found"
+    return story.consent_quote, turn
+
+
+def _clip(store: Store, session: Session, turn: int) -> bytes:
+    recording = store.open_audio(session.id)
+    if recording is None:
+        raise RuntimeError(f"The recording of {session.id} went missing while it was read")
+    with recording:
+        return clips.clip(recording, *clips.turn_window(session.turns, turn))

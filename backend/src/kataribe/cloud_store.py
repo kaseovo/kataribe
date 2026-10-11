@@ -243,6 +243,7 @@ class CloudStore:
                     "quotes": [quote.__dict__ for quote in story.quotes],
                     "visibility": story.visibility,
                     "consent_quote": story.consent_quote,
+                    "asked_to_share": story.asked_to_share,
                     "created_at": now,
                     # Stories from one session share a timestamp; this keeps
                     # them in the order they were told.
@@ -253,6 +254,11 @@ class CloudStore:
 
     def stories_for_session(self, session_id: str) -> list[Story]:
         return _in_order(self._where("stories", session_id=session_id))
+
+    def set_sharing(self, story_id: str, *, visibility: str, consent_quote: str) -> None:
+        self._collection("stories").document(story_id).update(
+            {"visibility": visibility, "consent_quote": consent_quote, "asked_to_share": True}
+        )
 
     def stories_for_senior(self, senior_id: str, shared_only: bool = False) -> list[Story]:
         if shared_only:
@@ -378,6 +384,7 @@ def _in_order(snapshots: list[Any]) -> list[Story]:
             quotes=[Quote(**quote) for quote in data.get("quotes", [])],
             visibility=data.get("visibility", "private"),
             consent_quote=data.get("consent_quote", ""),
+            asked_to_share=data.get("asked_to_share", True),
         )
         for story_id, data in rows
     ]

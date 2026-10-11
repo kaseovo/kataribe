@@ -83,6 +83,9 @@ LATER_COLUMNS = {
     "stories": {
         "visibility": "TEXT NOT NULL DEFAULT 'private'",
         "consent_quote": "TEXT NOT NULL DEFAULT ''",
+        # Stories from before this column were never going to be asked about
+        # again, so they count as asked.
+        "asked_to_share": "INTEGER NOT NULL DEFAULT 1",
     },
     "sessions": {
         "senior_id": "TEXT",
@@ -127,6 +130,10 @@ class Story:
     quotes: list[Quote]
     visibility: str = "private"
     consent_quote: str = ""
+    asked_to_share: bool = True
+    """Whether they were asked if their family may read it, whatever they said.
+    A private story never asked about is asked about at the close of the next
+    conversation; a private story they were asked about stays theirs."""
 
     @property
     def shared(self) -> bool:
@@ -273,6 +280,11 @@ class Store(Protocol):
     def stories_for_session(self, session_id: str) -> list[Story]: ...
     def stories_for_senior(self, senior_id: str, shared_only: bool = False) -> list[Story]:
         """With `shared_only`, filtered where they are stored, never by the caller."""
+        ...
+
+    def set_sharing(self, story_id: str, *, visibility: str, consent_quote: str) -> None:
+        """What they decided about an earlier story in a later conversation: shared
+        when asked at last, or taken back. Either way they have now been asked."""
         ...
 
     def save_plan(self, senior_id: str, plan: Plan) -> None: ...
@@ -509,8 +521,9 @@ class LocalStore:
             db.execute("DELETE FROM stories WHERE session_id = ?", (session_id,))
             db.executemany(
                 "INSERT INTO stories (id, senior_id, session_id, title, summary, life_stage,"
-                " approx_period, people, places, quotes, visibility, consent_quote, created_at)"
-                " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                " approx_period, people, places, quotes, visibility, consent_quote,"
+                " asked_to_share, created_at)"
+                " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 [
                     (
                         story.id,
@@ -525,6 +538,7 @@ class LocalStore:
                         json.dumps([q.__dict__ for q in story.quotes], ensure_ascii=False),
                         story.visibility,
                         story.consent_quote,
+                        int(story.asked_to_share),
                         datetime.now(UTC).isoformat(),
                     )
                     for story in stories
@@ -537,6 +551,14 @@ class LocalStore:
                 "SELECT * FROM stories WHERE session_id = ? ORDER BY created_at", (session_id,)
             ).fetchall()
         return [_to_story(row) for row in rows]
+
+    def set_sharing(self, story_id: str, *, visibility: str, consent_quote: str) -> None:
+        with self._connect() as db:
+            db.execute(
+                "UPDATE stories SET visibility = ?, consent_quote = ?, asked_to_share = 1"
+                " WHERE id = ?",
+                (visibility, consent_quote, story_id),
+            )
 
     def stories_for_senior(self, senior_id: str, shared_only: bool = False) -> list[Story]:
         clause = " AND visibility = 'family'" if shared_only else ""
@@ -639,6 +661,7 @@ def _to_story(row: sqlite3.Row) -> Story:
         quotes=[Quote(**q) for q in json.loads(row["quotes"])],
         visibility=row["visibility"] if "visibility" in columns else "private",
         consent_quote=row["consent_quote"] if "consent_quote" in columns else "",
+        asked_to_share=bool(row["asked_to_share"]) if "asked_to_share" in columns else True,
     )
 
 

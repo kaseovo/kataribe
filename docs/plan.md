@@ -161,7 +161,7 @@ The senior leads; the AI listens, remembers and never speaks for them.
 - **Difficult memories:** war, loss and old relationships are never pressed. "Let's not talk about that" adds the topic to the avoid list, and it returns only if the senior raises it.
 - **Faithfulness:** stories are built from their words, with every passage linked to audio. The AI never invents details. Hiroshima's [testimony device](https://www.city.hiroshima.lg.jp/atomicbomb-peace/fukko/1021099/1042983.html) follows the same rule: it only replays survivors' recorded answers.
 - **Changing stories:** never correct them. Keep both tellings, linked to their sessions.
-- **Consent to share:** at the end of a story, ask whether the family may read it. Default is private until they say yes.
+- **Consent to share:** once, at the close, the interviewer names today's stories and asks whether the family may read them; a painful story is asked about on its own. Default is private until they say yes, and a story can be taken back in any later conversation.
 - **Distress:** if the senior sounds upset, slow down, offer to stop, and end warmly. In the hackathon build, flag the session in the dev view.
 - **Limits:** one invitation a day, 5 to 10 minute sessions.
 - **Privacy:** face detection stays on the device; family access is by invitation only.
@@ -236,7 +236,7 @@ Open questions:
 - [ ] Who are the one or two seniors for testing, and when is the first session?
 - [ ] How do the senior and family give and record consent to recording?
 - [x] ~~Does a tablet web app demo meet the hackathon's submission requirements?~~ Resolved 2026-10-10: yes, provided it is deployed on Google Cloud with a live URL. See *Submission rules*.
-- [ ] Is the team registered, with at least two eligible members, before the roster closes on October 11?
+- [x] ~~Is the team registered, with at least two eligible members, before the roster closes on October 11?~~ Confirmed on Hack2skill on 2026-10-11, the day the roster closed.
 - [ ] Which timezone is the Oct 18 deadline in? Ask on the hackathon Discord.
 - [ ] Which category to submit under: Social Good, Healthcare or Accessibility?
 

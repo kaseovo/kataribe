@@ -1,8 +1,10 @@
-"""What processing does with the family's questions once a session ends.
+"""What processing does once a session ends: the family's questions, what the
+person decided about sharing, and what the recording bears out.
 
 The model calls are replaced: what is under test is the bookkeeping around them —
-which questions count as asked, what their answer points at, and what is held
-back — not the model's judgement, which `tests/live/test_family.py` measures.
+which questions count as asked, what their answer points at, what is shared or
+taken back, and what is held back — not the model's judgement, which
+`tests/live/` measures.
 """
 
 import datetime
@@ -11,10 +13,28 @@ from pathlib import Path
 import pytest
 
 from kataribe import brain
-from kataribe.brain import ExtractedStory, Extraction, NextPlan, RaisedQuestion
+from kataribe.brain import (
+    EarlierAnswer,
+    ExtractedQuote,
+    ExtractedStory,
+    Extraction,
+    NextPlan,
+    RaisedQuestion,
+)
 from kataribe.config import Settings
 from kataribe.processing import STALLED_AFTER, can_retry, process_session
-from kataribe.store import FamilyQuestion, LocalStore, Plan, Senior, Session, Store, Turn
+from kataribe.store import (
+    FamilyQuestion,
+    LocalStore,
+    Plan,
+    Quote,
+    Senior,
+    Session,
+    Store,
+    Story,
+    Turn,
+)
+from tests.wavs import conversation_wav
 
 TOLD = ExtractedStory(
     title="結婚式のお着物",
@@ -49,7 +69,14 @@ def session_carrying(store: Store, senior_id: str, carried: list[str]) -> str:
 @pytest.fixture
 def seen(monkeypatch: pytest.MonkeyPatch) -> dict[str, object]:
     """Fakes the model. Tests set what extraction and screening return."""
-    calls: dict[str, object] = {"raised": [], "refused": [], "hold": set()}
+    calls: dict[str, object] = {
+        "raised": [],
+        "refused": [],
+        "hold": set(),
+        "stories": [TOLD],
+        "decided": [],
+        "unheard": set(),
+    }
 
     def extract(
         settings: Settings,
@@ -57,13 +84,22 @@ def seen(monkeypatch: pytest.MonkeyPatch) -> dict[str, object]:
         turns: list[Turn],
         language: object = None,
         family_questions: list[FamilyQuestion] | None = None,
+        earlier: list[Story] | None = None,
     ) -> Extraction:
         calls["given"] = [q.text for q in family_questions or []]
+        calls["earlier"] = [s.title for s in earlier or []]
         return Extraction(
-            stories=[TOLD],
+            stories=calls["stories"],  # type: ignore[arg-type]
             refused_topics=calls["refused"],  # type: ignore[arg-type]
             raised=calls["raised"],  # type: ignore[arg-type]
+            earlier=calls["decided"],  # type: ignore[arg-type]
         )
+
+    def confirm(
+        settings: Settings, senior: Senior, claims: list[tuple[str, bytes]], language: object = None
+    ) -> list[tuple[bool, str]]:
+        calls["heard"] = [text for text, _ in claims]
+        return [(text not in calls["unheard"], "") for text, _ in claims]  # type: ignore[operator]
 
     def screen(settings: Settings, questions: list[FamilyQuestion], avoid: list[str]) -> set[str]:
         calls["screened"] = [q.text for q in questions]
@@ -71,6 +107,7 @@ def seen(monkeypatch: pytest.MonkeyPatch) -> dict[str, object]:
 
     monkeypatch.setattr(brain, "extract", extract)
     monkeypatch.setattr(brain, "screen", screen)
+    monkeypatch.setattr(brain, "confirm", confirm)
     monkeypatch.setattr(
         brain, "plan_next", lambda *a, **k: NextPlan(story_so_far="", next_questions=[])
     )
@@ -223,3 +260,197 @@ def test_an_old_session_queued_again_just_now_is_not_stalled() -> None:
 
     assert not can_retry(session, queued + datetime.timedelta(seconds=1))
     assert can_retry(session, queued + STALLED_AFTER + datetime.timedelta(seconds=1))
+
+
+# --- sharing, decided at the close or later --------------------------------
+
+ASKED = "今日のお話、ご家族にお伝えしてよろしいですか。"
+STORY_TURNS = [
+    Turn(speaker="ai", text="こんにちは。", started_at=2.0),
+    Turn(speaker="senior", text="白無垢でした。母が縫ってくれたんです。", started_at=10.0),
+    Turn(speaker="ai", text=ASKED, started_at=14.0),
+    Turn(speaker="senior", text="ええ、どうぞ。", started_at=18.0),
+]
+KIMONO = ExtractedStory(
+    title="結婚式のお着物",
+    summary="母が縫った白無垢を着た。",
+    life_stage="結婚",
+    approx_period="",
+    people=["母"],
+    places=[],
+    quotes=[ExtractedQuote(text="母が縫ってくれたんです", turn=1)],
+    consent_quote="ええ、どうぞ。",
+    asked_to_share=True,
+)
+
+
+def told(store: Store, senior_id: str, turns: list[Turn], *, recorded: bool = True) -> str:
+    session_id = store.start(
+        model="m",
+        voice="Sulafat",
+        silence_duration_ms=5000,
+        end_of_speech_sensitivity="LOW",
+        senior_id=senior_id,
+    )
+    store.finish(
+        session_id,
+        turns=turns,
+        audio=conversation_wav(20.0, left=[(4.0, 9.0), (15.0, 17.5)], right=[(0.5, 2.0)])
+        if recorded
+        else None,
+        duration_seconds=20.0,
+        input_label="test",
+    )
+    return session_id
+
+
+def earlier_story(store: Store, senior_id: str, *, shared: bool, asked: bool) -> str:
+    session_id = told(store, senior_id, STORY_TURNS[:2], recorded=False)
+    story = Story(
+        id=f"earlier-{'shared' if shared else 'private'}",
+        senior_id=senior_id,
+        session_id=session_id,
+        title="千曲川で泳いだ夏",
+        summary="兄と千曲川で泳いだ。",
+        life_stage="子供時代",
+        approx_period="",
+        people=[],
+        places=[],
+        quotes=[Quote(text="千曲川で泳いでおりました", turn=1)],
+        visibility="family" if shared else "private",
+        consent_quote="ええ、どうぞ。" if shared else "",
+        asked_to_share=asked,
+    )
+    store.replace_stories(session_id, senior_id, [story])
+    return story.id
+
+
+def test_a_story_she_agreed_to_at_the_close_is_shared(
+    tmp_path: Path, seen: dict[str, object]
+) -> None:
+    store = LocalStore(tmp_path)
+    senior_id = store.add_senior(name="田中ハル")
+    session_id = told(store, senior_id, STORY_TURNS)
+    seen["stories"] = [KIMONO]
+
+    process_session(Settings(), store, session_id)
+
+    [story] = store.stories_for_session(session_id)
+    assert story.shared and story.consent_quote == "ええ、どうぞ。"
+    assert seen["heard"] == ["母が縫ってくれたんです", "ええ、どうぞ。"]
+
+
+def test_a_quote_the_recording_does_not_bear_out_is_dropped(
+    tmp_path: Path, seen: dict[str, object]
+) -> None:
+    # In the transcript, so `verify` keeps it. The clip says something else.
+    store = LocalStore(tmp_path)
+    senior_id = store.add_senior(name="田中ハル")
+    session_id = told(store, senior_id, STORY_TURNS)
+    seen["stories"] = [KIMONO]
+    seen["unheard"] = {"母が縫ってくれたんです"}
+
+    process_session(Settings(), store, session_id)
+
+    [story] = store.stories_for_session(session_id)
+    assert story.quotes == []
+    assert story.shared
+
+
+def test_consent_the_recording_does_not_bear_out_is_asked_again(
+    tmp_path: Path, seen: dict[str, object]
+) -> None:
+    store = LocalStore(tmp_path)
+    senior_id = store.add_senior(name="田中ハル")
+    session_id = told(store, senior_id, STORY_TURNS)
+    seen["stories"] = [KIMONO]
+    seen["unheard"] = {"ええ、どうぞ。"}
+
+    process_session(Settings(), store, session_id)
+
+    [story] = store.stories_for_session(session_id)
+    assert not story.shared
+    assert not story.asked_to_share
+
+
+def test_without_a_recording_nothing_is_sent_to_be_heard(
+    tmp_path: Path, seen: dict[str, object]
+) -> None:
+    store = LocalStore(tmp_path)
+    senior_id = store.add_senior(name="田中ハル")
+    session_id = told(store, senior_id, STORY_TURNS, recorded=False)
+    seen["stories"] = [KIMONO]
+
+    process_session(Settings(), store, session_id)
+
+    assert "heard" not in seen
+    [story] = store.stories_for_session(session_id)
+    assert story.shared
+
+
+def test_a_story_taken_back_later_leaves_the_family_page(
+    tmp_path: Path, seen: dict[str, object]
+) -> None:
+    store = LocalStore(tmp_path)
+    senior_id = store.add_senior(name="田中ハル")
+    shared = earlier_story(store, senior_id, shared=True, asked=True)
+    session_id = told(store, senior_id, STORY_TURNS)
+    seen["stories"] = []
+    seen["decided"] = [EarlierAnswer(story=0, decision="withdrawn", words="家族には見せないで")]
+
+    process_session(Settings(), store, session_id)
+
+    assert seen["earlier"] == ["千曲川で泳いだ夏"]
+    assert store.stories_for_senior(senior_id, shared_only=True) == []
+    [story] = [s for s in store.stories_for_senior(senior_id) if s.id == shared]
+    assert story.consent_quote == ""
+
+
+def test_a_story_never_asked_about_is_shared_when_she_agrees_later(
+    tmp_path: Path, seen: dict[str, object]
+) -> None:
+    store = LocalStore(tmp_path)
+    senior_id = store.add_senior(name="田中ハル")
+    waiting = earlier_story(store, senior_id, shared=False, asked=False)
+    session_id = told(store, senior_id, STORY_TURNS)
+    seen["stories"] = []
+    seen["decided"] = [EarlierAnswer(story=0, decision="agreed", words="ええ、どうぞ。")]
+
+    process_session(Settings(), store, session_id)
+
+    [story] = store.stories_for_senior(senior_id, shared_only=True)
+    assert story.id == waiting
+    assert story.consent_quote == "ええ、どうぞ。"
+    assert story.asked_to_share
+
+
+def test_an_agreement_she_never_voiced_changes_nothing(
+    tmp_path: Path, seen: dict[str, object]
+) -> None:
+    store = LocalStore(tmp_path)
+    senior_id = store.add_senior(name="田中ハル")
+    earlier_story(store, senior_id, shared=False, asked=False)
+    session_id = told(store, senior_id, STORY_TURNS)
+    seen["stories"] = []
+    seen["decided"] = [EarlierAnswer(story=0, decision="agreed", words="もちろん見せてください")]
+
+    process_session(Settings(), store, session_id)
+
+    [story] = [s for s in store.stories_for_senior(senior_id) if s.title == "千曲川で泳いだ夏"]
+    assert not story.shared
+    assert not story.asked_to_share, "still to be asked, since no answer was evidenced"
+
+
+def test_a_story_she_was_asked_about_before_is_not_offered_again(
+    tmp_path: Path, seen: dict[str, object]
+) -> None:
+    # Asked once and kept private: that was her answer, and it stands.
+    store = LocalStore(tmp_path)
+    senior_id = store.add_senior(name="田中ハル")
+    earlier_story(store, senior_id, shared=False, asked=True)
+    session_id = told(store, senior_id, STORY_TURNS)
+    seen["stories"] = []
+
+    process_session(Settings(), store, session_id)
+
+    assert seen["earlier"] == []

@@ -1,5 +1,14 @@
-from kataribe.brain import ExtractedQuote, ExtractedStory, Extraction, context_for, verify
-from kataribe.store import Plan, Senior, Turn
+from kataribe.brain import (
+    EarlierAnswer,
+    ExtractedQuote,
+    ExtractedStory,
+    Extraction,
+    context_for,
+    verify,
+    verify_earlier,
+)
+from kataribe.languages import get
+from kataribe.store import Plan, Quote, Senior, Story, Turn
 
 HARU = Senior(
     id="s1",
@@ -168,3 +177,181 @@ def test_words_the_interviewer_said_cannot_grant_consent() -> None:
     stories, _ = verify(consented("ご家族にお伝えしてもよろしいですか。"), CONSENT_TURNS)
 
     assert stories[0].visibility == "private"
+
+
+def test_a_quote_carrying_a_character_from_another_language_is_held_back() -> None:
+    # Seen in a real run: a Korean particle in the middle of Japanese. The quote
+    # is in the transcript, since the transcript is where the glitch came from.
+    turns = [Turn(speaker="senior", text="みんなで食卓를囲んでいるときが一番です。", started_at=3)]
+
+    stories, dropped = verify(story_with("みんなで食卓를囲んでいるときが一番です"), turns)
+
+    assert stories[0].quotes == []
+    assert dropped == ["(not Japanese: 를) みんなで食卓를囲んでいるときが一番です"]
+
+
+def test_everyday_japanese_writing_passes_the_script_check() -> None:
+    said = "ええと、昭和３０年頃〜18の時、ツヨシ々とNHKを聞いておりました…"
+    turns = [Turn(speaker="senior", text=said, started_at=3)]
+
+    stories, dropped = verify(story_with(said), turns)
+
+    assert dropped == []
+    assert [q.text for q in stories[0].quotes] == [said]
+
+
+def test_french_is_checked_against_its_own_alphabet() -> None:
+    said = "Je suis né à Quimper, près de l’océan, en 1947 — « là-bas »."
+    turns = [Turn(speaker="senior", text=said, started_at=3)]
+
+    stories, dropped = verify(story_with(said), turns, get("fr"))
+
+    assert dropped == []
+    assert stories[0].quotes[0].text == said
+
+
+ASKED_AT_THE_CLOSE = [
+    Turn(speaker="senior", text="昭和十三年に、鹿児島の漁師町で生まれました。", started_at=3.0),
+    Turn(speaker="senior", text="十八で大阪に出て、工場で働きました。", started_at=9.0),
+    Turn(
+        speaker="ai",
+        text="今日は、生まれた町のお話と、大阪のお話を伺いました。ご家族にお伝えしてよろしいですか。",
+        started_at=12.0,
+    ),
+    Turn(speaker="senior", text="ええ、どちらも見せてやってください。", started_at=16.0),
+]
+
+
+def story_titled(title: str, consent: str, *, asked: bool = True) -> ExtractedStory:
+    return ExtractedStory(
+        title=title,
+        summary=f"{title}のこと。",
+        life_stage="子供時代",
+        approx_period="",
+        people=[],
+        places=[],
+        quotes=[],
+        consent_quote=consent,
+        asked_to_share=asked,
+    )
+
+
+def test_one_yes_at_the_close_can_share_several_stories() -> None:
+    yes = "ええ、どちらも見せてやってください。"
+    extraction = Extraction(
+        stories=[story_titled("生まれた町", yes), story_titled("大阪の工場", yes)],
+        refused_topics=[],
+    )
+
+    stories, dropped = verify(extraction, ASKED_AT_THE_CLOSE)
+
+    assert [s.visibility for s in stories] == ["family", "family"]
+    assert dropped == []
+
+
+def test_a_story_asked_about_and_kept_private_is_not_asked_again() -> None:
+    extraction = Extraction(stories=[story_titled("大阪の工場", "")], refused_topics=[])
+
+    [story], _ = verify(extraction, ASKED_AT_THE_CLOSE)
+
+    assert not story.shared
+    assert story.asked_to_share
+
+
+def test_a_story_never_asked_about_waits_for_the_next_close() -> None:
+    extraction = Extraction(
+        stories=[story_titled("大阪の工場", "", asked=False)], refused_topics=[]
+    )
+
+    [story], _ = verify(extraction, ASKED_AT_THE_CLOSE)
+
+    assert not story.shared
+    assert not story.asked_to_share
+
+
+def test_a_yes_that_cannot_be_evidenced_is_asked_about_again() -> None:
+    # Misheard, or never said: either way the answer is not known.
+    extraction = Extraction(
+        stories=[story_titled("大阪の工場", "はい、全部どうぞ。")], refused_topics=[]
+    )
+
+    [story], _ = verify(extraction, ASKED_AT_THE_CLOSE)
+
+    assert not story.shared
+    assert not story.asked_to_share
+
+
+def earlier(title: str, *, shared: bool, asked: bool) -> Story:
+    return Story(
+        id=title,
+        senior_id="s1",
+        session_id="before",
+        title=title,
+        summary="",
+        life_stage="子供時代",
+        approx_period="",
+        people=[],
+        places=[],
+        quotes=[Quote(text="", turn=0)],
+        visibility="family" if shared else "private",
+        consent_quote="はい。" if shared else "",
+        asked_to_share=asked,
+    )
+
+
+TAKE_BACK = [Turn(speaker="senior", text="あの川の話は、家族には見せないでね。", started_at=3.0)]
+
+
+def test_a_shared_story_can_be_taken_back_without_further_proof() -> None:
+    # Words or not, the safe direction is private.
+    stories = [earlier("川", shared=True, asked=True)]
+
+    decided, dropped = verify_earlier(
+        [EarlierAnswer(story=0, decision="withdrawn", words="そういうことにして")],
+        stories,
+        TAKE_BACK,
+    )
+
+    assert [(d.story_id, d.decision) for d in decided] == [("川", "withdrawn")]
+    assert dropped == []
+
+
+def test_an_earlier_story_is_shared_only_on_her_own_words() -> None:
+    stories = [earlier("川", shared=False, asked=False), earlier("工場", shared=False, asked=False)]
+    said = [Turn(speaker="senior", text="川のお話なら、どうぞ。", started_at=3.0)]
+
+    decided, dropped = verify_earlier(
+        [
+            EarlierAnswer(story=0, decision="agreed", words="川のお話なら、どうぞ。"),
+            EarlierAnswer(story=1, decision="agreed", words="工場の話もいいですよ"),
+        ],
+        stories,
+        said,
+    )
+
+    assert [(d.story_id, d.decision) for d in decided] == [("川", "agreed")]
+    assert dropped == ["(consent) 工場の話もいいですよ"]
+
+
+def test_a_decision_already_made_is_not_reopened_by_extraction() -> None:
+    # She kept it private when asked. A later "agreed" the model reports for it
+    # was not an answer to anything asked, and is ignored.
+    stories = [earlier("川", shared=False, asked=True)]
+    said = [Turn(speaker="senior", text="どうぞ。", started_at=3.0)]
+
+    decided, _ = verify_earlier(
+        [EarlierAnswer(story=0, decision="agreed", words="どうぞ。")], stories, said
+    )
+
+    assert decided == []
+
+
+def test_context_lists_the_stories_still_to_be_asked_about() -> None:
+    context = context_for(
+        HARU,
+        Plan(story_so_far="", next_questions=[], avoid_topics=[]),
+        unasked=[earlier("千曲川で泳いだ夏", shared=False, asked=False)],
+    )
+
+    assert "まだ伺っていないお話" in context
+    assert "- 千曲川で泳いだ夏" in context
