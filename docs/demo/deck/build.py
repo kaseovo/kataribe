@@ -374,12 +374,12 @@ def opportunities(slide):
         ("How will it be able to solve the problem?", [
             "A few minutes of conversation a day in natural Japanese. Nothing to install, open or type.",
             "Each talk becomes stories, people and places on a life timeline. The gaps plan the next talk.",
-            "Relatives read what she shared, hear her voice, and send questions she is asked next time.",
+            "Relatives read what the senior shared, hear their voice, and send questions for next time.",
         ]),
         ("USP of the proposed solution", [
-            "She decides what is shared. Consent is kept as her own words, checked against the recording.",
-            "Faithful, not rewritten. Every quote is verified word for word and plays in her own voice.",
-            "Built for Japanese: honorific register, names spelled from her profile, patience for long pauses.",
+            "The senior decides what is shared. Consent is kept in their own words, checked against the recording.",
+            "Faithful, not rewritten. Every quote is verified word for word and plays in the senior's own voice.",
+            "Built for Japanese: honorific register, names spelled from the profile, patience for long pauses.",
         ]),
     ]
     gap = 0.22
@@ -403,9 +403,9 @@ def features(slide):
         ("MdTimeline", "Plans from the gaps",
          "Finds thin life stages and people never described, and plans the next three questions."),
         ("MdVerifiedUser", "Consent per story",
-         "Shared only if she said yes, in words found in the recording. Private by default."),
-        ("MdFamilyRestroom", "Family page, her voice",
-         "Chapters by life stage. Every quote plays as a clip of her own answer."),
+         "Shared only after a yes, in words found in the recording. Private by default."),
+        ("MdFamilyRestroom", "Family page, real voice",
+         "Chapters by life stage. Every quote plays as a clip of the original answer."),
         ("MdForum", "The family asks back",
          "Relatives send questions and the AI says who is asking. Refused topics are never asked."),
     ]
@@ -427,7 +427,7 @@ def process_flow(slide):
     xs = [LEFT, LEFT + w + 0.71, RIGHT - w]
     ys = [1.45, 2.78, 4.11]
     loop = {
-        (0, 0): ("1", "Talk", "5–10 min in Japanese with Gemini Live. She leads, it follows."),
+        (0, 0): ("1", "Talk", "5–10 min in Japanese with Gemini Live. The senior leads, the AI follows."),
         (0, 1): ("2", "Store", "A stereo recording and both transcripts, per session."),
         (0, 2): ("3", "Extract and verify", "Stories, people, places. Quotes and consent checked verbatim."),
         (1, 2): ("4", "Timeline", "Stories placed on life stages: childhood, work, marriage…"),
@@ -435,9 +435,9 @@ def process_flow(slide):
         (1, 0): ("6", "Plan the next talk", "Story so far, three questions, and topics to avoid."),
     }
     family = {
-        (2, 2): ("MdFamilyRestroom", "Family reads", "Only stories she agreed to share, each quote in her voice."),
+        (2, 2): ("MdFamilyRestroom", "Family reads", "Only stories the senior agreed to share, each with its audio."),
         (2, 1): ("MdForum", "Family asks back", "A relative writes a question and who they are: 孫のゆか."),
-        (2, 0): ("MdVerifiedUser", "Screened", "A question touching a topic she refused is quietly held back."),
+        (2, 0): ("MdVerifiedUser", "Screened", "A question touching a refused topic is quietly held back."),
     }
     for (r, c), (n, title, body) in loop.items():
         rect(slide, xs[c], ys[r], w, h, CARD, radius=0.1, name=f"Step {n}")
@@ -466,7 +466,7 @@ def process_flow(slide):
     arrow(slide, xs[1] - pad, mid[2], xs[0] + w + pad, mid[2], color=ACCENT)
     arrow(slide, centre[0], ys[2] - pad, centre[0], ys[1] + h + pad, color=ACCENT)
     text(slide, centre[2] - 1.62, ys[1] + h + 0.08, 1.5, 0.3,
-         [P(R("only what she shared", 9, "medium", ACCENT_TEXT), align="r")], name="Shared label")
+         [P(R("only what was shared", 9, "medium", ACCENT_TEXT), align="r")], name="Shared label")
     text(slide, centre[0] + 0.12, ys[1] + h + 0.08, 1.5, 0.3,
          [P(R("up to two a session", 9, "medium", ACCENT_TEXT))], name="Limit label")
     text(slide, centre[0] + 0.12, ys[0] + h + 0.08, 1.5, 0.3,
@@ -507,7 +507,7 @@ def wireframes(slide):
 
     text(slide, LEFT, ty + th + 0.12, tw, 0.3,
          [P(R("Senior's tablet: nothing to open, tap or type", 11, "semibold"))], name="Tablet caption")
-    notes = ["Greets her by name", "One topic, from last time", "Listens, and waits", "One big button to stop"]
+    notes = ["Greets the senior by name", "One topic, from last time", "Listens, and waits", "One big button to stop"]
     for i, note in enumerate(notes):
         nx, ny = LEFT + (i % 2) * 2.4, ty + th + 0.5 + (i // 2) * 0.32
         number(slide, i + 1, nx, ny + 0.02, d=0.22, fill=ACCENT, color=DARK)
@@ -537,9 +537,9 @@ def wireframes(slide):
         callout(n, px + pw + 0.06, centre - 0.12)
 
     family_notes = [
-        "Her stories as chapters, by life stage",
-        "Her own words, and a clip of her answer to play",
-        "Ask her something; she hears who is asking",
+        "The senior's stories as chapters, by life stage",
+        "Their own words, with a clip of the answer to play",
+        "Ask a question; the senior hears who is asking",
     ]
     nx = 7.62
     text(slide, nx, TOP, RIGHT - nx, 0.3, [P(R("Family page", 11, "semibold"))], name="Phone caption")
@@ -565,9 +565,9 @@ def architecture(slide):
     cl_w = 1.95
     node(LEFT, TOP, cl_w, 2.35, "MdTabletAndroid", "Senior's tablet",
          ["React web app", "Mic in at 16 kHz, voice out at 24 kHz",
-          "Records the talk in stereo: her voice left, the AI right",
+          "Records the talk in stereo: the senior left, the AI right",
           "Holds only a short-lived token, which cannot change the prompt"])
-    node(LEFT, 4.3, cl_w, 1.05, "MdPhoneIphone", "Family's phone", ["The family page: shared stories, her voice"])
+    node(LEFT, 4.3, cl_w, 1.05, "MdPhoneIphone", "Family's phone", ["The family page: shared stories, with audio"])
 
     run_x, run_w = 3.05, 3.5
     rect(slide, run_x, 2.05, run_w, 3.3, CARD, radius=0.12, name="Cloud Run")
@@ -576,10 +576,10 @@ def architecture(slide):
          [P(R("Cloud Run", 11, "semibold")), P(R("FastAPI and the web app, in one container", 9, "regular", MUTED))],
          anchor="ctr", name="Cloud Run title")
     steps = [
-        ("1", "Session start", "Her story so far and family questions, locked into a short-lived Live token"),
+        ("1", "Session start", "The story so far and family questions, locked into a short-lived Live token"),
         ("3", "Recording upload", "Stereo WAV in parts, joined in Cloud Storage"),
         ("4", "Processing", "Extract → verify → screen → plan, after every session"),
-        ("5", "Family API", "Shared stories only; clips cut from her own channel"),
+        ("5", "Family API", "Shared stories only; clips cut from the senior's channel"),
     ]
     sub_ys = [2.6, 3.28, 3.96, 4.64]
     for (n, title, body), y in zip(steps, sub_ys):
@@ -648,7 +648,7 @@ def technologies(slide):
     rect(slide, LEFT, 4.72, WIDTH, 0.62, DARK, radius=0.12, name="Principle")
     text(slide, LEFT + 0.25, 4.76, WIDTH - 0.5, 0.54, [
         P(R("One rule across the stack  ", 11, "semibold", ACCENT),
-          R("The model never speaks for her. Gemini extracts the stories; plain code then checks every quote, "
+          R("The model never speaks for the senior. Gemini extracts the stories; plain code then checks every quote, "
             "and every yes to sharing, against the transcript.", 10, "regular", ON_DARK), line=1.05),
     ], anchor="ctr", name="Principle text")
 
@@ -686,11 +686,11 @@ def snapshots(slide):
          "Who is being interviewed, which voice, and how long to wait: 5 s, measured, against the "
          "model's 0.8 s default."),
         ("session.png", "After the session",
-         "A story extracted from a live session: life stage, people, places, and her quote matched to "
+         "A story extracted from a live session: life stage, people, places, and the quote matched to "
          "the turn it came from."),
         ("family.png", "Family page",
-         "Her granddaughter's question, the story that answers it, and her own words, one tap from "
-         "her voice."),
+         "A granddaughter's question, the story that answers it, and the senior's own words, one tap "
+         "from the audio."),
     ]
     gap = 0.31
     w = (WIDTH - 2 * gap) / 3
@@ -739,7 +739,7 @@ def benchmarks(slide):
         "Real models, three runs a case. Japanese speech is streamed at the Live API in real time; replies are "
         "graded by rules and by a model judging them against the interviewer's own prompt.",
         "AI-vs-AI sparring: three personas press a long pause, a refused topic, a change of subject.",
-        "Family questions about a topic she refused, the war and the evacuation, were held back; the rest "
+        "Family questions about a topic the senior refused, the war and the evacuation, were held back; the rest "
         "went through. 3 of 3.",
         "Not yet measured: elderly voices and dialect. A native speaker reviews with the demo take.",
     ]
@@ -752,7 +752,7 @@ def benchmarks(slide):
 def future(slide):
     columns = [
         ("MdSensors", "Next, on the same tablet", [
-            "It notices her sitting nearby, so there is no button at all",
+            "It notices the senior sitting nearby, so there is no button at all",
             "Names it is unsure of kept in kana; the family fixes the spelling in one tap",
             "A message to the family when a new story lands",
         ]),
@@ -762,9 +762,9 @@ def future(slide):
             "Inside the companion robots Japanese families already buy",
         ]),
         ("MdGroups", "Beyond the family", [
-            "Sharing with whoever she chooses: a friend, a care worker, a local archive",
+            "Sharing with whoever the senior chooses: a friend, a care worker, a local archive",
             "Municipalities as payers: Yokosuka City has trialled conversation AI for seniors since 2025",
-            "A printed book of her stories",
+            "A printed book of the stories",
         ]),
     ]
     gap = 0.22
@@ -832,14 +832,14 @@ def business_case(slide, heading_source):
     run.find(qn("a:t")).text = "Community benefit and business case"
 
     columns = [
-        ("MdElderly", "For her", [
+        ("MdElderly", "For the senior", [
             "Being listened to, a few minutes every day",
             "Reminiscence (回想法) is established practice in Japanese elderly care",
-            "A life story that lasts, in her own words",
+            "A life story that lasts, in their own words",
         ]),
-        ("MdFamilyRestroom", "For her family", [
+        ("MdFamilyRestroom", "For the family", [
             "Stories they never found the time to ask about",
-            "Her voice behind every quote",
+            "The original voice behind every quote",
             "A reason to call, and to ask more",
         ]),
         ("MdGroups", "For the community", [
