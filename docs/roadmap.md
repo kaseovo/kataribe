@@ -240,6 +240,8 @@ The same seven-and-a-half-minute sparring session, rerun with the new prompt on 
 - It then traded goodbyes with the simulated interviewee for the rest of the session. Partly the harness, since the persona cannot hang up, but nothing tells the interviewer to stop once it has said goodbye.
 - The marriage story, which ends on her husband's death ten years ago, went into the general question rather than being asked about on its own. Told warmly, so arguably not a painful story; a judgement for the native-speaker review.
 
+The first two have a fix in place, not yet measured. The model keeps no clock, so the screen now says when: after `KATARIBE_CLOSE_AFTER_SECONDS` (six minutes) it sends a closing cue, a stage direction like the opening one, and the prompt closes only on that cue or when the person wants to stop, waits for a pause in their story, and answers a further goodbye with a word or two. Finishing before the cue still works; the stories are asked about next time. `make spar CLOSE=240` sends the cue in a sparring session. The rerun that would measure it was refused on 2026-10-11: the AI Studio prepayment credits had run out.
+
 ## Quotes are checked against the recording, not only the transcript
 
 The word-for-word check compares a quote with the transcript, and the transcript can be wrong. A quote copied from a wrong transcript is found in it all the same. The same sparring session produced 「みんなで食卓를囲んでいるときが一番です」: a Korean particle in the middle of Japanese, and it passed.

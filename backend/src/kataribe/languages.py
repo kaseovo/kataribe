@@ -34,6 +34,11 @@ class Language:
     first rather than waiting to be spoken to. Nobody should have to work out
     that they are meant to start."""
 
+    closing: str
+    """A stage direction sent once the conversation has run its time, so it ends
+    with the close: thanks, the question about sharing, and goodbye. The model
+    keeps no clock of its own, and left to judge it closed after two minutes."""
+
     alphabet: str
     """Every character this language is written in, as the body of a regex class.
     A quote holding anything else is a recognition glitch, such as a Korean
@@ -56,6 +61,7 @@ LANGUAGES: dict[str, Language] = {
         silence_duration_ms=5000,
         measured=True,
         opening="（その方が席につかれました。こちらから、やさしく声をかけてください。）",
+        closing="（そろそろお開きの時間です。今のお話がひと区切りついたら、終わり方のとおりにお開きにしてください。）",
         # Kana, kanji, Japanese and full-width punctuation, and plain ASCII for
         # the odd number or acronym.
         alphabet=(
@@ -76,6 +82,10 @@ LANGUAGES: dict[str, Language] = {
         silence_duration_ms=1500,
         measured=False,
         opening="(La personne vient de s'asseoir. Adressez-lui la parole doucement.)",
+        closing=(
+            "(Il est bientôt l'heure de conclure. Quand son récit arrive à une pause, "
+            "concluez comme indiqué.)"
+        ),
         alphabet=LATIN,
     ),
     "en": Language(
@@ -88,6 +98,7 @@ LANGUAGES: dict[str, Language] = {
         silence_duration_ms=2500,
         measured=False,
         opening="(They have just sat down. Speak to them gently, first.)",
+        closing="(It is nearly time to close. When their story pauses, close as described.)",
         alphabet=LATIN,
     ),
 }

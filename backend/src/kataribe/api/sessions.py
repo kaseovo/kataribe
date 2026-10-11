@@ -181,6 +181,8 @@ class SessionResponse(BaseModel):
     silence_duration_ms: int
     language: str
     opening: str
+    closing: str
+    close_after_seconds: int
 
 
 class TurnView(BaseModel):
@@ -301,6 +303,8 @@ def create_session(
         silence_duration_ms=tuning.silence_duration_ms,
         language=tuning.language,
         opening=get(tuning.language).opening,
+        closing=get(tuning.language).closing,
+        close_after_seconds=settings.close_after_seconds,
     )
 
 

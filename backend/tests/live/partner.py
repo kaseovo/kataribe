@@ -17,6 +17,7 @@ from google.genai import types
 
 from kataribe.config import Settings
 from kataribe.gemini import InterviewTuning, mint_session_credentials
+from kataribe.languages import get
 from tests.live import speech
 from tests.live.connection import live_client
 from tests.live.personas import Persona
@@ -107,6 +108,9 @@ class Exchange:
     senior_audio: bytes = b""
     interviewer_audio: bytes = b""
     error: str | None = None
+    # When the screen's closing cue reached the interviewer, if it was sent: how
+    # many turns had been taken by then, so a close before it can be told apart.
+    cued_at_turn: int | None = None
     # A socket can still close for reasons outside our control. Once real
     # conversation has happened that is an ending, not a fault, so it is kept
     # apart from `error` and the transcript stays usable.
@@ -178,8 +182,12 @@ async def converse(
     settings: Settings,
     seconds: float = 60.0,
     tuning: InterviewTuning | None = None,
+    close_after: float | None = None,
 ) -> Exchange:
-    credentials = mint_session_credentials(settings, tuning or InterviewTuning())
+    """`close_after` sends the closing cue at that many seconds, as the senior's
+    screen does, so the close and the question about sharing can be watched."""
+    interview = tuning or InterviewTuning()
+    credentials = mint_session_credentials(settings, interview)
     interviewer_client = live_client(
         api_key=credentials.token, http_options={"api_version": "v1alpha"}
     )
@@ -270,6 +278,10 @@ async def converse(
                 await asyncio.sleep(0.1)
                 if result.error or result.ended:
                     break
+                cue_due = close_after is not None and time.monotonic() - started >= close_after
+                if cue_due and result.cued_at_turn is None:
+                    result.cued_at_turn = len(result.utterances)
+                    await interviewer.send_realtime_input(text=get(interview.language).closing)
         finally:
             for task in tasks:
                 task.cancel()

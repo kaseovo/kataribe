@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     static_dir: Path | None = None
     """The built frontend, served by the API itself when deployed. Unset in
     development, where Vite serves it and proxies /api here."""
+    close_after_seconds: int = 360
+    """When the screen tells the interviewer it is time to close. Five to ten
+    minutes is the session the product means; the close takes a minute more."""
     team_password: str = ""
     """Closes everything but the family pages. Unset, everything is open."""
     visitor_seniors: str = ""

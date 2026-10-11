@@ -55,6 +55,8 @@ interface SessionResponse {
   model: string;
   resuming: boolean;
   opening: string;
+  closing: string;
+  close_after_seconds: number;
 }
 
 /** `tuning` left out falls back to the person's own language defaults. `api`
@@ -86,6 +88,8 @@ export async function startInterview(
     model,
     resuming,
     opening,
+    closing,
+    close_after_seconds: closeAfterSeconds,
   }: SessionResponse = await response.json();
 
   const playback = new Playback();
@@ -96,6 +100,7 @@ export async function startInterview(
   let session: Session | undefined;
   let capture: Capture | undefined;
   let heartbeat: ReturnType<typeof setInterval> | undefined;
+  let closer: ReturnType<typeof setTimeout> | undefined;
   // When the microphone opened, on the playback clock, so both sides of the
   // recording share one timeline.
   let micStartSec = 0;
@@ -121,6 +126,7 @@ export async function startInterview(
     finished ??= (async () => {
       stopping = true;
       clearInterval(heartbeat);
+      clearTimeout(closer);
       const mic = capture?.recorded() ?? new Int16Array(0);
       const spoken = playback.recorded();
       await capture?.stop();
@@ -262,11 +268,22 @@ export async function startInterview(
     peak = 0;
   }, 5000);
 
+  // The model keeps no clock, and left to judge it closed after two minutes. So
+  // the screen says when, the same way it said to begin. The close is where the
+  // person is asked whether their family may read today's stories; finishing
+  // before it leaves them to be asked next time.
+  if (closing) {
+    closer = setTimeout(() => {
+      if (!stopping && !lost) session?.sendRealtimeInput({ text: closing });
+    }, closeAfterSeconds * 1000);
+  }
+
   if (lost) {
     // Closed before anyone could speak: the microphone only opened just now,
     // so there is nothing of theirs to keep. It must not be left listening.
     stopping = true;
     clearInterval(heartbeat);
+    clearTimeout(closer);
     await capture.stop();
     await playback.close();
     throw new Error(`Connection lost before the conversation started (${lost})`);

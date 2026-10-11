@@ -116,6 +116,19 @@ def test_a_session_is_recorded_when_it_starts(
     assert listed[0]["has_audio"] is False
 
 
+def test_a_session_says_when_and_how_to_close(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The model keeps no clock. The screen tells it when, in the person's language.
+    fake_credentials(monkeypatch)
+    client = stored(tmp_path, gemini_api_key="k", close_after_seconds=300)
+
+    created = client.post("/api/sessions", json={}).json()
+
+    assert created["close_after_seconds"] == 300
+    assert created["closing"].startswith("（そろそろお開きの時間です。")
+
+
 def test_a_recording_can_be_uploaded_and_read_back(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

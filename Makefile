@@ -31,12 +31,13 @@ eval-browser:
 	cd frontend && pnpm test:e2e
 
 # Interviewer versus a simulated interviewee, on live audio both ways.
-# PERSONA=haru|shigeru|kimiko  PATIENCE=5000  SECONDS=75
+# PERSONA=haru|shigeru|kimiko  PATIENCE=5000  SECONDS=75  CLOSE=60 (closing cue, seconds)
 spar:
 	cd backend && uv run python spar.py \
 		--persona $(or $(PERSONA),haru) \
 		--seconds $(or $(SECONDS),75) \
-		$(if $(PATIENCE),--patience $(PATIENCE),)
+		$(if $(PATIENCE),--patience $(PATIENCE),) \
+		$(if $(CLOSE),--close-after $(CLOSE),)
 
 fmt:
 	cd backend && uv run ruff format . && uv run ruff check --fix .

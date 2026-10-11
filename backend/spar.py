@@ -26,6 +26,9 @@ def main() -> int:
     parser.add_argument("--seconds", type=float, default=75.0)
     parser.add_argument("--patience", type=int, default=None, help="silence_duration_ms")
     parser.add_argument("--out", type=Path, default=Path("var/spar"))
+    parser.add_argument(
+        "--close-after", type=float, default=None, help="seconds before the closing cue"
+    )
     args = parser.parse_args()
 
     settings = Settings()
@@ -40,7 +43,9 @@ def main() -> int:
     print(f"{persona.name} — {persona.exercises}")
     print(f"patience {patience}ms, {args.seconds:.0f}s\n")
 
-    result = asyncio.run(partner.converse(persona, settings, args.seconds, tuning))
+    result = asyncio.run(
+        partner.converse(persona, settings, args.seconds, tuning, close_after=args.close_after)
+    )
 
     if result.error:
         print(f"FAILED: {result.error}", file=sys.stderr)
@@ -54,6 +59,8 @@ def main() -> int:
     for who, start, end in sorted(timeline, key=lambda row: row[1]):
         print(f"  {start:6.1f}s - {end:6.1f}s  {who}")
 
+    if result.cued_at_turn is not None:
+        print(f"\n(closing cue sent after turn {result.cued_at_turn})")
     print(f"\n--- 聞き手 ---\n{result.interviewer_said or '(silent)'}")
     print(f"\n--- {persona.name} ---\n{result.senior_said or '(silent)'}")
 
