@@ -59,6 +59,35 @@ async def test_never_being_asked_keeps_it_private(settings: Settings) -> None:
     assert stories and stories[0].visibility == "private"
 
 
+# --- only an answer settles it ---------------------------------------------------
+
+
+def extracted(*answer: str) -> Story:
+    turns = [STORY, ASKED, *(Turn(speaker="senior", text=a, started_at=26.0) for a in answer)]
+    stories, _ = brain.verify(brain.extract(Settings(), HARU, turns), turns)
+    assert stories, "Nothing extracted from a clear memory"
+    return stories[0]
+
+
+async def test_a_question_with_no_reply_is_asked_again(settings: Settings) -> None:
+    # The conversation ended on the question, as when someone presses End now
+    # while it is being asked. Private, and still to be asked: next time, or on
+    # a visitor's end screen.
+    story = extracted()
+    assert (story.visibility, story.asked_to_share) == ("private", False)
+
+
+async def test_a_no_is_an_answer_and_is_not_asked_again(settings: Settings) -> None:
+    story = extracted("いえ、それは家族には内緒にしておいてください。")
+    assert (story.visibility, story.asked_to_share) == ("private", True)
+
+
+async def test_hesitation_is_an_answer_and_is_not_asked_again(settings: Settings) -> None:
+    # Asking someone twice who already hesitated would be pressing them.
+    story = extracted("うーん、そうですねえ……どうしましょうかねえ。")
+    assert (story.visibility, story.asked_to_share) == ("private", True)
+
+
 # --- asked once, at the close ------------------------------------------------
 
 FACTORY = Turn(
@@ -170,3 +199,26 @@ async def test_a_story_never_asked_about_is_agreed_to_at_the_next_close(
 
     assert [(d.story_id, d.decision) for d in decided] == [("river", "agreed")]
     assert [s.visibility for s in stories] == ["family"]
+
+
+async def test_a_story_asked_about_again_with_no_reply_waits_once_more(
+    settings: Settings,
+) -> None:
+    earlier = [earlier_story(shared=False)]
+    turns = [
+        FACTORY,
+        Turn(
+            speaker="ai",
+            text=(
+                "今日は工場のお話を伺いました。前回の千曲川のお話とあわせて、"
+                "ご家族にお伝えしてよろしいですか。"
+            ),
+            started_at=12.0,
+        ),
+    ]
+
+    extraction = brain.extract(Settings(), HARU, turns, earlier=earlier)
+    decided, _ = brain.verify_earlier(extraction.earlier, earlier, turns)
+
+    # No decision, so it stays unasked rather than declined.
+    assert decided == []

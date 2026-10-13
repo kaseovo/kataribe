@@ -46,7 +46,8 @@ class ExtractedStory(BaseModel):
         default=False,
         description=(
             "Whether the interviewer asked if their family may read this story, on its "
-            "own or in a list, whatever the answer"
+            "own or in a list, and they answered, whatever the answer. False if they "
+            "gave no reply at all"
         ),
     )
 
@@ -193,7 +194,11 @@ def extract(
             "  answer is at all unclear. A polite noise that is not an answer is\n"
             "  not agreement.\n"
             "- asked_to_share: true if the interviewer asked whether their family\n"
-            "  may read this story, on its own or in a list, whatever the answer.\n"
+            "  may read this story, on its own or in a list, and they answered:\n"
+            "  yes, no, and an unsure or hesitant reply all count as an answer.\n"
+            "  False if they were not asked, or were asked and gave no reply at\n"
+            "  all, because the conversation ended there or they went on to\n"
+            "  something else without answering.\n"
             "- refused_topics: anything they said they did not want to discuss.\n"
             "- raised: for each family question listed above that the interviewer\n"
             "  actually put to them in this conversation, its number, and the\n"
@@ -204,8 +209,9 @@ def extract(
             "  One marked shared that they asked to take back, or not to show their\n"
             "  family: decision 'withdrawn', with their words. One marked not yet\n"
             "  asked that the interviewer asked about today: 'agreed', with their\n"
-            "  words exactly as said, only if they clearly agreed; otherwise\n"
-            "  'declined'. Leave out every story nothing was said about."
+            "  words exactly as said, only if they clearly agreed; 'declined' if\n"
+            "  they answered any other way. Leave out a story they were asked about\n"
+            "  but gave no reply to, and every story nothing was said about."
         ),
         config=types.GenerateContentConfig(
             response_mime_type="application/json",
@@ -525,8 +531,9 @@ def context_for(
     """The part of the interviewer's prompt that changes between sessions.
 
     `family_questions` must already be screened: anything here may be asked.
-    `unasked` are earlier stories nobody has yet asked whether the family may
-    read, most often because the last conversation ended before its close.
+    `unasked` are earlier stories with no answer yet about whether the family
+    may read them, most often because the last conversation ended before its
+    close, or before they replied.
     """
     lines = [
         "## お相手について",
