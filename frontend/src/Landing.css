@@ -1,5 +1,6 @@
-/* The start page. Read once, by a stranger deciding whether to press Start, so
-   it is set like the family page: one column, reading measure, one thing to do. */
+/* The start page. Read once, by a stranger deciding whether to press Start, in
+   the order they need it: what it is, how it works, a real story, their turn.
+   One column at reading measure, like the family page. */
 
 .landing {
   max-width: 42rem;
@@ -8,38 +9,39 @@
   line-height: 1.7;
 }
 
-.landing header {
+.landing .hero {
   display: block;
-  margin-bottom: 2.5rem;
+  padding: 2rem 0 1rem;
+}
+
+.landing .brand {
+  margin: 0 0 1.5rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.landing .brand span {
+  margin-left: 0.4rem;
+  color: var(--accent);
 }
 
 .landing h1 {
-  font-size: 2.4rem;
-  margin-bottom: 1rem;
-}
-
-.landing h1 span {
-  margin-left: 0.4rem;
-  color: var(--accent);
-  font-weight: 500;
+  margin: 0 0 1rem;
+  font-size: clamp(2rem, 5vw, 2.8rem);
+  line-height: 1.2;
 }
 
 .landing .lede {
-  margin: 0 0 0.75rem;
-  font-size: 1.2rem;
-}
-
-.landing .aside {
-  margin: 0;
+  margin: 0 0 1.5rem;
+  font-size: 1.15rem;
   color: var(--muted);
 }
 
-.landing section {
-  margin-bottom: 2rem;
-  padding: 1.5rem;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 0.75rem;
+.landing .actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 0;
 }
 
 .landing h2 {
@@ -47,29 +49,129 @@
   font-size: 1.35rem;
 }
 
-.landing section > p {
-  margin: 0 0 1rem;
+/* The loop, in four steps: what a judge should leave knowing. */
+.loop ol {
+  list-style: none;
+  counter-reset: loop;
+  margin: 2rem 0 3rem;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 1rem;
 }
 
-.landing section > p.actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  margin: 0;
+.loop li {
+  counter-increment: loop;
+  padding-top: 0.75rem;
+  border-top: 2px solid var(--accent);
+  font-size: 0.9rem;
+  color: var(--muted);
 }
 
-.steps {
-  margin: 0 0 1.5rem;
-  padding-left: 1.4rem;
-}
-
-.steps li {
-  margin-bottom: 0.35rem;
-}
-
-.steps li::marker {
+.loop li::before {
+  content: counter(loop);
+  display: block;
   color: var(--accent);
+  font-weight: 700;
+}
+
+.loop strong {
+  display: block;
+  margin-bottom: 0.2rem;
+  color: var(--text);
+}
+
+.example {
+  margin-bottom: 3rem;
+}
+
+.example .note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* One story from the demo's family page, as the family page sets it. */
+.story {
+  margin: 1rem 0;
+  padding: 1.25rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+}
+
+.story h3 {
+  margin: 0.1rem 0 0.5rem;
+  font-size: 1.25rem;
+}
+
+.story > p {
+  margin: 0 0 0.9rem;
+}
+
+.story .asked {
+  margin: 0 0 0.6rem;
+  color: var(--accent);
+  font-size: 0.85rem;
+}
+
+.story .stage {
+  margin: 0;
+  font-size: 0.72rem;
   font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.story blockquote {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  margin: 0 0 0.6rem;
+  padding: 0.8rem 1rem;
+  background: var(--bg);
+  border-left: 2px solid var(--accent);
+  border-radius: 0 0.4rem 0.4rem 0;
+}
+
+.story .english {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--muted);
+  font-size: 0.92em;
+}
+
+.story .listen {
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  font-size: 0.7rem;
+}
+
+.landing .story button.more {
+  padding: 0.25rem 0;
+  color: var(--accent);
+  font-size: 0.9rem;
+}
+
+.landing .try {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+}
+
+.landing .try > p {
+  margin: 0 0 1rem;
 }
 
 .landing form {
@@ -138,10 +240,16 @@
   accent-color: var(--accent);
 }
 
-.family-question .hint {
-  margin: -0.2rem 0 0.2rem;
-  color: var(--muted);
-  font-size: 0.85rem;
+.family-question summary {
+  cursor: pointer;
+  color: var(--accent);
+  font-size: 0.9rem;
+}
+
+.family-question[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
 }
 
 .landing button.start,

@@ -1,9 +1,14 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 
 import './App.css';
 import './Landing.css';
+import { lifeStage } from './lifeStages';
 
 /** The start page, for strangers on the public URL: judges, mostly.
+ *
+ *  It goes in the order a judge needs: what it is, how it works, a real story
+ *  from the demo's family page, and then their own turn. Chosen on 2026-10-14
+ *  from three prototypes, over two side-by-side doors and a guided tour.
  *
  *  Each visitor gets a persona of their own and talks as themselves. Memory is
  *  per person, so a shared persona would greet the second visitor with the
@@ -16,6 +21,19 @@ interface Start {
   video: string;
   repo: string;
   open: boolean;
+}
+
+/** The demo's family page, as much of it as the start page shows. */
+interface Told {
+  name: string;
+  story: {
+    title: string;
+    summary: string;
+    life_stage: string;
+    /** In their words, with the English, and their voice where recorded. */
+    quotes: { text: string; english: string; audio: string | null }[];
+  };
+  question: { asked_by: string; text: string } | null;
 }
 
 interface Remembered {
@@ -69,6 +87,104 @@ function canConverse(): boolean {
   );
 }
 
+/** One story from the demo's family page, in English, for a judge: the one a
+ *  family question was answered in, since it shows the loop, or else the first.
+ *  Null until it has loaded, or when no showcase is set. */
+function useTold(showcase: string | null): Told | null {
+  const [told, setTold] = useState<Told | null>(null);
+  useEffect(() => {
+    if (!showcase) return;
+    const page = fetch(`/api/family/${showcase}`).then((r) => r.json());
+    const english = fetch(`/api/family/${showcase}/translations`)
+      .then((r) => (r.ok ? r.json() : {}))
+      .catch(() => ({}));
+    Promise.all([page, english])
+      .then(([view, en]: [FamilyPage, Record<string, string>]) => {
+        const say = (text: string) => en[text] ?? text;
+        const stories = view.chapters.flatMap((chapter) => chapter.stories);
+        const question = view.questions.find((q) => q.answered_in.length > 0);
+        const story = stories.find((s) => question?.answered_in.includes(s.id)) ?? stories[0];
+        if (!story) return;
+        setTold({
+          name: say(view.senior.name),
+          story: {
+            title: say(story.title),
+            summary: say(story.summary),
+            life_stage: story.life_stage,
+            quotes: story.quotes.map((q) => ({ ...q, english: say(q.text) })),
+          },
+          question: question ? { asked_by: say(question.asked_by), text: say(question.text) } : null,
+        });
+      })
+      .catch(() => undefined);
+  }, [showcase]);
+  return told;
+}
+
+interface FamilyPage {
+  senior: { name: string };
+  chapters: {
+    stories: {
+      id: string;
+      title: string;
+      summary: string;
+      life_stage: string;
+      quotes: { text: string; audio: string | null }[];
+    }[];
+  }[];
+  questions: { asked_by: string; text: string; answered_in: string[] }[];
+}
+
+/** The story, with its first quote, and every other one a press away: the
+ *  summary is a retelling, so a judge can check each thing in it against what
+ *  was actually said, and hear it where there is a recording. */
+function Story({ told }: { told: Told }) {
+  const [all, setAll] = useState(false);
+  const player = useRef<HTMLAudioElement | null>(null);
+  const { story, question } = told;
+  const quotes = all ? story.quotes : story.quotes.slice(0, 1);
+  const play = (audio: string) => {
+    const element = player.current;
+    if (!element) return;
+    if (!element.src.endsWith(audio)) element.src = audio;
+    element.currentTime = 0;
+    void element.play();
+  };
+  return (
+    <article className="story">
+      <audio ref={player} preload="none" />
+      {question && (
+        <p className="asked">
+          {question.asked_by} asked: {question.text}
+        </p>
+      )}
+      <p className="stage">{lifeStage(story.life_stage)}</p>
+      <h3>{story.title}</h3>
+      <p>{story.summary}</p>
+      {quotes.map((quote) => (
+        <blockquote key={quote.text}>
+          {quote.audio && (
+            <button className="listen" onClick={() => play(quote.audio!)} aria-label="Listen">
+              ▶
+            </button>
+          )}
+          <span>
+            <span lang="ja">「{quote.text}」</span>
+            <span className="english">“{quote.english}”</span>
+          </span>
+        </blockquote>
+      ))}
+      {story.quotes.length > 1 && (
+        <button type="button" className="quiet more" onClick={() => setAll(!all)}>
+          {all
+            ? 'Show only the first quote'
+            : `Show all ${story.quotes.length} quotes, in their own words`}
+        </button>
+      )}
+    </article>
+  );
+}
+
 export default function Landing() {
   const [start, setStart] = useState<Start | null>(null);
   const [visitor, setVisitor] = useState<Remembered | null>(remembered);
@@ -76,6 +192,7 @@ export default function Landing() {
   const [sending, setSending] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const supported = canConverse();
+  const told = useTold(start?.showcase ?? null);
 
   useEffect(() => {
     fetch('/api/try')
@@ -132,40 +249,60 @@ export default function Landing() {
 
   return (
     <div className="landing">
-      <header>
-        <h1>
+      <header className="hero">
+        <p className="brand">
           Kataribe <span lang="ja">語り部</span>
-        </h1>
-        <p className="lede">
-          A voice AI that talks with an elderly person for a few minutes a day, and turns their
-          memories into a life story their family can read and hear.
         </p>
-        <p className="aside">
-          It is built for Japanese seniors. A <em>kataribe</em> is a traditional keeper of oral
-          history: the one who remembers the stories and passes them on.
+        <h1>Every grandparent has stories nobody has asked about yet.</h1>
+        <p className="lede">
+          Kataribe talks with an elderly person for a few minutes a day, in Japanese, and turns
+          what they remember into a life story their family can read, and hear in their own voice.
+          A <em>kataribe</em> is a traditional keeper of oral history: the one who remembers the
+          stories and passes them on.
+        </p>
+        <p className="actions">
+          {told && (
+            <a className="start" href="#example">
+              See a life story
+            </a>
+          )}
+          <a className={told ? 'secondary' : 'start'} href="#try">
+            Try it on your own life
+          </a>
         </p>
       </header>
 
-      {/* First, so a judge can see it at work before talking to it. */}
-      {(start?.showcase || start?.video) && (
-        <section className="showcase">
-          <h2>See how it works</h2>
-          {start.showcase && (
-            <p>
-              The family page of the person in our demo: their life story as their family reads it,
-              told in Japanese with English under each passage. Only the stories they agreed to share
-              are there, and every quote plays in their own voice.
-            </p>
-          )}
-          {start.video && (
-            <p>A whole conversation in Japanese, with English subtitles, in the demo video.</p>
-          )}
+      <section className="loop" aria-label="How it works">
+        <ol>
+          <li>
+            <strong>They talk</strong>
+            The interviewer speaks first, asks one thing at a time, and waits through a pause.
+          </li>
+          <li>
+            <strong>It writes their story</strong>
+            Every quote word for word, with their voice behind it.
+          </li>
+          <li>
+            <strong>The family reads</strong>
+            Only what they agreed, aloud, to share.
+          </li>
+          <li>
+            <strong>The family asks back</strong>
+            A relative’s question opens the next conversation.
+          </li>
+        </ol>
+      </section>
+
+      {/* Before the form, so a judge sees what it makes before talking to it. */}
+      {told && start?.showcase && (
+        <section id="example" className="example">
+          <h2>From {told.name}’s family page</h2>
+          <p className="note">A life story from our demo, told in Japanese, shown in English.</p>
+          <Story told={told} />
           <p className="actions">
-            {start.showcase && (
-              <a className="secondary" href={`/family/${start.showcase}`}>
-                Open the family page
-              </a>
-            )}
+            <a className="secondary" href={`/family/${start.showcase}`}>
+              Read the whole family page
+            </a>
             {start.video && (
               <a className="secondary" href={start.video}>
                 Watch the demo video
@@ -174,24 +311,22 @@ export default function Landing() {
           </p>
         </section>
       )}
-
-      <section className="try">
-        <h2>Try it on your own life</h2>
-        <p>
-          The interviewer asks about your memories for two minutes or so, then writes up what you
-          told it the way a family would see it.
+      {!told && start?.video && (
+        <p className="actions">
+          <a className="secondary" href={start.video}>
+            Watch the demo video
+          </a>
         </p>
-        <ol className="steps">
-          <li>Allow the microphone. The interviewer speaks first.</li>
-          <li>Talk as yourself. It follows where you go, one question at a time.</li>
-          <li>
-            At two minutes it asks whether you want to go on. When you are done, say so or press{' '}
-            <strong>Finish</strong>: it asks whether your family may read today’s story. Answer
-            aloud, or press <strong>Share with my family</strong> or{' '}
-            <strong>Keep it private</strong>.
-          </li>
-          <li>Your story then appears on your own family page, with your voice behind each quote.</li>
-        </ol>
+      )}
+
+      <section id="try" className="try">
+        <h2>Your turn</h2>
+        <p>
+          Talk about your own life for two minutes or so. At two minutes it asks whether you want
+          to go on. When you are done, it asks whether your family may read today’s story: answer
+          aloud, or press <strong>Share with my family</strong> or <strong>Keep it private</strong>.
+          Your story then appears on a family page of your own.
+        </p>
 
         {!supported && (
           <p className="notice" role="alert">
@@ -202,7 +337,7 @@ export default function Landing() {
         {start && !open && (
           <p className="notice" role="status">
             Today’s conversations are used up. They start again at midnight, Japan time. Meanwhile,
-            the video and the life story below show it at work.
+            the life story above shows it at work.
           </p>
         )}
 
@@ -254,12 +389,10 @@ export default function Landing() {
               </fieldset>
             )}
 
-            <fieldset className="family-question">
-              <legend>A question from someone who would love to hear your stories</legend>
-              <p className="hint">
-                Optional. Your first conversation opens with it, the way a relative’s question
-                would.
-              </p>
+            {/* Filled in already, so it is there without being one more thing
+                to read before pressing Start. */}
+            <details className="family-question">
+              <summary>A question to open with, from someone who would love to hear your stories</summary>
               <label>
                 Who is asking
                 <input
@@ -277,7 +410,7 @@ export default function Landing() {
                   onChange={(e) => setDraft({ ...draft, question: e.target.value })}
                 />
               </label>
-            </fieldset>
+            </details>
 
             <button
               type="submit"
@@ -294,18 +427,16 @@ export default function Landing() {
             {problem}
           </p>
         )}
-
-        <p className="privacy">
-          Your conversation is recorded and processed by Google’s Gemini. Your family page is
-          reachable only by its link, kept in this browser, and shows only what you agree to share,
-          though the Kataribe team can see full conversations to fix problems. Everything recorded
-          from this page is deleted once judging ends.
-        </p>
       </section>
 
-      <footer>
-        {start?.repo && <a href={start.repo}>Source code</a>}
-      </footer>
+      <p className="privacy">
+        Your conversation is recorded and processed by Google’s Gemini. Your family page is
+        reachable only by its link, kept in this browser, and shows only what you agree to share,
+        though the Kataribe team can see full conversations to fix problems. Everything recorded
+        from this page is deleted once judging ends.
+      </p>
+
+      <footer>{start?.repo && <a href={start.repo}>Source code</a>}</footer>
     </div>
   );
 }

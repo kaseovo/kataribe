@@ -47,6 +47,8 @@ Decided 2026-10-12, for the evaluation from Oct 19 to Nov 6. Judges get the vide
 
 **The start page is `/`, and the console moves to `/console`.** It says what this is, offers *Try it*, links a showcase family page, the video and the repository, and says what happens to what they say.
 
+**Redesigned on 2026-10-14, from three prototypes,** in the order a judge needs it: what it is, the loop in four steps, one story from the demo's family page shown in English, and then *Your turn*. The story opens with its first quote and shows every other one on a press, since its summary is a retelling and a judge should be able to check each thing in it against what was said, and hear it where there is a recording. The form is a name and *Start talking*; the family question is filled in already, behind a disclosure. The other two prototypes were two side-by-side doors, quickest for a judge who has already decided, and a guided tour, step by step, clearest but the most clicks.
+
 **Each judge gets a persona of their own.** Memory is per person: with one shared persona the second judge would be greeted with the first judge's childhood, and asked the first judge's family questions. *Try it* asks for a name and a language and creates a visitor persona, remembered in that browser. The judge talks as themselves. A second conversation recalls the first, on their own words.
 
 - Its id is 128 random bits, since the link is the only key, as a family page's link already is. Nothing public lists people.
