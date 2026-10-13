@@ -339,7 +339,7 @@ def brief(slide):
         ("6.72M", "people aged 65 and over live alone in Japan",
          "2020 census · Cabinet Office, Annual Report on the Ageing Society"),
         ("¥220,000", "for one professionally written self-history (自分史), made once, by hand",
-         "親の雑誌 (Kokoromi), price incl. tax"),
+         "Oya no Zasshi (親の雑誌, Kokoromi), price incl. tax"),
     ]
     y = TOP
     for big, label, source in stats:
@@ -368,7 +368,7 @@ def opportunities(slide):
         ("How different is it from any of the other existing ideas?", [
             "Memoir AIs (Tell Mel, Storyworth, Remento) rewrite a parent's words into chapters, and "
             "the family chooses who receives them.",
-            "Companion AIs (茶の間 Cotomo) keep seniors company, but no life story comes out.",
+            "Companion AIs (Cotomo, by Starley) keep seniors company, but no life story comes out.",
             "A human-written self-history costs ¥220,000, and is made once.",
         ]),
         ("How will it be able to solve the problem?", [
@@ -436,7 +436,7 @@ def process_flow(slide):
     }
     family = {
         (2, 2): ("MdFamilyRestroom", "Family reads", "Only stories the senior agreed to share, each with its audio."),
-        (2, 1): ("MdForum", "Family asks back", "A relative writes a question and who they are: 孫のゆか."),
+        (2, 1): ("MdForum", "Family asks back", "A relative writes a question, and who they are: granddaughter Yuka."),
         (2, 0): ("MdVerifiedUser", "Screened", "A question touching a refused topic is quietly held back."),
     }
     for (r, c), (n, title, body) in loop.items():
@@ -519,9 +519,9 @@ def wireframes(slide):
     qx, qy, qw, qh = px + 0.1, py + 0.18, pw - 0.2, ph - 0.36
     rect(slide, qx, qy, qw, qh, APP_BG, radius=0.08, name="Phone screen")
     text(slide, qx + 0.12, qy + 0.12, qw - 0.2, 0.55, [
-        P(R("田中ハル", 12, "semibold", ON_DARK)), P(R("1947年生まれ · 長野", 6.5, "regular", ON_DARK_MUTED)),
+        P(R("田中ハル", 12, "semibold", ON_DARK)), P(R("Born in 1947 · 長野", 6.5, "regular", ON_DARK_MUTED)),
     ])
-    text(slide, qx + 0.12, qy + 0.72, qw - 0.2, 0.2, [P(R("子供時代", 6.5, "medium", ACCENT))])
+    text(slide, qx + 0.12, qy + 0.72, qw - 0.2, 0.2, [P(R("Childhood", 6.5, "medium", ACCENT))])
     text(slide, qx + 0.12, qy + 0.9, qw - 0.2, 0.25, [P(R("織物工場のこと", 9, "semibold", ON_DARK))])
     rect(slide, qx + 0.12, qy + 1.2, qw - 0.24, 0.5, APP_PANEL, radius=0.05, name="Quote")
     text(slide, qx + 0.2, qy + 1.26, qw - 0.65, 0.42,
@@ -701,7 +701,7 @@ def snapshots(slide):
              [P(R(title, 11.5, "semibold"), after=2), P(R(body, 9.5, "regular", MUTED), line=1.05)],
              name=f"{title} caption")
     text(slide, 6.4, 0.89, RIGHT - 6.4, 0.3,
-         [P(R("Test persona 田中ハル, voiced by synthesized speech", 9, "regular", MUTED), align="r")],
+         [P(R("Persona 田中ハル (Tanaka Haru), synthesized voice", 9, "regular", MUTED), align="r")],
          name="Data note")
 
 
