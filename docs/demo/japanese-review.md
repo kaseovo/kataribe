@@ -1,12 +1,10 @@
-# Japanese review and demo take, Oct 14–15
+# Japanese review and demo take
 
-The product is Japanese, and until now nobody has judged it in Japanese. Every prompt change since 2026-09-30 was tested in French and English. These two days settle the pause length and the voice, judge the Japanese, and record the conversations the demo video and the showcase family page are made from. Whatever the review finds has to be fixed and retaken by Oct 17. See *Japanese validation is deferred* in [roadmap.md](../roadmap.md).
+The product is Japanese, and until now nobody has judged it in Japanese. Every prompt change since 2026-09-30 was tested in French and English. This settles the pause length and the voice, judges the Japanese, and records the conversations the demo video and the showcase family page are made from. Whatever the review finds has to be fixed and retaken before the submission. See *Japanese validation is deferred* in [roadmap.md](../roadmap.md).
 
 Everything here runs on the live service, <https://kataribe-uxxefqeqqq-an.a.run.app>, so the showcase persona ends up in the cloud store the start page links to. The console is at `/console`, behind the team password.
 
-## Day 1: Oct 14
-
-### 1. Pause and voice (console, about 20 minutes)
+## 1. Pause and voice (console, about 20 minutes)
 
 Open `/console`, create a test person in Japanese, and hold short conversations. Changing a setting starts a fresh session.
 
@@ -15,7 +13,7 @@ Open `/console`, create a test person in Japanese, and hold short conversations.
 
 If either changes, the new defaults go in the `ja` entry of `backend/src/kataribe/languages.py` and get deployed **before the take**, since the senior's screen uses the defaults, not the console's slider.
 
-### 2. Read the prompt (about 30 minutes)
+## 2. Read the prompt (about 30 minutes)
 
 [`interviewer_ja.md`](../../backend/src/kataribe/prompts/interviewer_ja.md), with its English gloss [`interviewer_ja.en.md`](../../backend/src/kataribe/prompts/interviewer_ja.en.md) beside it. Read it as an elderly person would hear the result: warm or stiff, polite or ceremonious, a neighbour or a clerk.
 
@@ -36,7 +34,7 @@ Then these specific questions, each from a test run:
 | 11 | 「佐藤誠さん」 for 佐藤茂 | A name heard only by ear came back as a different name. How should the interviewer handle a name it is not sure of? |
 | 12 | Goodbyes after the close | It answers each further goodbye with a word or two. Polite, or should it stay silent? |
 
-### 3. The take, first session (about 10 minutes)
+## 3. The take, first session (about 10 minutes)
 
 **Decide first:** who speaks, and as whom. The video and the showcase family page are public, so the speaker agrees to their voice and these stories being shown, and tells only stories they are happy for anyone to read.
 
@@ -53,7 +51,7 @@ While it runs, the reviewer notes:
 - [ ] No name, place or year it was not told
 - [ ] It closes warmly, names today's stories, asks about sharing, proposes a topic for next time
 
-### 4. The family question, second session (about 10 minutes)
+## 4. The family question, second session (about 10 minutes)
 
 1. On the family page, send a question as a relative: who they are (孫のゆか, not just ゆか) and what they want to know.
 2. Start a second session from `/talk/{id}`, recorded. It should open with a word about last time, then the family question, saying who asked.
@@ -61,7 +59,7 @@ While it runs, the reviewer notes:
 
 **Only after this** set the showcase. The showcase's family page takes no questions, so the question has to be sent before.
 
-### 5. Read what it wrote (about 15 minutes)
+## 5. Read what it wrote (about 15 minutes)
 
 On the family page and in the console:
 
@@ -72,15 +70,15 @@ On the family page and in the console:
 
 The family page's own labels are English over Japanese content. That stays for the hackathon.
 
-## Between the days
+## 6. Fix and retake
 
 The findings become fixes. Each prompt fix is measured again with `make eval` before the retake, since a change that fixes one rule has broken another before (see *Asked once, at the close* in the roadmap).
 
-## Day 2: Oct 15
+Retake steps 3 and 4 on a fresh person if the fixes changed what the interviewer says, and the reviewer listens to the new takes against the same checklists.
 
-- Retake sessions 3 and 4 if the fixes changed what the interviewer says, on a fresh person.
-- The reviewer listens to the new takes against the same checklist.
-- **Decide whether judges may talk in Japanese.** If the review passes, `TRY_LANGUAGES=en,ja` in the next deploy. If not, judges get English only and the video shows the Japanese.
+## 7. Japanese for judges
+
+**Decide whether judges may talk in Japanese.** If the review passes, `TRY_LANGUAGES=en,ja` in the next deploy. If not, judges get English only and the video shows the Japanese.
 
 ## What comes out of it
 
