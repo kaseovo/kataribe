@@ -33,6 +33,8 @@ export interface InterviewCallbacks {
   onSaved?: (saved: boolean) => void;
   /** The interviewer has been told to close, by the clock or by close(). */
   onClosing?: () => void;
+  /** A visitor's clock has asked whether they want to go on. */
+  onCheckIn?: () => void;
 }
 
 /** The server would not start a conversation, with its HTTP status: 429 means
@@ -66,6 +68,7 @@ interface SessionResponse {
   opening: string;
   closing: string;
   close_after_seconds: number;
+  check_in: string;
 }
 
 /** `tuning` left out falls back to the person's own language defaults. `api`
@@ -99,6 +102,7 @@ export async function startInterview(
     opening,
     closing,
     close_after_seconds: closeAfterSeconds,
+    check_in: checkIn,
   }: SessionResponse = await response.json();
 
   const playback = new Playback();
@@ -314,7 +318,16 @@ export async function startInterview(
     session?.sendRealtimeInput({ text: closing });
     callbacks.onClosing?.();
   };
-  if (closing) closer = setTimeout(close, closeAfterSeconds * 1000);
+  // A visitor's clock asks whether they want to go on, rather than closing on
+  // them: a judge talks for two minutes and may well want a third. Finish
+  // still closes.
+  const askToGoOn = () => {
+    if (closingSent || stopping || lost) return;
+    session?.sendRealtimeInput({ text: checkIn });
+    callbacks.onCheckIn?.();
+  };
+  if (checkIn) closer = setTimeout(askToGoOn, closeAfterSeconds * 1000);
+  else if (closing) closer = setTimeout(close, closeAfterSeconds * 1000);
 
   if (lost) {
     // Closed before anyone could speak: the microphone only opened just now,

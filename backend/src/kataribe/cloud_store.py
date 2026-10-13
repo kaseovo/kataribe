@@ -298,6 +298,22 @@ class CloudStore:
             avoid_topics=list(data.get("avoid_topics", [])),
         )
 
+    # --- translations --------------------------------------------------
+
+    # One document per person, as a plan is. A list of pairs rather than a map,
+    # since a field name holds at most 1500 bytes and a summary in Japanese can
+    # come close.
+    def translations(self, senior_id: str) -> dict[str, str]:
+        snapshot = self._collection("translations").document(senior_id).get()
+        pairs = _data(snapshot).get("pairs", []) if snapshot.exists else []
+        return {pair["source"]: pair["english"] for pair in pairs}
+
+    def save_translations(self, senior_id: str, english: dict[str, str]) -> None:
+        kept = self.translations(senior_id) | english
+        self._collection("translations").document(senior_id).set(
+            {"pairs": [{"source": s, "english": e} for s, e in kept.items()]}
+        )
+
     # --- forgetting ----------------------------------------------------
 
     def forget_senior(self, senior_id: str) -> dict[str, int]:
@@ -310,6 +326,7 @@ class CloudStore:
             for document in documents:
                 batch.delete(document.reference)
         batch.delete(self._collection("plans").document(senior_id))
+        batch.delete(self._collection("translations").document(senior_id))
         batch.delete(self._collection("seniors").document(senior_id))
         batch.commit()
 

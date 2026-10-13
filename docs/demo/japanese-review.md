@@ -33,6 +33,8 @@ Then these specific questions, each from a test run:
 | 10 | 「佐藤さん」 for someone who said 佐藤茂 | The prompt says to use the name 一字も変えずに. Is a surname with さん the right way to address someone, or is the full name expected? |
 | 11 | 「佐藤誠さん」 for 佐藤茂 | A name heard only by ear came back as a different name. How should the interviewer handle a name it is not sure of? |
 | 12 | Goodbyes after the close | It answers each further goodbye with a word or two. Polite, or should it stay silent? |
+| 13 | 「田中ハルさんは二十四歳のときに、小学校の先生だった正夫さんと結婚した。」 | Summaries are now sentences about the person, by name, instead of their phrases strung together. です/ます or だ/である, for a family to read? And her 「やっておりました」 came back as 営んでおり: too far from her own word? |
+| 14 | 「このまま続けるか、今日はここまでにするか」, then 「ご家族に読んでいただいてもよろしいですか。それとも、ご自分だけのものにしておきましょうか」 | A visitor's short trial (`visitor_rules` in `backend/src/kataribe/languages.py`). Only for judges talking in Japanese: natural? |
 
 ## 3. The take, first session (about 10 minutes)
 
@@ -66,7 +68,8 @@ On the family page and in the console:
 - [ ] The transcript matches what was said, names and places included
 - [ ] Story titles and summaries read naturally in Japanese
 - [ ] Every quote is what they actually said, word for word
-- [ ] The Japanese screens read well: the senior's screen, and a visitor's end screen and question about sharing (`frontend/src/Talk.tsx`), and the start page's family question 「子どもの頃の場所で、今も思い出すところはどこですか？」 (`frontend/src/Landing.tsx`)
+- [ ] The Japanese screens read well: the senior's screen, and a visitor's question about sharing while it closes and on the end screen (`frontend/src/Talk.tsx`), and the start page's family question 「子どもの頃の場所で、今も思い出すところはどこですか？」 (`frontend/src/Landing.tsx`)
+- [ ] The English under each passage on the family page says what the Japanese says, and no more
 
 The family page's own labels are English over Japanese content. That stays for the hackathon.
 

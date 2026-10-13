@@ -174,10 +174,21 @@ def extract(
             f"- Write everything in {spoken.label}, the language they spoke.\n"
             "- Only what the speaker actually said. Never the interviewer's words.\n"
             "- Do not fill in anything the conversation does not contain.\n"
-            "- The title and summary must use the speaker's own words too. Do not\n"
-            "  swap in a word they did not use, and do not assert a relationship\n"
-            "  they did not state: if they said 'my father's factory' then it is\n"
-            "  'my father's factory', not 'the family home's factory'.\n"
+            "- summary: the story in a few plain, natural sentences, as their\n"
+            "  family will read it. About them, in the third person, by name:\n"
+            "  never 'I', since these are not their words, and never 'he' or\n"
+            "  'she'. Every fact must be one they said. Add no detail, feeling\n"
+            "  or judgement ('wonderful', 'cherished'), and do not assert a\n"
+            "  relationship they did not state: if they said 'my father's\n"
+            "  factory' it is their father's factory, not 'the family\n"
+            "  factory'. Keep their word for each thing rather than swapping in\n"
+            "  another. What you may add is only what turns their words into\n"
+            "  sentences: who did it, linking words, tense and order. Do not\n"
+            "  string their phrases together as they came, and do not keep their\n"
+            "  grammar where it faltered: a halting phrase becomes a correct\n"
+            "  sentence that means the same.\n"
+            "- title: a few words naming the story, as a chapter heading would,\n"
+            "  with their words for the things in it.\n"
             "- quotes must be the speaker's words exactly, not one character\n"
             "  changed. Never summarise or paraphrase inside a quote.\n"
             f"- life_stage must be one of: {', '.join(LIFE_STAGES)}\n"
@@ -471,6 +482,54 @@ def screen(settings: Settings, questions: list[FamilyQuestion], avoid: list[str]
     if not isinstance(result, Screening):
         raise RuntimeError(f"Screening returned nothing usable: {response.text!r}")
     return {questions[i].id for i in result.hold if 0 <= i < len(questions)}
+
+
+class Translated(BaseModel):
+    english: list[str] = Field(description="One translation per passage, in order")
+
+
+def translate(settings: Settings, texts: list[str], language: Language) -> list[str]:
+    """English for what a family page shows in another language, one for each
+    text and in its order: names, titles, summaries, the person's own words, and
+    the family's questions.
+
+    Shown under the original, never in its place. The quote stays the person's
+    own words, with their voice behind it; the translation is there so that
+    someone without the language can follow, and says that it is one.
+    """
+    if not texts:
+        return []
+
+    client = genai.Client(api_key=settings.gemini_api_key)
+    response = client.models.generate_content(
+        model=settings.text_model,
+        contents=(
+            f"Translate each numbered passage below from {language.label} into plain, "
+            "natural English. They come from the page where a family reads an elderly "
+            "person's life story: names, story titles, short summaries, the person's own "
+            "spoken words, and questions their family sent.\n\n"
+            "- Translate faithfully. Add nothing and explain nothing. Spoken words stay "
+            "spoken: keep their tone, and do not tidy them into something they did not "
+            "say.\n"
+            "- Write names of people and places as they sound, in the Latin alphabet, "
+            "family name first as in the original: 田中ハル is Tanaka Haru, 長野 is Nagano. "
+            "A relation stays a relation, no more precise than it was said: 孫のゆか "
+            "is grandchild Yuka.\n"
+            "- Where the original leaves out who, as Japanese does, say it with their "
+            "name, or 'they', never 'he' or 'she': nothing here says which they are.\n"
+            "- One translation per passage, in the same order, without the numbers.\n\n"
+            + "\n".join(f"[{i}] {text}" for i, text in enumerate(texts))
+        ),
+        config=types.GenerateContentConfig(
+            response_mime_type="application/json",
+            response_schema=Translated,
+            temperature=0.0,
+        ),
+    )
+    result = response.parsed
+    if not isinstance(result, Translated) or len(result.english) != len(texts):
+        raise RuntimeError(f"Translation returned nothing usable: {response.text!r}")
+    return result.english
 
 
 def plan_next(

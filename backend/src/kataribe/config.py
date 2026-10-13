@@ -41,10 +41,11 @@ class Settings(BaseSettings):
     visitor_personas_per_day: int = 100
     """Across every visitor. Making one costs nothing, but nothing else stops a
     script making them forever."""
-    visitor_close_after_seconds: int = 180
+    visitor_close_after_seconds: int = 120
     """A visitor talks for two or three minutes. Left to the six-minute cue, the
     question about sharing would never come and their family page would stay
-    empty."""
+    empty. At this point a visitor is asked whether to go on, not closed on, so
+    it can come early."""
     showcase_senior: str = ""
     """The persona whose family page the start page shows: stories from the demo
     take, read-only."""

@@ -62,6 +62,10 @@ test('a shared story reaches the family, with her voice behind it', async ({ pag
   await expect(page.locator('.told h3')).toContainText('織物工場のこと');
   await expect(page.locator('.told blockquote')).toContainText('織物の工場');
   await expect(page.locator('.withheld')).toHaveCount(0);
+  // English follows, under the original, for a reader without Japanese.
+  await expect(page.locator('.told blockquote .translation')).toContainText(/factory|mill/i, {
+    timeout: 60_000,
+  });
 
   // Her own voice one tap away is the whole claim — her voice saying this,
   // not the session it came from.

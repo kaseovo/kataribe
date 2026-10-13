@@ -29,6 +29,7 @@ from kataribe.store import (
     FamilyQuestion,
     LocalStore,
     MissingAudioParts,
+    Senior,
     Store,
     Turn,
 )
@@ -189,7 +190,11 @@ class SessionResponse(BaseModel):
     language: str
     opening: str
     closing: str
+    """Sent when the clock says, or when a visitor presses Finish."""
     close_after_seconds: int
+    check_in: str = ""
+    """A visitor's timed cue in place of `closing`, asking whether to go on.
+    Empty for everyone else, whose clock sends `closing`."""
 
 
 class TurnView(BaseModel):
@@ -282,6 +287,13 @@ def create_session(
         unasked = [story for story in told if not story.asked_to_share][-3:]
         context = brain.context_for(senior, plan, waiting, unasked)
 
+    # A stranger trying it for a few minutes is asked whether to go on, rather
+    # than closed on, and asked about sharing on its own.
+    spoken = get(senior.language if senior else None)
+    trial = bool(senior and senior.visitor and spoken.visitor_rules)
+    if trial:
+        context = f"{context}\n\n{spoken.visitor_rules}"
+
     # The person's language decides the prompt, the locale and the defaults.
     base = InterviewTuning.for_language(senior.language if senior else None)
     tuning = InterviewTuning(
@@ -311,11 +323,12 @@ def create_session(
         voice=tuning.voice,
         silence_duration_ms=tuning.silence_duration_ms,
         language=tuning.language,
-        opening=get(tuning.language).opening,
-        closing=get(tuning.language).closing,
+        opening=spoken.opening,
+        closing=spoken.visitor_finish if trial else spoken.closing,
         close_after_seconds=settings.visitor_close_after_seconds
         if senior and senior.visitor
         else settings.close_after_seconds,
+        check_in=spoken.visitor_check_in if trial else "",
     )
 
 
@@ -519,12 +532,13 @@ def read_family_view(
         )
 
     shared_ids = {story.id for story in shared}
+    questions = [_family_safe(q, shared_ids) for q in store.family_questions(senior_id)]
     now = datetime.datetime.now(tz=datetime.UTC)
     return FamilyView(
         senior=SeniorView(**senior.__dict__),
         chapters=chapters,
         withheld=len(everything) - len(shared),
-        questions=[_family_safe(q, shared_ids) for q in store.family_questions(senior_id)],
+        questions=questions,
         # A reading that stalled is not on its way, and saying so would leave
         # them waiting for nothing.
         writing=any(
@@ -534,6 +548,54 @@ def read_family_view(
         showcase=senior_id == settings.showcase_senior,
         visitor=senior.visitor,
     )
+
+
+@router.get("/family/{senior_id}/translations")
+def read_family_translations(
+    senior_id: str,
+    settings: Annotated[Settings, Depends(get_settings)],
+    store: Annotated[Store, Depends(get_store)],
+) -> dict[str, str]:
+    """English for what the family page shows, by the text, when the person
+    speaks another language, so that someone without it, such as a judge, can
+    follow. Shown under the original, never in its place.
+
+    Read after the page rather than with it, so the page never waits on a
+    translation: the first reading of a text takes seconds, and after that it
+    is kept. Only what the page shows is translated, never a private story."""
+    view = read_family_view(senior_id, settings, store)
+    senior = store.get_senior(senior_id)
+    assert senior is not None, "checked by read_family_view"
+    shown = [view.senior.name, view.senior.birthplace]
+    for chapter in view.chapters:
+        for told in chapter.stories:
+            shown += [told.title, told.summary, told.approx_period, *told.people, *told.places]
+            shown += [quote.text for quote in told.quotes]
+    for question in view.questions:
+        shown += [question.asked_by, question.text]
+    return _in_english(settings, store, senior, shown)
+
+
+def _in_english(
+    settings: Settings, store: Store, senior: Senior, texts: list[str]
+) -> dict[str, str]:
+    """Each text translated once, the first time a page shows it, and kept. A
+    page that cannot be translated just now is shown without, not at all."""
+    if senior.language == "en" or not settings.gemini_api_key:
+        return {}
+    wanted = list(dict.fromkeys(text for text in texts if text))
+    kept = store.translations(senior.id)
+    missing = [text for text in wanted if text not in kept]
+    if missing:
+        try:
+            english = brain.translate(settings, missing, get(senior.language))
+        except Exception:
+            log.exception("could not translate the family page of %s", senior.id)
+        else:
+            new = dict(zip(missing, english, strict=True))
+            store.save_translations(senior.id, new)
+            kept |= new
+    return {text: kept[text] for text in wanted if text in kept}
 
 
 def _family_safe(question: FamilyQuestion, shared_ids: set[str]) -> FamilyQuestionView:

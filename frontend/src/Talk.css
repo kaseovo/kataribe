@@ -217,6 +217,27 @@ a.talk-button {
   gap: 1rem;
 }
 
+/* A visitor's way out while it closes: the question about sharing, on screen
+   as well as aloud, where either answer ends it. */
+.talk-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.talk-question {
+  margin: 0.25rem 0 0;
+  font-size: clamp(1.6rem, 3.5vw, 1.9rem);
+  font-weight: 600;
+}
+
+.talk-wrap .talk-choices {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .talk-presence,
   .talk.speaking .talk-presence,

@@ -55,9 +55,14 @@ Decided 2026-10-12, for the evaluation from Oct 19 to Nov 6. Judges get the vide
 
 **Short conversations still end with the question about sharing.** A judge will talk for two minutes, and a closing cue at six would never come, so nothing would be shared and the family page would stay empty. For visitor personas:
 
-- *Finish* sends the closing cue instead of hanging up, and becomes *End now*.
-- The cue comes on its own at three minutes.
-- If a story still has no answer, because they ended it before the question or before replying, the end screen asks once, naming the stories, after they have been written up: let the family read them, or keep them private. Neither is private. A story they kept private in the conversation is not offered. The choice is recorded as made on screen, apart from consent in their own words.
+- At two minutes the interviewer asks only whether they want to keep going or stop there. Keeping going carries on and is not asked again.
+- Once they want to stop, because they said so or pressed *Finish*, it asks one thing, alone in its turn: may their family read today's story, named in a few words, or would they rather keep it private. Then a sentence of thanks and goodbye. A senior's close is unchanged: it is the one the native-speaker review judges.
+- From then on the screen asks the same question, with *Share with my family* and *Keep it private*. Either ends the conversation, and the choice is applied once the story is written up. *Keep it private* has the last word even over a yes said aloud, since private is the safe way to be wrong; *Share* never overrides a no said aloud.
+- *End now, choose later* ends it without choosing. If a story still has no answer, the end screen asks once, naming the stories, after they have been written up: let the family read them, or keep them private. Neither is private. A story they kept private in the conversation is not offered. A choice made on screen is recorded as one, apart from consent in their own words.
+
+Decided 2026-10-13, after trying it as a judge would. At the three-minute cue the interviewer asked a question and closed in the same breath, and the question about sharing was lost in the middle of the goodbye: "…Do you recall any particular programs or movies you watched together? Thank you so much for sharing these memories today. May your family read these stories…? Next time, I would love to hear more about growing up and school. I look forward to hearing more another time." The reply was "So do you want to… make it private or not?" And the buttons to choose were never seen, since they came only on the end screen, only for a story with no answer. The same trial also opened its first conversation with "so good to see you again"; the trial rules say a first conversation is a first.
+
+Measured once each way on live audio, with the check-in brought forward to 30 seconds: asked to go on or stop, "I think I'm done for today" got "Before we stop: may your family read what you told me about your childhood in Brittany and your grandfather's boat, or would you rather keep it private?", and "Yes, my family can read it" a one-line goodbye and the story on their family page, from the words said. "I'd like to keep going a little" got "What kind of fish did you and your grandfather usually catch?". The buttons have a browser test of their own.
 
 **The end screen waits for the writing-up,** then links to their family page. The family page says when a conversation is still being written up.
 
@@ -243,6 +248,20 @@ So "it works in French" must never be read as "it works". The Japanese session w
 **Settings are per language** for the same reason. Each language keeps its own voice and pause length, and only the Japanese pause figure was measured against real speech — the others are starting guesses, and the console says so when one is selected. A value that feels right in a French test cannot become the one an elderly Japanese speaker gets.
 
 The extraction and planning instructions are written once, in English, and told which language to write in. Three translated copies would drift apart, and the rules they carry — do not invent, do not paraphrase inside a quotation — are the same in any language. The Japanese live tests were run before and after that change to confirm the Japanese behaviour did not move.
+
+## Summaries in sentences, and English beside the Japanese
+
+Both decided 2026-10-13, after trying it as a judge would.
+
+**A summary is written, not stitched.** The rule was that the title and summary use the speaker's own words, and the model took it to the letter: "Childhood house lived in from birth until 11 years old, smaller than the one got after it, with a swimming pool." In Japanese a summary came back as the quote itself, in the first person. The rule now says what it meant: no fact, feeling or judgement they did not give, and their word for each thing, but in plain sentences about them, by name, with grammar where theirs faltered. Never "I", since the AI does not speak for them, and never "he" or "she", since nothing says which. The same conversation now gives "Alex grew up in a small town by the sea in Brittany. Alex's grandfather had a boat, and every summer he took Alex out fishing at dawn." A live test feeds it halting speech and judges both halves: 3 of 3 on the first wording, then 2 of 3 once the rule also allowed fixing faltering grammar, the third ending "…around eight people, swimming by day and night, and watching TV on Friday night", which the judge took for phrases strung together. The test that summaries add nothing, and the one that the recap adds nothing, failed at first on her name: it comes from her profile, which extraction is given and the judges were not. Given the profile too, 3 of 3 each. The consent cases, rerun on the new prompt: 36 of 36 over three runs.
+
+For the native speaker: the Japanese summaries moved from です/ます to だ/である, and her 「やっておりました」 came back as 営んでおり.
+
+**A family page in another language comes with English.** The showcase page will be Japanese, and judges may not read it. Under each title, summary, quote, family question, name and place, a grey line of English, and a note at the top saying they are translations made by AI and that the quotes are the person's own words, with their voice behind the play button. Never in place of the original.
+
+- Translated once, the first time the page shows a text, and kept per person, so forgetting them removes it too. Only what the page shows goes to be translated: never a private story.
+- Read after the page rather than with it. The first version put it in the page's own request, and a page opened blank for over five seconds while the English was written; the browser tests caught it. Now the page appears at once and the English follows.
+- Translated as said: names in the Latin alphabet, family name first, and nothing made more precise than the original. The live test caught the prompt's own example teaching it to guess: 孫のゆか was "granddaughter Yuka", where 孫 is a grandchild. 3 of 3 since.
 
 ## Consent is evidence, not inference
 

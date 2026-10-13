@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 
 import './App.css';
 import './Talk.css';
@@ -105,8 +105,13 @@ const WORDS: Record<string, Words> = {
 
 /** Only on a visitor's screen. Visitors may pick English or Japanese. */
 interface VisitorWords {
-  endNow: string;
   closing: string;
+  checkIn: string;
+  /** Asked on screen while it closes, as the interviewer asks it aloud. */
+  question: string;
+  shareNow: string;
+  keepNow: string;
+  endLater: string;
   writing: string;
   slow: string;
   written: (shared: number) => string;
@@ -121,14 +126,17 @@ interface VisitorWords {
 
 const VISITOR_WORDS: Record<string, VisitorWords> = {
   en: {
-    endNow: 'End now',
-    closing:
-      'Wrapping up. It will ask whether your family may read today’s story: answer aloud, then press End now.',
+    closing: 'Wrapping up. Answer its question aloud, or choose here.',
+    checkIn: 'Keep talking if you like. When you are done, tell it so, or choose here.',
+    question: 'May your family read today’s story?',
+    shareNow: 'Share with my family',
+    keepNow: 'Keep it private',
+    endLater: 'End now, choose later',
     writing: 'Writing up your story…',
     slow: 'This is taking longer than usual. Your family page will show it once it is ready.',
     written: (shared) =>
       shared === 0
-        ? 'Nothing was shared with your family. A story appears there only once you say yes, aloud, when asked.'
+        ? 'Nothing was shared with your family: today’s story stays private.'
         : shared === 1
           ? 'One story is now on your family page.'
           : `${shared} stories are now on your family page.`,
@@ -141,14 +149,18 @@ const VISITOR_WORDS: Record<string, VisitorWords> = {
     home: 'Back to the start page',
   },
   ja: {
-    endNow: '今すぐおわる',
-    closing:
-      'お話をしめくくっています。今日のお話をご家族が読んでもよいか、お尋ねします。お答えになってから「今すぐおわる」を押してください。',
+    closing: 'お話をしめくくっています。声でお答えいただくか、こちらでお選びください。',
+    checkIn:
+      '続けたいときは、そのままお話しください。終わるときは、そうおっしゃるか、こちらでお選びください。',
+    question: '今日のお話を、ご家族が読んでもよいですか？',
+    shareNow: 'ご家族に読んでもらう',
+    keepNow: '自分だけのものにする',
+    endLater: '今すぐおわって、あとで決める',
     writing: 'お話をまとめています…',
     slow: 'いつもより時間がかかっています。まとまり次第、ご家族のページに載ります。',
     written: (shared) =>
       shared === 0
-        ? 'ご家族と共有されたお話はありません。お尋ねしたときに、声で「はい」とお答えいただいたお話だけが載ります。'
+        ? 'ご家族と共有されたお話はありません。今日のお話は、ご自分だけのものとしてお預かりします。'
         : `${shared}つのお話が、ご家族のページに載りました。`,
     failed: '今回は、お話をまとめられませんでした。',
     ask: 'お帰りの前に、こちらのお話を、ご家族が読んでもよいですか？',
@@ -175,6 +187,9 @@ export default function Talk({ seniorId }: { seniorId: string }) {
   const [problem, setProblem] = useState<Problem | null>(null);
   const [unsaved, setUnsaved] = useState<string | null>(null);
   const [closing, setClosing] = useState(false);
+  const [checkedIn, setCheckedIn] = useState(false);
+  /** Chosen with the buttons while it closed, applied once it is written up. */
+  const [chosen, setChosen] = useState<boolean | null>(null);
   const [writingUp, setWritingUp] = useState<WritingUp | null>(null);
   const [slow, setSlow] = useState(false);
   const [choosing, setChoosing] = useState(false);
@@ -184,6 +199,7 @@ export default function Talk({ seniorId }: { seniorId: string }) {
   const lastSpeaker = useRef<Speaker | null>(null);
   const saved = useRef<boolean | null>(null);
   const awake = useRef<WakeLockSentinel | null>(null);
+  const applied = useRef(false);
 
   useEffect(() => {
     fetch(api)
@@ -238,6 +254,9 @@ export default function Talk({ seniorId }: { seniorId: string }) {
     setUnsaved(null);
     setPhase('listening');
     setClosing(false);
+    setCheckedIn(false);
+    setChosen(null);
+    applied.current = false;
     setWritingUp(null);
     setSlow(false);
     lastSpeaker.current = null;
@@ -262,6 +281,7 @@ export default function Talk({ seniorId }: { seniorId: string }) {
             saved.current = ok;
           },
           onClosing: () => setClosing(true),
+          onCheckIn: () => setCheckedIn(true),
           onClosed: (_reason, kept) => {
             setProblem('lost');
             setStage('ending');
@@ -284,26 +304,44 @@ export default function Talk({ seniorId }: { seniorId: string }) {
     }
   };
 
-  /** A visitor's first press asks the interviewer to close, so they are asked
-   *  about sharing; the second, or a real person's, ends it there and then. */
+  /** A visitor's press asks the interviewer to close, so they are asked about
+   *  sharing; a real person's ends it there and then. */
   const finish = () => {
-    if (person?.visitor && !closing) interview.current?.close();
+    if (person?.visitor) interview.current?.close();
     else void stop();
   };
-
-  const share = async (yes: boolean) => {
-    setChoosing(true);
-    try {
-      const response = await fetch(`${api}/sessions/${sessionId}/sharing`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ share: yes }),
-      });
-      if (response.ok) setWritingUp(await response.json());
-    } finally {
-      setChoosing(false);
-    }
+  /** Closing, or asked by the clock whether to go on: the question about
+   *  sharing is on screen too, and either answer ends it. */
+  const wrapping = Boolean(person?.visitor && (closing || checkedIn));
+  const choose = (yes: boolean) => {
+    setChosen(yes);
+    void stop();
   };
+
+  const share = useCallback(
+    async (yes: boolean, everything = false) => {
+      setChoosing(true);
+      try {
+        const response = await fetch(`${api}/sessions/${sessionId}/sharing`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ share: yes, everything }),
+        });
+        if (response.ok) setWritingUp(await response.json());
+      } finally {
+        setChoosing(false);
+      }
+    },
+    [api, sessionId],
+  );
+
+  // A choice made with the buttons while it closed, once there are stories to
+  // apply it to. Keep it private is the last word, even over a yes said aloud.
+  useEffect(() => {
+    if (chosen === null || applied.current || writingUp?.state !== 'written') return;
+    applied.current = true;
+    void share(chosen, !chosen);
+  }, [chosen, writingUp?.state, share]);
 
   const stop = async () => {
     setStage('ending');
@@ -366,10 +404,27 @@ export default function Talk({ seniorId }: { seniorId: string }) {
           <p className="talk-caption" aria-live="polite">
             {caption}
           </p>
-          {person.visitor && closing && <p className="talk-hint">{visitorWords.closing}</p>}
-          <button className="talk-stop" onClick={finish}>
-            {person.visitor && closing ? visitorWords.endNow : words.stop}
-          </button>
+          {wrapping ? (
+            <div className="talk-wrap">
+              <p className="talk-hint">{closing ? visitorWords.closing : visitorWords.checkIn}</p>
+              <p className="talk-question">{visitorWords.question}</p>
+              <div className="talk-choices">
+                <button className="talk-button" onClick={() => choose(true)}>
+                  {visitorWords.shareNow}
+                </button>
+                <button className="talk-button" onClick={() => choose(false)}>
+                  {visitorWords.keepNow}
+                </button>
+              </div>
+              <button className="talk-quiet" onClick={() => void stop()}>
+                {visitorWords.endLater}
+              </button>
+            </div>
+          ) : (
+            <button className="talk-stop" onClick={finish}>
+              {words.stop}
+            </button>
+          )}
         </section>
       )}
 
@@ -382,7 +437,7 @@ export default function Talk({ seniorId }: { seniorId: string }) {
       {stage === 'done' && following && (
         <section className="talk-done" aria-live="polite">
           <p className="talk-thanks">{problem === 'lost' ? words.lost : words.thanks}</p>
-          {writingUp?.state === 'written' && writingUp.unasked.length > 0 ? (
+          {writingUp?.state === 'written' && writingUp.unasked.length > 0 && chosen === null ? (
             <div className="talk-ask">
               <p className="talk-message">{visitorWords.ask}</p>
               <ul className="talk-titles">

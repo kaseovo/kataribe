@@ -102,6 +102,32 @@
   color: #1a1206;
 }
 
+/* English under the original, for a reader without the language, such as a
+   judge. Smaller and quieter, so the person's own words stay first. */
+.family .translation {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.9em;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.told > p.translation {
+  margin: -0.35rem 0 0.75rem;
+}
+
+.family .translation.name {
+  margin: -0.2rem 0 0.4rem;
+  font-size: 1rem;
+}
+
+.family .translated-note {
+  margin: 1rem 0 0;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
 .told .tags {
   margin: 0;
   font-size: 0.8rem;

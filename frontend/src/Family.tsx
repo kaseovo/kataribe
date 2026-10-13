@@ -40,7 +40,7 @@ interface Question {
 }
 
 interface View {
-  senior: { name: string; birth_year: number | null; birthplace: string };
+  senior: { name: string; birth_year: number | null; birthplace: string; language: string };
   chapters: Chapter[];
   withheld: number;
   questions: Question[];
@@ -51,6 +51,8 @@ interface View {
   /** A visitor's own persona, made from the start page. */
   visitor: boolean;
 }
+
+const SPOKEN: Record<string, string> = { ja: 'Japanese', fr: 'French' };
 
 /** How often the page looks again while a conversation is being written up. */
 const REFRESH_MS = 4000;
@@ -64,6 +66,9 @@ export default function Family({ seniorId }: { seniorId: string }) {
   const [draft, setDraft] = useState({ asked_by: '', text: '' });
   const [sending, setSending] = useState(false);
   const [unsent, setUnsent] = useState<string | null>(null);
+  /** English for the page's text, by the text, when they speak another
+   *  language. Shown under the original, never in its place. */
+  const [translations, setTranslations] = useState<Record<string, string>>({});
   const player = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
@@ -85,6 +90,21 @@ export default function Family({ seniorId }: { seniorId: string }) {
     }, REFRESH_MS);
     return () => clearInterval(timer);
   }, [writing, seniorId]);
+
+  // Read after the page, so it never waits on a translation: the first time a
+  // text is shown takes seconds, after that it is kept. Again whenever a story
+  // or a question arrives.
+  const foreign = Boolean(view && view.senior.language !== 'en');
+  const shownKey = view
+    ? `${view.chapters.flatMap((c) => c.stories.map((s) => s.id)).join()}|${view.questions.length}`
+    : '';
+  useEffect(() => {
+    if (!foreign) return;
+    fetch(`/api/family/${seniorId}/translations`)
+      .then((r) => (r.ok ? (r.json() as Promise<Record<string, string>>) : null))
+      .then((english) => english && setTranslations(english))
+      .catch(() => undefined);
+  }, [foreign, shownKey, seniorId]);
 
   const ask = async (event: FormEvent) => {
     event.preventDefault();
@@ -123,15 +143,28 @@ export default function Family({ seniorId }: { seniorId: string }) {
   const titles = new Map(view.chapters.flatMap((c) => c.stories.map((s) => [s.id, s.title])));
   const askedFor = (storyId: string) =>
     view.questions.filter((q) => q.answered_in.includes(storyId));
+  const english = (text: string) => (text ? translations[text] : undefined);
+  const translated = Object.keys(translations).length > 0;
+  const tag = (text: string) => (english(text) ? `${text} (${english(text)})` : text);
 
   return (
     <div className="family">
       <header>
         <h1>{view.senior.name}</h1>
+        {english(view.senior.name) && (
+          <p className="translation name">{english(view.senior.name)}</p>
+        )}
         <p className="life">
           {view.senior.birth_year && `Born in ${view.senior.birth_year}`}
-          {view.senior.birthplace && ` · ${view.senior.birthplace}`}
+          {view.senior.birthplace && ` · ${tag(view.senior.birthplace)}`}
         </p>
+        {translated && (
+          <p className="translated-note">
+            Told in {SPOKEN[view.senior.language] ?? 'their own language'}. The grey lines are
+            English translations made by AI, so that you can follow. The quotes are{' '}
+            {view.senior.name}’s own words, and the play buttons their voice.
+          </p>
+        )}
         {view.visitor && (
           <p className="yours">
             Your own page, reachable only by its link. <a href={`/talk/${seniorId}`}>Talk again</a>{' '}
@@ -163,13 +196,29 @@ export default function Family({ seniorId }: { seniorId: string }) {
               {askedFor(story.id).map((q) => (
                 <p key={q.id} className="asked-for">
                   {q.asked_by} asked: {q.text}
+                  {english(q.text) && (
+                    <span className="translation">
+                      {english(q.asked_by) ?? q.asked_by} asked: {english(q.text)}
+                    </span>
+                  )}
                 </p>
               ))}
               <h3>
                 {story.title}
                 {story.approx_period && <em>{story.approx_period}</em>}
               </h3>
-              <p>{story.summary}</p>
+              {english(story.title) && (
+                <p className="translation">
+                  {english(story.title)}
+                  {english(story.approx_period) && ` · ${english(story.approx_period)}`}
+                </p>
+              )}
+              <p>
+                {story.summary}
+                {english(story.summary) && (
+                  <span className="translation">{english(story.summary)}</span>
+                )}
+              </p>
               {story.quotes.map((quote, i) => (
                 <blockquote key={i}>
                   {quote.audio && (
@@ -177,11 +226,16 @@ export default function Family({ seniorId }: { seniorId: string }) {
                       ▶
                     </button>
                   )}
-                  <span>「{quote.text}」</span>
+                  <span>
+                    「{quote.text}」
+                    {english(quote.text) && (
+                      <span className="translation">“{english(quote.text)}”</span>
+                    )}
+                  </span>
                 </blockquote>
               ))}
               {[...story.people, ...story.places].length > 0 && (
-                <p className="tags">{[...story.people, ...story.places].join(' · ')}</p>
+                <p className="tags">{[...story.people, ...story.places].map(tag).join(' · ')}</p>
               )}
             </article>
           ))}
@@ -207,8 +261,9 @@ export default function Family({ seniorId }: { seniorId: string }) {
             {view.questions.map((q) => (
               <li key={q.id} className={`question ${q.status}`}>
                 <p>
-                  <span className="who">{q.asked_by}</span>
+                  <span className="who">{tag(q.asked_by)}</span>
                   {q.text}
+                  {english(q.text) && <span className="translation">{english(q.text)}</span>}
                 </p>
                 <p className="state">
                   {q.status === 'waiting' && 'Waiting to be asked'}
@@ -218,7 +273,7 @@ export default function Family({ seniorId }: { seniorId: string }) {
                       {q.answered_in.map((id, i) => (
                         <span key={id}>
                           {i > 0 && ', '}
-                          <a href={`#${id}`}>{titles.get(id)}</a>
+                          <a href={`#${id}`}>{tag(titles.get(id) ?? '')}</a>
                         </span>
                       ))}
                     </>

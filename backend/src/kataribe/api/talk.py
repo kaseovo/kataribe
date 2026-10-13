@@ -55,6 +55,10 @@ class WritingUp(BaseModel):
 
 class SharingChoice(BaseModel):
     share: bool
+    everything: bool = False
+    """Kept private, every story of the conversation, even one agreed to aloud.
+    Pressed while the conversation was still going, Keep it private is the last
+    word, and private is the safe way to be wrong."""
 
 
 def is_visitor(request: Request) -> bool:
@@ -175,19 +179,21 @@ def choose_sharing(
     request: Request,
     store: Annotated[Store, Depends(get_store)],
 ) -> WritingUp:
-    """What a visitor chose on screen for the stories with no answer about
-    sharing, most often because they ended it before the close or before
-    replying.
+    """What a visitor chose on screen: on the end screen, for the stories with
+    no answer about sharing, or with the buttons shown while it was closing.
 
-    It reaches only those stories: one they kept private aloud stays private,
-    whatever they press. The choice is kept on the session, apart from consent
-    in their own words, so the two can always be told apart."""
+    Sharing reaches only stories with no answer: one they kept private aloud
+    stays private, whatever they press. Keeping private reaches the same ones,
+    or, with `everything`, every story of the conversation. The choice is kept
+    on the session, apart from consent in their own words, so the two can
+    always be told apart."""
     _visitor(senior_id, request, store)
     _own_session(senior_id, session_id, store)
     if _writing_up(session_id, store).state != "written":
         raise HTTPException(status_code=409, detail="Not written up yet")
     for story in store.stories_for_session(session_id):
-        if not story.asked_to_share and not story.shared:
+        unanswered = not story.asked_to_share and not story.shared
+        if unanswered or (choice.everything and not choice.share):
             store.set_sharing(
                 story.id, visibility="family" if choice.share else "private", consent_quote=""
             )

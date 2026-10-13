@@ -244,6 +244,70 @@ def test_the_family_page_says_when_a_conversation_is_being_written_up(tmp_path: 
     assert (writing, written) == (True, False)
 
 
+def fake_translation(monkeypatch: pytest.MonkeyPatch) -> list[list[str]]:
+    """Every batch sent to be translated, answered with "EN:" before each text."""
+    sent: list[list[str]] = []
+
+    def translate(settings: Settings, texts: list[str], language: object) -> list[str]:
+        sent.append(texts)
+        return [f"EN:{text}" for text in texts]
+
+    monkeypatch.setattr("kataribe.brain.translate", translate)
+    return sent
+
+
+def test_a_family_page_in_japanese_comes_with_english_translated_once(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # So that someone without Japanese, such as a judge, can follow the page.
+    client, senior_id, _ = story_for(tmp_path, visibility="family")
+    sent = fake_translation(monkeypatch)
+
+    first = client.get(f"/api/family/{senior_id}/translations").json()
+    again = client.get(f"/api/family/{senior_id}/translations").json()
+
+    assert first["長野で生まれました。"] == "EN:長野で生まれました。"
+    assert first["生まれた村"] == "EN:生まれた村"
+    assert first["田中ハル"] == "EN:田中ハル"
+    assert again == first
+    # Kept after the first reading, not translated on every one.
+    assert len(sent) == 1
+
+
+def test_only_what_the_page_shows_is_translated(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    client, senior_id, _ = story_for(tmp_path, visibility="private")
+    sent = fake_translation(monkeypatch)
+
+    client.get(f"/api/family/{senior_id}/translations")
+
+    # A private story's words never leave for a translation.
+    assert "生まれた村" not in json.dumps(sent, ensure_ascii=False)
+
+
+def test_a_page_that_cannot_be_translated_is_shown_without(tmp_path: Path) -> None:
+    # The unit tests' own translation always fails.
+    client, senior_id, _ = story_for(tmp_path, visibility="family")
+
+    view = client.get(f"/api/family/{senior_id}").json()
+    translations = client.get(f"/api/family/{senior_id}/translations")
+
+    assert view["chapters"][0]["stories"][0]["title"] == "生まれた村"
+    assert (translations.status_code, translations.json()) == (200, {})
+
+
+def test_an_english_page_is_not_translated(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    sent = fake_translation(monkeypatch)
+    store = LocalStore(tmp_path)
+    senior_id = store.add_senior(name="Alex", language="en", visitor=True)
+
+    client = stored(tmp_path, gemini_api_key="k")
+    translations = client.get(f"/api/family/{senior_id}/translations").json()
+
+    assert (translations, sent) == ({}, [])
+
+
 def test_the_showcase_page_takes_no_questions(tmp_path: Path) -> None:
     # Every visitor sees it: a question sent from it would wait forever, and
     # every visitor would read the others'.

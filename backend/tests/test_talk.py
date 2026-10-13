@@ -19,6 +19,8 @@ from fastapi.testclient import TestClient
 
 from kataribe.access import is_public
 from kataribe.config import Settings, get_settings
+from kataribe.gemini import SessionCredentials
+from kataribe.languages import get
 from kataribe.main import create_app
 from kataribe.store import LocalStore, Quote, Story, Turn
 from tests.test_sessions import fake_credentials
@@ -119,8 +121,39 @@ def test_a_visitor_is_cued_to_close_sooner(tmp_path: Path, monkeypatch: pytest.M
     visitor = client.post(f"/api/talk/{demo}/sessions").json()
     person = client.post(f"/api/talk/{real}/sessions", headers=TEAM).json()
 
-    assert visitor["close_after_seconds"] == 180
+    assert visitor["close_after_seconds"] == 120
     assert person["close_after_seconds"] == 360
+
+
+def test_a_visitor_is_asked_whether_to_go_on_then_about_sharing_alone(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A judge lost the question about sharing in the middle of the full close:
+    # thanks, the question, next time's topic and goodbye, in one breath. So a
+    # visitor's clock asks whether to go on, and the question comes on its own.
+    client, demo, real = deployed(tmp_path, monkeypatch)
+    prompts: list[str] = []
+    monkeypatch.setattr(
+        "kataribe.api.sessions.mint_session_credentials",
+        lambda settings, tuning, context="": (
+            prompts.append(context)
+            or SessionCredentials(
+                token="t", model="m", expires_at=datetime.datetime.now(datetime.UTC)
+            )
+        ),
+    )
+
+    visitor = client.post(f"/api/talk/{demo}/sessions").json()
+    person = client.post(f"/api/talk/{real}/sessions", headers=TEAM).json()
+
+    english, japanese = get("en"), get("ja")
+    assert visitor["check_in"] == english.visitor_check_in
+    assert visitor["closing"] == english.visitor_finish
+    assert english.visitor_rules in prompts[0]
+    # A senior's close is the one the native-speaker review is judging.
+    assert person["check_in"] == ""
+    assert person["closing"] == japanese.closing
+    assert japanese.visitor_rules not in prompts[1]
 
 
 def test_a_conversation_is_kept_only_under_its_own_person(
@@ -274,6 +307,39 @@ def test_keeping_it_private_on_screen_settles_the_question(
     assert (kept.visibility, kept.asked_to_share) == ("private", True)
     session = store.get(session_id)
     assert session is not None and session.screen_consent == "private"
+
+
+def test_keep_it_private_pressed_while_closing_has_the_last_word(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Said yes aloud, then pressed Keep it private before it ended.
+    client, demo, _ = deployed(tmp_path, monkeypatch)
+    agreed = story("agreed", visibility="family", asked=True)
+    session_id = told(tmp_path, demo, [agreed, story("unasked")], "processed")
+
+    client.post(
+        f"/api/talk/{demo}/sessions/{session_id}/sharing",
+        json={"share": False, "everything": True},
+    )
+
+    stories = LocalStore(tmp_path).stories_for_session(session_id)
+    assert [s.visibility for s in stories] == ["private", "private"]
+
+
+def test_share_pressed_while_closing_never_overrides_a_no_said_aloud(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    client, demo, _ = deployed(tmp_path, monkeypatch)
+    declined = story("declined", asked=True)
+    session_id = told(tmp_path, demo, [declined, story("unasked")], "processed")
+
+    client.post(
+        f"/api/talk/{demo}/sessions/{session_id}/sharing",
+        json={"share": True, "everything": True},
+    )
+
+    stories = LocalStore(tmp_path).stories_for_session(session_id)
+    assert [s.visibility for s in stories] == ["private", "family"]
 
 
 def test_nothing_is_chosen_before_the_writing_up_is_done(

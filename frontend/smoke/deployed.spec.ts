@@ -141,13 +141,10 @@ test('a judge tries it from the start page, with nothing to sign in to', async (
   await page.evaluate(() => (window as unknown as { answer: () => void }).answer());
   await expect(page.locator('.talk-caption')).toContainText(HEARD_EN, { timeout: 90_000 });
   await page.getByRole('button', { name: 'Finish' }).click();
-  await page.getByRole('button', { name: 'End now' }).click();
-
-  // Written up after the upload returned, on Cloud Run, then asked on screen.
-  await expect(page.getByText('Before you go: may your family read these?')).toBeVisible({
-    timeout: 150_000,
-  });
-  await page.getByRole('button', { name: 'Let my family read them' }).click();
+  // Shared with the button shown while it closes, applied once it is written
+  // up, after the upload returned, on Cloud Run.
+  await page.getByRole('button', { name: 'Share with my family' }).click();
+  await expect(page.getByText(/now on your family page/)).toBeVisible({ timeout: 150_000 });
   await page.getByRole('link', { name: 'Open your family page' }).click();
   await expect(page.locator('.told blockquote').first()).toBeVisible();
 

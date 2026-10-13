@@ -5,10 +5,13 @@ ask a different question: does the model produce verbatim quotes in the first
 place, or is the guard having to catch it every time?
 """
 
+import re
+
 import pytest
 
 from kataribe import brain
 from kataribe.config import Settings
+from kataribe.languages import get
 from kataribe.store import Senior, Turn
 from tests.live import checks
 
@@ -60,12 +63,97 @@ async def test_extraction_does_not_add_what_was_not_said(settings: Settings) -> 
     verdict = checks.judge(
         settings,
         "Every place, person, date and detail in the extracted stories must "
-        "appear in the conversation. Adding a detail that was not said, however "
-        "plausible, fails. Leaving something out is fine.",
-        senior="\n".join(t.text for t in CONVERSATION if t.speaker == "senior"),
+        "appear in the conversation or in what was known about them beforehand. "
+        "Adding a detail that was not said, however plausible, fails. Leaving "
+        "something out is fine.",
+        # Her name, from her profile, is the summary's subject.
+        senior=f"Known beforehand:\n{brain._who(HARU)}\n\nWhat she said:\n"
+        + "\n".join(t.text for t in CONVERSATION if t.speaker == "senior"),
         interviewer=written,
     )
     assert verdict.passes, f"{verdict.reason}\n\n{written}"
+
+
+ALEX = Senior(
+    id="s2", name="Alex", name_reading="", birth_year=None, birthplace="", family=[], language="en"
+)
+
+# Spoken English the way people talk when they are thinking: fragments, false
+# starts, "so, yeah". The first summary rule kept to their words so closely that
+# it strung these fragments together: "Childhood house lived in from birth until
+# 11 years old, smaller than the one got after it, with a swimming pool."
+HALTING = [
+    Turn(
+        speaker="ai",
+        text="Which place from your childhood do you still think about?",
+        started_at=0.0,
+    ),
+    Turn(
+        speaker="senior",
+        text="Well, I really like remember about my childhood house before we moved.",
+        started_at=4.0,
+    ),
+    Turn(speaker="ai", text="What do you remember about the house?", started_at=12.0),
+    Turn(
+        speaker="senior",
+        text="It was smaller than the one we got after it. We had the swimming pool, "
+        "which was really nice. We lived there from my birth to until eleven years old.",
+        started_at=15.0,
+    ),
+    Turn(speaker="ai", text="Who did you spend time with there?", started_at=30.0),
+    Turn(
+        speaker="senior",
+        text="My cousins, in summer. They used to stay for two months, so, yeah. "
+        "For around eight people. Swimming by day, by night, and TV on Friday night.",
+        started_at=33.0,
+    ),
+]
+
+
+async def test_the_summary_reads_as_sentences_and_adds_nothing(settings: Settings) -> None:
+    extraction = brain.extract(settings, ALEX, HALTING)
+    stories, _ = brain.verify(extraction, HALTING)
+    assert stories, "Nothing was extracted from a clear memory"
+    written = "\n".join(f"{s.title}: {s.summary}" for s in stories)
+
+    verdict = checks.judge(
+        settings,
+        "These are titles and summaries of what the person said, written for their "
+        "family to read. They pass only if both hold. Every fact in them was said "
+        "by the person: any added detail, feeling or judgement fails ('wonderful', "
+        "'happy memories'). And each summary reads as plain, grammatical sentences "
+        "about the person in the third person, by name: phrases strung together as "
+        "they were spoken, a sentence with no subject, or 'I' fails.",
+        senior="\n".join(t.text for t in HALTING if t.speaker == "senior"),
+        interviewer=written,
+    )
+    assert verdict.passes, f"{verdict.reason}\n\n{written}"
+
+
+async def test_a_family_page_is_translated_faithfully(settings: Settings) -> None:
+    # Under the original, for a reader without Japanese, such as a judge.
+    texts = [
+        "田中ハル",
+        "長野",
+        "父の織物工場",
+        "田中ハルさんの父は、村で小さな織物の工場をやっていた。",
+        "母の白無垢を、仕立て直してもらったんですよ。",
+        "孫のゆか",
+    ]
+    english = brain.translate(settings, texts, get("ja"))
+
+    assert len(english) == len(texts)
+    assert not any(re.search(r"[\u3040-\u30ff\u4e00-\u9fff]", line) for line in english), english
+    verdict = checks.judge(
+        settings,
+        "Each English line translates the Japanese line with the same number. It "
+        "passes only if each says what its original says and nothing more: an added "
+        "detail, feeling or explanation fails, as does 'he' or 'she' where the "
+        "original does not say which. Names are written in the Latin alphabet.",
+        senior="\n".join(f"[{i}] {t}" for i, t in enumerate(texts)),
+        interviewer="\n".join(f"[{i}] {t}" for i, t in enumerate(english)),
+    )
+    assert verdict.passes, f"{verdict.reason}\n\n{english}"
 
 
 async def test_the_recap_repeats_rather_than_embellishes(settings: Settings) -> None:
@@ -80,8 +168,10 @@ async def test_the_recap_repeats_rather_than_embellishes(settings: Settings) -> 
         "This is a recap that will be read back to the person as what they said "
         "last time. It must contain only what they actually said. Any scene "
         "setting, impression or evaluation — 'surrounded by rich nature', 'it "
-        "was very moving' — fails, as does any detail they did not give.",
-        senior="\n".join(t.text for t in CONVERSATION if t.speaker == "senior"),
+        "was very moving' — fails, as does any detail they did not give. What was "
+        "known about them beforehand may be used.",
+        senior=f"Known beforehand:\n{brain._who(HARU)}\n\nWhat she said:\n"
+        + "\n".join(t.text for t in CONVERSATION if t.speaker == "senior"),
         interviewer=plan.story_so_far,
     )
     assert verdict.passes, f"{verdict.reason}\n\n{plan.story_so_far}"

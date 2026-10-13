@@ -75,6 +75,13 @@ CREATE TABLE IF NOT EXISTS plans (
     avoid_topics   TEXT NOT NULL DEFAULT '[]',
     updated_at     TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS translations (
+    senior_id TEXT NOT NULL,
+    source    TEXT NOT NULL,
+    english   TEXT NOT NULL,
+    PRIMARY KEY (senior_id, source)
+);
 """
 
 # Added after the first sessions were recorded, so they arrive by migration.
@@ -321,10 +328,20 @@ class Store(Protocol):
     def save_plan(self, senior_id: str, plan: Plan) -> None: ...
     def get_plan(self, senior_id: str) -> Plan: ...
 
+    # --- translations, so a family page can be read by someone without the language
+    def translations(self, senior_id: str) -> dict[str, str]:
+        """English for text shown on one person's family page, by the text."""
+        ...
+
+    def save_translations(self, senior_id: str, english: dict[str, str]) -> None:
+        """Adds to what is kept for them; a text already kept is replaced."""
+        ...
+
     # --- forgetting
     def forget_senior(self, senior_id: str) -> dict[str, int]:
         """Everything kept about one person: their sessions and every recording,
-        stories, plan and family questions. Returns how many of each went."""
+        stories, plan, family questions and translations. Returns how many
+        sessions, stories, questions and recordings went."""
         ...
 
 
@@ -648,6 +665,22 @@ class LocalStore:
             avoid_topics=json.loads(row["avoid_topics"]),
         )
 
+    # --- translations --------------------------------------------------
+
+    def translations(self, senior_id: str) -> dict[str, str]:
+        with self._connect() as db:
+            rows = db.execute(
+                "SELECT source, english FROM translations WHERE senior_id = ?", (senior_id,)
+            )
+            return {row["source"]: row["english"] for row in rows}
+
+    def save_translations(self, senior_id: str, english: dict[str, str]) -> None:
+        with self._connect() as db:
+            db.executemany(
+                "INSERT OR REPLACE INTO translations (senior_id, source, english) VALUES (?, ?, ?)",
+                [(senior_id, source, text) for source, text in english.items()],
+            )
+
     # --- forgetting ----------------------------------------------------
 
     def forget_senior(self, senior_id: str) -> dict[str, int]:
@@ -662,6 +695,7 @@ class LocalStore:
                     f"DELETE FROM {table} WHERE senior_id = ?", (senior_id,)
                 ).rowcount
             db.execute("DELETE FROM plans WHERE senior_id = ?", (senior_id,))
+            db.execute("DELETE FROM translations WHERE senior_id = ?", (senior_id,))
             db.execute("DELETE FROM seniors WHERE id = ?", (senior_id,))
         gone["recordings"] = 0
         for session_id in sessions:

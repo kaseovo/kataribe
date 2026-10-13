@@ -363,6 +363,21 @@ def test_a_plan_is_empty_until_one_is_saved(store: Store) -> None:
     assert (plan.next_questions, plan.avoid_topics) == (["初任給は?"], ["戦争"])
 
 
+def test_translations_are_kept_per_person_and_added_to(store: Store) -> None:
+    senior_id = store.add_senior(name="田中ハル")
+    other = store.add_senior(name="佐藤茂")
+    assert store.translations(senior_id) == {}
+
+    store.save_translations(senior_id, {"工場": "The factory"})
+    store.save_translations(senior_id, {"お着物": "The kimono", "工場": "The weaving factory"})
+
+    assert store.translations(senior_id) == {
+        "工場": "The weaving factory",
+        "お着物": "The kimono",
+    }
+    assert store.translations(other) == {}
+
+
 # --- forgetting --------------------------------------------------------------
 
 
@@ -377,6 +392,7 @@ def test_a_person_can_be_forgotten_entirely(store: Store) -> None:
     store.save_plan(
         senior_id, Plan(story_so_far="工場。", next_questions=[], avoid_topics=["戦争"])
     )
+    store.save_translations(senior_id, {"工場": "The factory"})
     other_session = started(store, kept)
     store.replace_stories(other_session, kept, [story("b", "釣り")])
 
@@ -389,6 +405,7 @@ def test_a_person_can_be_forgotten_entirely(store: Store) -> None:
     assert store.stories_for_senior(senior_id) == []
     assert store.family_questions(senior_id) == []
     assert store.get_plan(senior_id).is_empty
+    assert store.translations(senior_id) == {}
     # Nobody else is touched.
     assert [s.id for s in store.list_seniors()] == [kept]
     assert [s.id for s in store.stories_for_senior(kept)] == ["b"]
