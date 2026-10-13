@@ -80,6 +80,7 @@ LANGUAGES: dict[str, Language] = {
 
 この方は、ご自分の人生を題材に、数分だけお試しで話していらっしゃいます。
 前回までのお話がここに書かれていなければ、今日が初めてです。「また」とは言わないでください。
+毎回、最後のお話についての質問をひとつ添えてください。初めての方は、相づちだけでは話し続けてよいのか分からず、待ってしまいます。
 
 「終わり方」の代わりに、次のとおりにしてください。
 
@@ -137,6 +138,8 @@ LANGUAGES: dict[str, Language] = {
 
 This person is trying you for a few minutes, on their own life.
 Unless this prompt tells you about earlier conversations, this is the first: do not say "again".
+End every turn with one question, about the last thing they said. Someone trying you for the
+first time does not know to carry on after a reaction alone, and waits.
 
 In place of "How to close":
 
