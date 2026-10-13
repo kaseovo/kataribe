@@ -58,7 +58,7 @@ test('a shared story reaches the family, with her voice behind it', async ({ pag
   await page.goto(`/family/${seniorId}`);
 
   await expect(page.locator('h1')).toContainText('田中ハル');
-  await expect(page.locator('.chapter h2')).toContainText('子供時代');
+  await expect(page.locator('.chapter h2')).toContainText('Childhood');
   await expect(page.locator('.told h3')).toContainText('織物工場のこと');
   await expect(page.locator('.told blockquote')).toContainText('織物の工場');
   await expect(page.locator('.withheld')).toHaveCount(0);

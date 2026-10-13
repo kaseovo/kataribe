@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 
+import { lifeStage } from './lifeStages';
+
 interface Summary {
   id: string;
   status: string;
@@ -157,7 +159,7 @@ export default function Sessions() {
                       <h3>
                         {story.title}
                         <em>
-                          {story.life_stage}
+                          {lifeStage(story.life_stage)}
                           {story.approx_period && ` · ${story.approx_period}`}
                         </em>
                       </h3>

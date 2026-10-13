@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 
 import './App.css';
 import './Family.css';
+import { lifeStage } from './lifeStages';
 
 interface Quote {
   text: string;
@@ -128,7 +129,7 @@ export default function Family({ seniorId }: { seniorId: string }) {
       <header>
         <h1>{view.senior.name}</h1>
         <p className="life">
-          {view.senior.birth_year && `${view.senior.birth_year}年生まれ`}
+          {view.senior.birth_year && `Born in ${view.senior.birth_year}`}
           {view.senior.birthplace && ` · ${view.senior.birthplace}`}
         </p>
         {view.visitor && (
@@ -156,7 +157,7 @@ export default function Family({ seniorId }: { seniorId: string }) {
 
       {view.chapters.map((chapter) => (
         <section key={chapter.life_stage} className="chapter">
-          <h2>{chapter.life_stage}</h2>
+          <h2>{lifeStage(chapter.life_stage)}</h2>
           {chapter.stories.map((story) => (
             <article key={story.id} id={story.id} className="told">
               {askedFor(story.id).map((q) => (
@@ -241,14 +242,14 @@ export default function Family({ seniorId }: { seniorId: string }) {
           <form onSubmit={ask}>
             <input
               aria-label="Who is asking"
-              placeholder="Relation and name, e.g. 孫のゆか"
+              placeholder="Relation and name, e.g. granddaughter Yuka"
               maxLength={40}
               value={draft.asked_by}
               onChange={(e) => setDraft({ ...draft, asked_by: e.target.value })}
             />
             <textarea
               aria-label="Your question"
-              placeholder="結婚式のときのお着物は、どんなものでしたか?"
+              placeholder="What did you wear on your wedding day?"
               maxLength={300}
               rows={3}
               value={draft.text}
