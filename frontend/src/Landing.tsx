@@ -134,7 +134,7 @@ export default function Landing() {
     <div className="landing">
       <header>
         <h1>
-          kataribe <span lang="ja">語り部</span>
+          Kataribe <span lang="ja">語り部</span>
         </h1>
         <p className="lede">
           A voice AI that talks with an elderly person for a few minutes a day, and turns their
@@ -267,7 +267,7 @@ export default function Landing() {
         <p className="privacy">
           Your conversation is recorded and processed by Google’s Gemini. Your family page is
           reachable only by its link, kept in this browser, and shows only what you agree to share,
-          though the kataribe team can see full conversations to fix problems. Everything recorded
+          though the Kataribe team can see full conversations to fix problems. Everything recorded
           from this page is deleted once judging ends.
         </p>
       </section>

@@ -1,4 +1,4 @@
-# kataribe 語り部
+# Kataribe 語り部
 
 **A voice AI that talks with an elderly person for a few minutes a day, and turns their memories into a life story their family can read and hear.**
 

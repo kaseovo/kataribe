@@ -1,4 +1,4 @@
-"""Fills the AI Builder Cup submission template with the kataribe pitch.
+"""Fills the AI Builder Cup submission template with the Kataribe pitch.
 
     uv run --no-project --with python-pptx --with "qrcode[pil]" python docs/demo/deck/build.py
 
@@ -311,7 +311,7 @@ def team_details(slide):
 def brief(slide):
     text(
         slide, LEFT, TOP, 5.6, 0.55,
-        [P(R("kataribe ", 28, "semibold"), R("語り部", 24, "semibold", ACCENT_TEXT))],
+        [P(R("Kataribe ", 28, "semibold"), R("語り部", 24, "semibold", ACCENT_TEXT))],
         name="Name",
     )
     text(

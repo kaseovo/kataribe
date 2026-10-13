@@ -12,7 +12,7 @@ from kataribe.config import Settings, get_settings
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or get_settings()
-    app = FastAPI(title="kataribe", version=__version__)
+    app = FastAPI(title="Kataribe", version=__version__)
 
     app.add_middleware(
         CORSMiddleware,
@@ -34,7 +34,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             if request.state.team or is_public(request.url.path):
                 return await call_next(request)
             return Response(
-                status_code=401, headers={"WWW-Authenticate": 'Basic realm="kataribe team"'}
+                status_code=401, headers={"WWW-Authenticate": 'Basic realm="Kataribe team"'}
             )
 
     @app.get("/api/health")
