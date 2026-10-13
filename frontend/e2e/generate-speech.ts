@@ -14,8 +14,10 @@ export const SAMPLE_EN = join(CACHE, 'en.wav');
  *  leaks the right channel is visible in the transcript. */
 export const SESSION = join(CACHE, 'session-stereo.wav');
 
+/** No 私は: the Live API hears this voice's 私は as 私を, and the check against
+ *  the recording then rightly holds back the quote it is in. */
 export const UTTERANCE =
-  'こんにちは。私は昭和二十二年に、長野の小さな村で生まれました。' +
+  'こんにちは。昭和二十二年に、長野の小さな村で生まれました。' +
   '父は、村で小さな織物の工場をやっておりました。';
 
 /** Only ever on the right channel. If this word reaches the model, the replay
@@ -27,6 +29,12 @@ export const UTTERANCE_FR =
 export const UTTERANCE_EN =
   'Hello. I grew up in a small town by the sea, in Brittany. ' +
   'My grandfather had a boat, and every summer he took me out fishing at dawn.';
+
+/** A reply that asks after what was said in UTTERANCE_EN, in its words or the
+ *  plain ones for them: "What was the water like in the early morning?" is a
+ *  good answer to it, and names none of the original's nouns. */
+export const HEARD_EN =
+  /Brittany|grandfather|grandpa|boat|fish|catch|sea|ocean|water|coast|town|summer|dawn/i;
 
 export const INTERVIEWER_ONLY = '沖縄';
 const INTERVIEWER_LINE = `そうでしたか。${INTERVIEWER_ONLY}のお話も聞かせてください。`;

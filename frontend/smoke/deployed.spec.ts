@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 
 import { expect, request as fresh, test, type BrowserContext } from '@playwright/test';
 
-import { SAMPLE, SAMPLE_EN } from '../e2e/generate-speech';
+import { HEARD_EN, SAMPLE, SAMPLE_EN } from '../e2e/generate-speech';
 
 /**
  * The deployed service, end to end: what the local suite cannot reach. That a
@@ -30,22 +30,27 @@ test.afterAll(() => {
   }
 });
 
-/** The microphone replaced by a recording, played once. */
-async function speak(context: BrowserContext, sample: string) {
+/** The microphone replaced by a recording, played once: as soon as it opens,
+ *  or, `onCue`, when the test calls `window.answer()`. */
+async function speak(context: BrowserContext, sample: string, { onCue = false } = {}) {
   const wav = readFileSync(sample).toString('base64');
-  await context.addInitScript((b64: string) => {
-    const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-    navigator.mediaDevices.getUserMedia = async () => {
-      const ctx = new AudioContext();
-      const buffer = await ctx.decodeAudioData(bytes.buffer.slice(0) as ArrayBuffer);
-      const destination = ctx.createMediaStreamDestination();
-      const source = ctx.createBufferSource();
-      source.buffer = buffer;
-      source.connect(destination);
-      source.start();
-      return destination.stream;
-    };
-  }, wav);
+  await context.addInitScript(
+    ({ b64, onCue }: { b64: string; onCue: boolean }) => {
+      const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+      navigator.mediaDevices.getUserMedia = async () => {
+        const ctx = new AudioContext();
+        const buffer = await ctx.decodeAudioData(bytes.buffer.slice(0) as ArrayBuffer);
+        const destination = ctx.createMediaStreamDestination();
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(destination);
+        if (onCue) Object.assign(window, { answer: () => source.start() });
+        else source.start();
+        return destination.stream;
+      };
+    },
+    { b64: wav, onCue },
+  );
 }
 
 test('a stranger reaches the start page and a family page, and nothing else', async () => {
@@ -120,8 +125,9 @@ test('a judge tries it from the start page, with nothing to sign in to', async (
   page,
   context,
 }) => {
-  // No password anywhere in this test: it is a stranger's whole path.
-  await speak(context, SAMPLE_EN);
+  // No password anywhere in this test: it is a stranger's whole path. They
+  // answer the greeting rather than talk over it; see e2e/visitor.spec.ts.
+  await speak(context, SAMPLE_EN, { onCue: true });
 
   await page.goto('/');
   await page.getByLabel('Your name').fill('Smoke test');
@@ -130,10 +136,10 @@ test('a judge tries it from the start page, with nothing to sign in to', async (
   made.push(new URL(page.url()).pathname.split('/').pop()!);
 
   await page.getByRole('button', { name: 'Talk', exact: true }).click();
-  await expect(page.locator('.talk-caption')).toContainText(
-    /Brittany|grandfather|boat|fish|sea|town|summer|dawn/i,
-    { timeout: 90_000 },
-  );
+  await expect(page.locator('.talk-caption')).not.toBeEmpty({ timeout: 60_000 });
+  await expect(page.locator('.talk-phase')).toHaveText('Listening', { timeout: 60_000 });
+  await page.evaluate(() => (window as unknown as { answer: () => void }).answer());
+  await expect(page.locator('.talk-caption')).toContainText(HEARD_EN, { timeout: 90_000 });
   await page.getByRole('button', { name: 'Finish' }).click();
   await page.getByRole('button', { name: 'End now' }).click();
 

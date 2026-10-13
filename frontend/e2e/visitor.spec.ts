@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 
 import { expect, test } from '@playwright/test';
 
-import { SAMPLE_EN } from './generate-speech';
+import { HEARD_EN, SAMPLE_EN } from './generate-speech';
 
 /**
  * A judge trying it from the start page, the path the live URL exists for
@@ -16,6 +16,10 @@ import { SAMPLE_EN } from './generate-speech';
 test('a visitor goes from the start page to their own family page', async ({ page, context }) => {
   test.setTimeout(240_000);
 
+  // The microphone is replaced by a recording that starts when the test says,
+  // since a judge listens to the greeting before answering it. Played the
+  // moment the microphone opened, it could start with the greeting itself and
+  // be lost, leaving the interviewer waiting for an answer that had been given.
   const wav = readFileSync(SAMPLE_EN).toString('base64');
   await context.addInitScript((b64: string) => {
     const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
@@ -26,7 +30,7 @@ test('a visitor goes from the start page to their own family page', async ({ pag
       const source = ctx.createBufferSource();
       source.buffer = buffer;
       source.connect(destination);
-      source.start();
+      Object.assign(window, { answer: () => source.start() });
       return destination.stream;
     };
   }, wav);
@@ -43,11 +47,10 @@ test('a visitor goes from the start page to their own family page', async ({ pag
 
   await page.getByRole('button', { name: 'Talk', exact: true }).click();
   await expect(page.locator('.talk-caption')).not.toBeEmpty({ timeout: 60_000 });
+  await expect(page.locator('.talk-phase')).toHaveText('Listening', { timeout: 60_000 });
+  await page.evaluate(() => (window as unknown as { answer: () => void }).answer());
   // Heard: the interviewer asks after something they said.
-  await expect(page.locator('.talk-caption')).toContainText(
-    /Brittany|grandfather|boat|fish|sea|town|summer|dawn/i,
-    { timeout: 90_000 },
-  );
+  await expect(page.locator('.talk-caption')).toContainText(HEARD_EN, { timeout: 90_000 });
 
   // Finish asks the interviewer to wrap up rather than hanging up.
   await page.getByRole('button', { name: 'Finish' }).click();
