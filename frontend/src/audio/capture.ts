@@ -71,13 +71,12 @@ export async function startCapture(
   source: CaptureSource,
   onChunk: (pcm: Int16Array) => void,
 ): Promise<Capture> {
-  // A browser may ignore this and run at its own rate, so we read back what we
-  // actually got and resample from there.
-  const context = new AudioContext({ sampleRate: CAPTURE_RATE });
+  const { context, input } = await listenTo(source.stream);
   await context.audioWorklet.addModule(WORKLET_URL);
 
+  // A browser may ignore the rate asked for and run at its own, so we read back
+  // what we actually got and resample from there.
   const resampler = new Resampler(context.sampleRate, CAPTURE_RATE);
-  const input = context.createMediaStreamSource(source.stream);
   const node = new AudioWorkletNode(context, 'capture-processor');
   const chunks: Int16Array[] = [];
 
@@ -101,6 +100,23 @@ export async function startCapture(
     recorded: () => concat(chunks),
     inputRate: context.sampleRate,
   };
+}
+
+/** The stream, in a context running at the rate we send, so the browser does
+ *  the resampling where it will. Firefox will not connect a microphone to a
+ *  context at another rate than the device's, so there the context runs at the
+ *  device's rate and the resampler does the work. */
+async function listenTo(
+  stream: MediaStream,
+): Promise<{ context: AudioContext; input: MediaStreamAudioSourceNode }> {
+  const context = new AudioContext({ sampleRate: CAPTURE_RATE });
+  try {
+    return { context, input: context.createMediaStreamSource(stream) };
+  } catch {
+    await context.close();
+    const native = new AudioContext();
+    return { context: native, input: native.createMediaStreamSource(stream) };
+  }
 }
 
 function concat(chunks: Int16Array[]): Int16Array {
