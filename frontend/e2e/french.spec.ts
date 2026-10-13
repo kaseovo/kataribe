@@ -29,7 +29,7 @@ test('holds a French conversation and extracts a story from it', async ({ page, 
     };
   }, wav);
 
-  await page.goto('/');
+  await page.goto('/console');
 
   await addPerson(page, { name: 'Jean Dupont', birthplace: 'Bretagne', language: 'fr' });
 

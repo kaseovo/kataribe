@@ -1,4 +1,5 @@
-"""What a stranger can reach on the public URL: a family page, and nothing else."""
+"""What a stranger can reach on the public URL: the start page, a family page,
+a visitor's screen, and nothing else."""
 
 import base64
 from pathlib import Path
@@ -33,7 +34,7 @@ def basic(password: str) -> dict[str, str]:
 
 @pytest.mark.parametrize(
     "path",
-    ["/", "/api/sessions", "/api/seniors", "/api/sessions/abc/audio", "/api/voices"],
+    ["/console", "/api/sessions", "/api/seniors", "/api/sessions/abc/audio", "/api/voices"],
 )
 def test_the_console_and_its_data_are_closed_to_strangers(tmp_path: Path, path: str) -> None:
     client, _ = deployed(tmp_path)
@@ -54,7 +55,7 @@ def test_the_team_gets_in_with_the_password(tmp_path: Path) -> None:
     client, _ = deployed(tmp_path)
 
     assert client.get("/api/sessions", headers=basic("pw")).status_code == 200
-    assert client.get("/", headers=basic("pw")).text == "<html>kataribe</html>"
+    assert client.get("/console", headers=basic("pw")).text == "<html>kataribe</html>"
 
 
 def test_a_wrong_password_is_a_stranger(tmp_path: Path) -> None:
@@ -72,6 +73,15 @@ def test_a_relative_reaches_the_family_page_with_nothing_to_sign_in_to(tmp_path:
     # Loaded by the browser without the password, for any page that listens.
     assert client.get("/capture-processor.js").status_code == 200
     assert client.get(f"/api/family/{senior_id}").json()["senior"]["name"] == "田中ハル"
+
+
+def test_a_stranger_reaches_the_start_page_with_nothing_to_sign_in_to(tmp_path: Path) -> None:
+    client, _ = deployed(tmp_path)
+
+    assert client.get("/").text == "<html>kataribe</html>"
+    assert client.get("/api/try").status_code == 200
+    # The start page, not everything under it.
+    assert client.get("/api/try/anything").status_code == 401
 
 
 def test_a_relative_can_send_a_question(tmp_path: Path) -> None:

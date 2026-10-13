@@ -11,6 +11,7 @@ session is close to 60 MB, and a quote needs a few seconds of it.
 """
 
 import json
+import secrets
 import sqlite3
 import uuid
 from dataclasses import dataclass, field
@@ -78,7 +79,11 @@ CREATE TABLE IF NOT EXISTS plans (
 
 # Added after the first sessions were recorded, so they arrive by migration.
 LATER_COLUMNS = {
-    "seniors": {"language": "TEXT NOT NULL DEFAULT 'ja'"},
+    "seniors": {
+        "language": "TEXT NOT NULL DEFAULT 'ja'",
+        # Made by a stranger from the start page, to try it themselves.
+        "visitor": "INTEGER NOT NULL DEFAULT 0",
+    },
     # Private unless the person said otherwise, and said so in words we kept.
     "stories": {
         "visibility": "TEXT NOT NULL DEFAULT 'private'",
@@ -97,6 +102,9 @@ LATER_COLUMNS = {
         # When the status last changed, so a reading that stalled can be told
         # from one still going.
         "status_at": "TEXT",
+        # What a visitor chose on screen for stories with no answer aloud.
+        "screen_consent": "TEXT",
+        "screen_consent_at": "TEXT",
     },
 }
 
@@ -131,9 +139,10 @@ class Story:
     visibility: str = "private"
     consent_quote: str = ""
     asked_to_share: bool = True
-    """Whether they were asked if their family may read it, whatever they said.
-    A private story never asked about is asked about at the close of the next
-    conversation; a private story they were asked about stays theirs."""
+    """Whether they answered when asked if their family may read it, whatever
+    they said. A private story never asked about, or asked about with no reply,
+    is asked about at the close of the next conversation, or on a visitor's end
+    screen; a private story they answered about stays theirs."""
 
     @property
     def shared(self) -> bool:
@@ -149,6 +158,17 @@ class Senior:
     birthplace: str
     family: list[str]
     language: str = "ja"
+    visitor: bool = False
+    """A persona a stranger made from the start page, such as a judge trying it
+    on their own life. Only these may be talked to without the team password."""
+    created_at: datetime | None = None
+
+
+def new_senior_id(visitor: bool) -> str:
+    """A visitor's id is the only key to their screen and their family page, and
+    a stranger chose to share nothing else, so it is long enough that it cannot
+    be guessed. The team's people keep short ids, easier to read in the console."""
+    return secrets.token_urlsafe(16) if visitor else uuid.uuid4().hex[:12]
 
 
 @dataclass(frozen=True)
@@ -200,6 +220,11 @@ class Session:
     processing_error: str | None = None
     carried_questions: list[str] = field(default_factory=list)
     status_at: datetime | None = None
+    screen_consent: str | None = None
+    """"shared" or "private": what a visitor chose on the end screen for this
+    session's stories that got no answer about sharing aloud. Kept apart
+    from consent in their own words, which lives on each story."""
+    screen_consent_at: datetime | None = None
 
 
 class MissingAudioParts(ValueError):
@@ -219,6 +244,7 @@ class Store(Protocol):
         birthplace: str = "",
         family: list[str] | None = None,
         language: str = "ja",
+        visitor: bool = False,
     ) -> str: ...
     def get_senior(self, senior_id: str) -> Senior | None: ...
     def list_seniors(self) -> list[Senior]: ...
@@ -244,7 +270,12 @@ class Store(Protocol):
         input_label: str,
     ) -> None: ...
     def set_status(self, session_id: str, status: str, error: str | None = None) -> None: ...
+    def set_screen_consent(self, session_id: str, choice: str) -> None: ...
     def list_sessions(self, limit: int = 100) -> list[Session]: ...
+    def sessions_for_senior(self, senior_id: str) -> list[Session]:
+        """Newest first."""
+        ...
+
     def get(self, session_id: str) -> Session | None: ...
     def has_audio(self, session_id: str) -> bool: ...
     def open_audio(self, session_id: str) -> BinaryIO | None:
@@ -328,12 +359,13 @@ class LocalStore:
         birthplace: str = "",
         family: list[str] | None = None,
         language: str = "ja",
+        visitor: bool = False,
     ) -> str:
-        senior_id = uuid.uuid4().hex[:12]
+        senior_id = new_senior_id(visitor)
         with self._connect() as db:
             db.execute(
                 "INSERT INTO seniors (id, name, name_reading, birth_year, birthplace, family,"
-                " language, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                " language, visitor, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (
                     senior_id,
                     name,
@@ -342,6 +374,7 @@ class LocalStore:
                     birthplace,
                     json.dumps(family or [], ensure_ascii=False),
                     language,
+                    int(visitor),
                     datetime.now(UTC).isoformat(),
                 ),
             )
@@ -362,6 +395,8 @@ class LocalStore:
             birthplace=row["birthplace"],
             family=json.loads(row["family"]),
             language=row["language"] if "language" in columns else "ja",
+            visitor=bool(row["visitor"]) if "visitor" in columns else False,
+            created_at=datetime.fromisoformat(row["created_at"]),
         )
 
     def list_seniors(self) -> list[Senior]:
@@ -431,10 +466,25 @@ class LocalStore:
                 (status, error, datetime.now(UTC).isoformat(), session_id),
             )
 
+    def set_screen_consent(self, session_id: str, choice: str) -> None:
+        with self._connect() as db:
+            db.execute(
+                "UPDATE sessions SET screen_consent = ?, screen_consent_at = ? WHERE id = ?",
+                (choice, datetime.now(UTC).isoformat(), session_id),
+            )
+
     def list_sessions(self, limit: int = 100) -> list[Session]:
         with self._connect() as db:
             rows = db.execute(
                 "SELECT * FROM sessions ORDER BY started_at DESC LIMIT ?", (limit,)
+            ).fetchall()
+        return [_to_session(row) for row in rows]
+
+    def sessions_for_senior(self, senior_id: str) -> list[Session]:
+        with self._connect() as db:
+            rows = db.execute(
+                "SELECT * FROM sessions WHERE senior_id = ? ORDER BY started_at DESC",
+                (senior_id,),
             ).fetchall()
         return [_to_session(row) for row in rows]
 
@@ -643,6 +693,10 @@ def _to_session(row: sqlite3.Row) -> Session:
         status_at=datetime.fromisoformat(row["status_at"])
         if "status_at" in keys and row["status_at"]
         else None,
+        screen_consent=row["screen_consent"] if "screen_consent" in keys else None,
+        screen_consent_at=datetime.fromisoformat(row["screen_consent_at"])
+        if "screen_consent_at" in keys and row["screen_consent_at"]
+        else None,
     )
 
 
@@ -677,4 +731,5 @@ __all__ = [
     "Store",
     "Story",
     "Turn",
+    "new_senior_id",
 ]

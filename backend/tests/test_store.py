@@ -170,6 +170,28 @@ def test_sessions_are_listed_newest_first(store: Store) -> None:
     assert len(store.list_sessions(limit=2)) == 2
 
 
+def test_a_persons_sessions_are_theirs_alone_newest_first(store: Store) -> None:
+    senior_id = store.add_senior(name="田中ハル")
+    mine = [started(store, senior_id) for _ in range(2)]
+    started(store, store.add_senior(name="佐藤茂"))
+
+    listed = store.sessions_for_senior(senior_id)
+
+    assert {s.id for s in listed} == set(mine)
+    assert [s.started_at for s in listed] == sorted((s.started_at for s in listed), reverse=True)
+
+
+def test_a_choice_made_on_screen_is_kept_on_the_session(store: Store) -> None:
+    session_id = started(store)
+
+    store.set_screen_consent(session_id, "shared")
+
+    session = store.get(session_id)
+    assert session is not None
+    assert session.screen_consent == "shared"
+    assert session.screen_consent_at is not None
+
+
 def test_a_status_change_says_when_it_happened(store: Store) -> None:
     session_id = started(store)
 
@@ -217,6 +239,19 @@ def test_a_senior_reads_back_as_entered(store: Store) -> None:
     assert (senior.name, senior.name_reading, senior.birth_year) == ("田中ハル", "たなかはる", 1947)
     assert (senior.birthplace, senior.family, senior.language) == ("長野", ["孫のゆか"], "ja")
     assert store.get_senior("nobody") is None
+
+
+def test_a_visitor_persona_reads_back_as_one_with_an_id_nobody_can_guess(store: Store) -> None:
+    visitor_id = store.add_senior(name="Alex", language="en", visitor=True)
+    person_id = store.add_senior(name="田中ハル")
+
+    visitor = store.get_senior(visitor_id)
+    person = store.get_senior(person_id)
+
+    assert visitor is not None and person is not None
+    assert (visitor.visitor, person.visitor) == (True, False)
+    assert len(visitor_id) >= 22  # 128 random bits: the link is the only key
+    assert visitor.created_at is not None and person.created_at is not None
 
 
 def test_seniors_are_listed_in_the_order_they_were_added(store: Store) -> None:

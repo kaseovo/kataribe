@@ -163,6 +163,60 @@
   color: var(--accent);
 }
 
+/* A visitor's screen: the links back, the writing-up, and the one question
+   about stories that got no answer about sharing. */
+a.talk-button {
+  display: inline-block;
+  text-decoration: none;
+}
+
+.talk-links {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.75rem 2rem;
+  font-size: 1.5rem;
+}
+
+.talk-links a {
+  color: var(--accent);
+}
+
+.talk-quiet {
+  padding: 0.6em 1.4em;
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.talk-ask {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.talk-titles {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: clamp(1.6rem, 3.5vw, 1.9rem);
+  color: var(--accent);
+}
+
+.talk-choices {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .talk-presence,
   .talk.speaking .talk-presence,

@@ -31,10 +31,16 @@ export interface InterviewCallbacks {
   /** Whether the recording reached the server. Until it has, the browser holds
    *  the only copy, and whoever is in front of it should be told. */
   onSaved?: (saved: boolean) => void;
+  /** The interviewer has been told to close, by the clock or by close(). */
+  onClosing?: () => void;
 }
 
 /** The server would not start a conversation, with its HTTP status: 429 means
  *  enough for today, 401 that this screen needs signing in. */
+/** How long to wait for Gemini Live to accept the connection before saying it
+ *  cannot talk just now, rather than leaving someone looking at "Connecting…". */
+const CONNECT_TIMEOUT_MS = 20_000;
+
 export class StartRefused extends Error {
   readonly status: number;
 
@@ -47,6 +53,9 @@ export class StartRefused extends Error {
 export interface Interview {
   sessionId: string;
   stop: () => Promise<Blob>;
+  /** Asks the interviewer to close now rather than when the clock says: thanks,
+   *  the question about sharing, goodbye. The conversation goes on until stop(). */
+  close: () => void;
 }
 
 interface SessionResponse {
@@ -101,6 +110,7 @@ export async function startInterview(
   let capture: Capture | undefined;
   let heartbeat: ReturnType<typeof setInterval> | undefined;
   let closer: ReturnType<typeof setTimeout> | undefined;
+  let closingSent = false;
   // When the microphone opened, on the playback clock, so both sides of the
   // recording share one timeline.
   let micStartSec = 0;
@@ -149,10 +159,20 @@ export async function startInterview(
     return finished;
   };
 
+  // A connection the server closes before setup completes, as it does when the
+  // project's credits have run out, leaves live.connect() waiting forever. So a
+  // close before the conversation has started fails the start at once.
+  let refuse: (reason: Error) => void = () => undefined;
+  const refused = new Promise<never>((_, reject) => {
+    refuse = reject;
+  });
+  refused.catch(() => undefined);
+
   const closed = (reason: string) => {
     if (stopping || lost) return;
     lost = reason;
     if (ready) callbacks.onClosed(reason, finish(reason));
+    else refuse(new Error(`Connection lost before the conversation started (${reason})`));
   };
 
   // Turns are stamped with when they began, so a stored transcript can be
@@ -171,7 +191,7 @@ export async function startInterview(
     callbacks.onTranscript(speaker, delta);
   };
 
-  session = await ai.live.connect({
+  const connecting = ai.live.connect({
     model,
     // The interviewer prompt, voice and VAD are locked into the token server-side.
     config: {},
@@ -215,6 +235,21 @@ export async function startInterview(
         closed(`Closed ${event.code}: ${event.reason || 'no reason given'}`),
     },
   });
+  let giveUp: ReturnType<typeof setTimeout> | undefined;
+  const tooSlow = new Promise<never>((_, reject) => {
+    giveUp = setTimeout(() => reject(new Error('Gemini Live did not answer')), CONNECT_TIMEOUT_MS);
+  });
+  try {
+    session = await Promise.race([connecting, refused, tooSlow]);
+  } catch (error) {
+    stopping = true;
+    void playback.close();
+    // Settles later, if ever; nothing is listening by then.
+    void connecting.then((late) => late.close(), () => undefined);
+    throw error;
+  } finally {
+    clearTimeout(giveUp);
+  }
 
   // The interviewer speaks first. A stage direction rather than words put in
   // anyone's mouth: it is not spoken aloud and never reaches the transcript,
@@ -272,11 +307,14 @@ export async function startInterview(
   // the screen says when, the same way it said to begin. The close is where the
   // person is asked whether their family may read today's stories; finishing
   // before it leaves them to be asked next time.
-  if (closing) {
-    closer = setTimeout(() => {
-      if (!stopping && !lost) session?.sendRealtimeInput({ text: closing });
-    }, closeAfterSeconds * 1000);
-  }
+  const close = () => {
+    if (!closing || closingSent || stopping || lost) return;
+    closingSent = true;
+    clearTimeout(closer);
+    session?.sendRealtimeInput({ text: closing });
+    callbacks.onClosing?.();
+  };
+  if (closing) closer = setTimeout(close, closeAfterSeconds * 1000);
 
   if (lost) {
     // Closed before anyone could speak: the microphone only opened just now,
@@ -290,7 +328,7 @@ export async function startInterview(
   }
   ready = true;
 
-  return { sessionId, stop: () => finish() };
+  return { sessionId, stop: () => finish(), close };
 }
 
 function encodeBase64(pcm: Int16Array): string {

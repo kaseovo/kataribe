@@ -152,6 +152,13 @@ class FamilyView(BaseModel):
     withheld: int
     """Stories the person has not agreed to share. Counted, never shown."""
     questions: list[FamilyQuestionView] = Field(default_factory=list)
+    writing: bool = False
+    """A conversation is still being written up, so more may be on its way."""
+    showcase: bool = False
+    """The page the start page shows every visitor. Read-only: a question sent
+    from it would wait forever, and every visitor would read the others'."""
+    visitor: bool = False
+    """Their own persona, made from the start page: the page offers to talk again."""
 
 
 class PlanView(BaseModel):
@@ -211,6 +218,8 @@ class SessionDetail(SessionSummary):
     transcript: list[TurnView]
     stories: list[StoryView]
     processing_error: str | None = None
+    screen_consent: str | None = None
+    """What a visitor chose on the end screen for stories with no answer aloud."""
 
 
 @router.get("/voices")
@@ -304,7 +313,9 @@ def create_session(
         language=tuning.language,
         opening=get(tuning.language).opening,
         closing=get(tuning.language).closing,
-        close_after_seconds=settings.close_after_seconds,
+        close_after_seconds=settings.visitor_close_after_seconds
+        if senior and senior.visitor
+        else settings.close_after_seconds,
     )
 
 
@@ -451,11 +462,16 @@ def read_session(session_id: str, store: Annotated[Store, Depends(get_store)]) -
             for story in store.stories_for_session(session_id)
         ],
         processing_error=session.processing_error,
+        screen_consent=session.screen_consent,
     )
 
 
 @router.get("/family/{senior_id}")
-def read_family_view(senior_id: str, store: Annotated[Store, Depends(get_store)]) -> FamilyView:
+def read_family_view(
+    senior_id: str,
+    settings: Annotated[Settings, Depends(get_settings)],
+    store: Annotated[Store, Depends(get_store)],
+) -> FamilyView:
     """Only what the person agreed to share, grouped into chapters.
 
     The filtering happens in the query, not in the caller, so there is no way to
@@ -503,11 +519,20 @@ def read_family_view(senior_id: str, store: Annotated[Store, Depends(get_store)]
         )
 
     shared_ids = {story.id for story in shared}
+    now = datetime.datetime.now(tz=datetime.UTC)
     return FamilyView(
         senior=SeniorView(**senior.__dict__),
         chapters=chapters,
         withheld=len(everything) - len(shared),
         questions=[_family_safe(q, shared_ids) for q in store.family_questions(senior_id)],
+        # A reading that stalled is not on its way, and saying so would leave
+        # them waiting for nothing.
+        writing=any(
+            s.status in ("queued", "processing") and not can_retry(s, now)
+            for s in store.sessions_for_senior(senior_id)
+        ),
+        showcase=senior_id == settings.showcase_senior,
+        visitor=senior.visitor,
     )
 
 
@@ -530,6 +555,8 @@ def ask_a_question(
 ) -> FamilyQuestionView:
     if store.get_senior(senior_id) is None:
         raise HTTPException(status_code=404, detail=f"No senior {senior_id}")
+    if senior_id == settings.showcase_senior:
+        raise HTTPException(status_code=403, detail="This page is read-only")
 
     # Screened before it is stored, so a question never sits waiting unchecked
     # against what she refused. If it cannot be checked, it is not taken.

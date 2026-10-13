@@ -42,6 +42,8 @@ interface Detail extends Summary {
   transcript: Turn[];
   stories: Story[];
   processing_error: string | null;
+  /** What a visitor chose on the end screen for stories with no answer aloud. */
+  screen_consent: 'shared' | 'private' | null;
 }
 
 const SPEAKER_LABEL: Record<string, string> = { senior: 'お話しされた方', ai: '聞き手' };
@@ -131,6 +133,14 @@ export default function Sessions() {
           {open?.id === session.id && (
             <div className="detail">
               {open.processing_error && <p className="failure">{open.processing_error}</p>}
+              {open.screen_consent && (
+                <p className="empty">
+                  On the end screen, the visitor chose to{' '}
+                  {open.screen_consent === 'shared'
+                    ? 'share the stories that got no answer aloud.'
+                    : 'keep the stories that got no answer aloud private.'}
+                </p>
+              )}
               {open.can_process && (
                 <button className="process-again" onClick={() => processAgain(open.id)}>
                   Process again

@@ -211,3 +211,31 @@
   color: #e08573;
   font-size: 0.9rem;
 }
+
+/* A visitor's own page, and the notices that a story is on its way or that
+   the showcase takes no questions. */
+.family .yours {
+  margin: 0.75rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.family .yours a,
+.asking .read-only a {
+  color: var(--accent);
+}
+
+.writing {
+  margin: 0 0 2rem;
+  padding: 0.75rem 1rem;
+  border-left: 3px solid var(--accent);
+  background: var(--panel);
+  line-height: 1.7;
+}
+
+.asking .read-only {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.7;
+}

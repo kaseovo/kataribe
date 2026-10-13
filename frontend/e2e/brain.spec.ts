@@ -26,7 +26,7 @@ test('records a session against a person and extracts a story from it', async ({
     };
   }, wav);
 
-  await page.goto('/');
+  await page.goto('/console');
 
   await addPerson(page, {
     name: '田中ハル',

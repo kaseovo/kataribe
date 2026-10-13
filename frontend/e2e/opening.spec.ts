@@ -21,7 +21,7 @@ test('the interviewer speaks first, before anyone has said anything', async ({ p
     };
   });
 
-  await page.goto('/');
+  await page.goto('/console');
   await addPerson(page, { name: 'Jean Dupont', birthplace: 'Bretagne', language: 'fr' });
   await page.getByRole('button', { name: /start conversation/i }).click();
 

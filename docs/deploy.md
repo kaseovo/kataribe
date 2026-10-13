@@ -16,12 +16,13 @@ The app runs on Cloud Run in Tokyo, from one image that serves both the API and 
 
 ## Who can reach what
 
-Everything sits behind the team password except what a family page needs, and the screens of demo personas.
+Everything sits behind the team password except the start page, what a family page needs, and visitors' screens.
 
-- **Family page**, `/family/{senior_id}`: open to anyone with the link. It shows only stories that were agreed to be shared.
+- **The start page**, `/`: open to anyone. A stranger, such as a judge, makes a persona of their own there and talks to it. See *Judges try it themselves* in [roadmap.md](roadmap.md).
+- **Family page**, `/family/{senior_id}`: open to anyone with the link. It shows only stories that were agreed to be shared. The showcase persona's (`SHOWCASE` in the Makefile) takes no questions.
 - **A senior's own screen**, `/talk/{senior_id}`: the page is open, but talking needs the team password, which the browser asks for. A tablet in someone's home stays signed in. A stranger able to talk as someone could put invented stories into their life story, which their family reads.
-- **Demo personas**, listed in `VISITORS` in the Makefile: their screen works for anyone, up to 20 conversations a day each, counted in Japan time. Never list a real person.
-- **The console**, every transcript and every recording: the team password.
+- **Visitor personas**, made from the start page: their screen works for anyone with its link, which is 128 random bits. All visitors together get 30 conversations and 100 new personas a day, counted in Japan time.
+- **The console**, `/console`, every transcript and every recording: the team password.
 
 To sign in, open the URL and enter any user name and the password:
 
@@ -38,9 +39,30 @@ make smoke    # a real conversation on the live service, checked, then forgotten
 
 `make deploy` sends the working tree minus anything git-ignored, so `backend/.env` never leaves the machine. Every revision is kept: a bad one is undone by sending traffic back to the previous revision in the Cloud Run console.
 
-`make smoke` costs a few cents of Gemini. It checks that a stranger reaches only a family page, then holds a conversation with a person of its own, confirms the recording reached the bucket, the transcript reached Firestore and a story was extracted after the upload, and forgets that person and everything they produced.
+`make smoke` costs a few cents of Gemini. It checks that a stranger reaches only the start page and a family page, then holds a conversation with a person of its own, confirms the recording reached the bucket, the transcript reached Firestore and a story was extracted after the upload. Then it does what a judge does, with no password: makes a visitor persona from the start page, talks, ends early, shares on the end screen, and plays a quote from its family page. It forgets both people and everything they produced.
+
+A health check cannot see a Gemini key that has stopped working, which is what judges would hit, so `make smoke` is run by hand every morning while judging lasts.
 
 The `gcloud` CLI needs a Python with SSL. If it fails to load, point it at one: `export CLOUDSDK_PYTHON=/opt/homebrew/bin/python3`.
+
+## While judges may arrive
+
+From the submission on Oct 17 to the end of judging on Nov 6. Decided in [roadmap.md](roadmap.md), *Judges try it themselves*.
+
+- **Gemini must be paid for.** The key bills against prepaid credits in AI Studio, and when they ran out on 2026-10-12 every conversation was refused with `1011 Your prepayment credits are depleted`. Token minting kept working, so nothing but a real conversation shows it. The Cloud trial credit does not cover Gemini.
+- **The nightly eval gets a key of its own**, in the repository's `KATARIBE_GEMINI_API_KEY` secret, so testing cannot use up what judges need.
+- **One instance stays warm**, `MIN_INSTANCES=1`, the Makefile's default until Nov 6. A cold start measured 4.6 s, nearly all of it Cloud Run starting the container; startup CPU boost was already on.
+- **The deploy sets** `TRY_LANGUAGES=en` (`en,ja` once the native-speaker review passes), `SHOWCASE` to the demo persona and `VIDEO_URL` to the video.
+- **Watched by** an uptime check on `/api/health`, Error Reporting by email, the budget above, and `make smoke` each morning.
+- **Frozen.** The submitted commit is tagged and deployed. Only an outage is fixed, and each fix is noted in the README.
+- **Afterwards**, on Nov 7 unless the project is shortlisted, every visitor persona is forgotten, as the start page promises, and `MIN_INSTANCES` goes back to 0:
+
+```sh
+cd backend
+KATARIBE_STORAGE=cloud KATARIBE_GCP_PROJECT=gen-lang-client-0821244556 \
+  KATARIBE_RECORDINGS_BUCKET=kataribe-recordings-0821244556 \
+  uv run python forget.py --visitors
+```
 
 ## Forgetting a person
 

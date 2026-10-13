@@ -6,7 +6,7 @@ from fastapi.responses import FileResponse
 
 from kataribe import __version__
 from kataribe.access import is_public, is_team
-from kataribe.api import sessions, talk
+from kataribe.api import sessions, talk, visitors
 from kataribe.config import Settings, get_settings
 
 
@@ -43,6 +43,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.include_router(sessions.router)
     app.include_router(talk.router)
+    app.include_router(visitors.router)
 
     if settings.static_dir:
         pages = settings.static_dir.resolve()

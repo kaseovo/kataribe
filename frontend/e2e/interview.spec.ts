@@ -28,7 +28,7 @@ test('holds a Japanese conversation through the real page', async ({ page, conte
     if (message.text().includes('[kataribe]')) diagnostics.push(message.text());
   });
 
-  await page.goto('/');
+  await page.goto('/console');
   await page.getByRole('button', { name: /start conversation/i }).click();
 
   // The microphone is being heard, which is all the screen can show while
@@ -71,7 +71,7 @@ test('holds a Japanese conversation through the real page', async ({ page, conte
 });
 
 test('replays a downloaded session in place of the microphone', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/console');
   await page.locator('.replay input[type="file"]').setInputFiles(SESSION);
 
   await page.getByRole('button', { name: /replay recording/i }).click();

@@ -1,12 +1,14 @@
 """Who may reach what, once the app is on a public URL.
 
-Two audiences share one address. A relative arrives at a link to one person's
-family page and must get there with nothing to sign in to. The team's console,
-with every transcript and every recording, private stories included, must not be
-reachable by anyone else at all.
+Three audiences share one address. A relative arrives at a link to one person's
+family page and must get there with nothing to sign in to. A stranger, such as a
+judge, arrives at the start page and may make a persona of their own to talk to.
+The team's console, with every transcript and every recording, private stories
+included, must not be reachable by anyone else at all.
 
-So everything is closed behind the team password except what a family page
-needs. With no password set, as in local development, everything is open.
+So everything is closed behind the team password except the start page and what
+a family page or a visitor's screen needs. With no password set, as in local
+development, everything is open.
 """
 
 import base64
@@ -15,9 +17,12 @@ import re
 import secrets
 
 PUBLIC = [
+    # The start page, and what it reads and sends. The console is at /console.
+    re.compile(r"/"),
+    re.compile(r"/api/try"),
     re.compile(r"/family/[\w-]+/?"),  # the family page itself
-    # The senior's screen. The page is open; its API lets a visitor through only
-    # for demo personas, and checks that itself (api/talk.py).
+    # The senior's screen. The page is open; its API lets a stranger through only
+    # for visitor personas, and checks that itself (api/talk.py).
     re.compile(r"/talk/[\w-]+/?"),
     re.compile(r"/api/talk/[\w-]+(?:/.*)?"),
     re.compile(r"/api/family/.+"),  # what it reads, the questions it sends, the quote clips

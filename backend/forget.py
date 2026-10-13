@@ -7,6 +7,10 @@ whichever store the settings name, so for the deployed one:
 
     KATARIBE_STORAGE=cloud KATARIBE_GCP_PROJECT=... KATARIBE_RECORDINGS_BUCKET=... \\
         uv run python forget.py --senior-id abc
+
+`--visitors` forgets every persona a stranger made from the start page, which the
+start page promises once judging is over. It never touches the team's people,
+the showcase among them: they are not visitors.
 """
 
 import argparse
@@ -29,11 +33,20 @@ def store_for(settings: Settings) -> Store:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--senior-id", required=True)
+    who = parser.add_mutually_exclusive_group(required=True)
+    who.add_argument("--senior-id")
+    who.add_argument("--visitors", action="store_true", help="every visitor persona")
     args = parser.parse_args()
 
     settings = Settings()
     store = store_for(settings)
+    if args.visitors:
+        visitors = [senior for senior in store.list_seniors() if senior.visitor]
+        for senior in visitors:
+            store.forget_senior(senior.id)
+        print(f"Forgot {len(visitors)} visitor persona(s) from the {settings.storage} store")
+        return
+
     senior = store.get_senior(args.senior_id)
     if senior is None:
         raise SystemExit(f"No one with id {args.senior_id} in the {settings.storage} store")

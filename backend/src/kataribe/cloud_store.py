@@ -26,6 +26,7 @@ from kataribe.store import (
     Session,
     Story,
     Turn,
+    new_senior_id,
 )
 
 READ_CHUNK = 1 << 20
@@ -60,8 +61,9 @@ class CloudStore:
         birthplace: str = "",
         family: list[str] | None = None,
         language: str = "ja",
+        visitor: bool = False,
     ) -> str:
-        senior_id = uuid.uuid4().hex[:12]
+        senior_id = new_senior_id(visitor)
         self._collection("seniors").document(senior_id).set(
             {
                 "name": name,
@@ -70,6 +72,7 @@ class CloudStore:
                 "birthplace": birthplace,
                 "family": family or [],
                 "language": language,
+                "visitor": visitor,
                 "created_at": _now(),
             }
         )
@@ -143,6 +146,11 @@ class CloudStore:
             {"status": status, "processing_error": error, "status_at": _now()}
         )
 
+    def set_screen_consent(self, session_id: str, choice: str) -> None:
+        self._collection("sessions").document(session_id).update(
+            {"screen_consent": choice, "screen_consent_at": _now()}
+        )
+
     def list_sessions(self, limit: int = 100) -> list[Session]:
         query = (
             self._collection("sessions")
@@ -150,6 +158,10 @@ class CloudStore:
             .limit(limit)
         )
         return [_session(s.id, _data(s)) for s in query.stream()]
+
+    def sessions_for_senior(self, senior_id: str) -> list[Session]:
+        sessions = [_session(s.id, _data(s)) for s in self._where("sessions", senior_id=senior_id)]
+        return sorted(sessions, key=lambda session: session.started_at, reverse=True)
 
     def get(self, session_id: str) -> Session | None:
         snapshot = self._collection("sessions").document(session_id).get()
@@ -332,6 +344,8 @@ def _senior(senior_id: str, data: dict[str, Any]) -> Senior:
         birthplace=data.get("birthplace", ""),
         family=list(data.get("family", [])),
         language=data.get("language", "ja"),
+        visitor=data.get("visitor", False),
+        created_at=data.get("created_at"),
     )
 
 
@@ -352,6 +366,8 @@ def _session(session_id: str, data: dict[str, Any]) -> Session:
         processing_error=data.get("processing_error"),
         carried_questions=list(data.get("carried_questions", [])),
         status_at=data.get("status_at"),
+        screen_consent=data.get("screen_consent"),
+        screen_consent_at=data.get("screen_consent_at"),
     )
 
 

@@ -6,6 +6,8 @@ import { fileURLToPath } from 'node:url';
 export const CACHE = join(dirname(fileURLToPath(import.meta.url)), '.audio-cache');
 export const SAMPLE = join(CACHE, 'ja.wav');
 export const SAMPLE_FR = join(CACHE, 'fr.wav');
+/** What a judge trying it from the start page would say, in English. */
+export const SAMPLE_EN = join(CACHE, 'en.wav');
 
 /** A stereo file shaped like a downloaded session: senior left, interviewer
  *  right, with deliberately different words on each side so a replay that
@@ -22,15 +24,20 @@ export const UTTERANCE_FR =
   'Bonjour. Je suis né en 1947 dans un petit village en Bretagne. ' +
   'Mon père tenait une petite fabrique de textile.';
 
+export const UTTERANCE_EN =
+  'Hello. I grew up in a small town by the sea, in Brittany. ' +
+  'My grandfather had a boat, and every summer he took me out fishing at dawn.';
+
 export const INTERVIEWER_ONLY = '沖縄';
 const INTERVIEWER_LINE = `そうでしたか。${INTERVIEWER_ONLY}のお話も聞かせてください。`;
 
 export default function generateSpeech() {
-  if (existsSync(SAMPLE) && existsSync(SESSION) && existsSync(SAMPLE_FR)) return;
+  if ([SAMPLE, SESSION, SAMPLE_FR, SAMPLE_EN].every((path) => existsSync(path))) return;
   mkdirSync(CACHE, { recursive: true });
 
   synthesize(UTTERANCE, SAMPLE);
   synthesize(UTTERANCE_FR, SAMPLE_FR, 'Thomas');
+  synthesize(UTTERANCE_EN, SAMPLE_EN, 'Samantha');
   const right = join(CACHE, 'right.wav');
   synthesize(INTERVIEWER_LINE, right);
   writeFileSync(SESSION, interleave(readPcm(SAMPLE), readPcm(right)));

@@ -17,6 +17,7 @@ See [plan.md](plan.md) for the product thinking behind this.
 | Session recording | Stereo WAV built in the browser | Senior left, AI right, aligned on a shared timeline. Without it the first real session is unreviewable after the fact. |
 | Token security | Config locked server-side into the ephemeral token | The interviewer persona is the product; the browser gets a token that cannot rewrite it. Tuning values are requested by the client but validated and locked by the backend. |
 | Japanese review | With the demo take, Oct 14–15, by a native speaker on the team | Postponed on 2026-09-30, when nobody was free, and French stayed the working language meanwhile (see *French and English are for testing*). A native Japanese speaker joined the team on 2026-10-10; decided the same day that the review waits for the final part rather than coming ahead of it. |
+| Judge access | A public start page; each judge talks to a persona of their own | Decided 2026-10-12. A judge who can hold a conversation themselves is stronger evidence than a video, and a shared persona would greet the second judge with the first one's memories. See *Judges try it themselves*. |
 
 ## Demo must-haves
 
@@ -39,6 +40,42 @@ The Talk button stays, and presence becomes a line in the pitch: today a button,
 ### Japanese validation is deferred, deliberately
 
 Everything stays testable in French so the work is not blocked on a Japanese speaker being free. The cost is real and worth naming: the interviewer prompt now carries changes nobody has judged in the language that ships, and the naturalness change made that worse rather than better — the warmer reactions it produces are close to the restatements rule 3 forbids. This is a debt. From 2026-09-30 it had no due date; it is now due with the demo take on Oct 14–15, when a native speaker on the team settles the pause length and the voice, and judges every prompt change made in French since. Whatever that finds has to be fixed and retaken before the deadline.
+
+## Judges try it themselves
+
+Decided 2026-10-12, for the evaluation from Oct 19 to Nov 6. Judges get the video, a family page that is already full, and a conversation of their own. Until now the live URL asked a stranger for a password at its root, and no stranger could talk to anyone.
+
+**The start page is `/`, and the console moves to `/console`.** It says what this is, offers *Try it*, links a showcase family page, the video and the repository, and says what happens to what they say.
+
+**Each judge gets a persona of their own.** Memory is per person: with one shared persona the second judge would be greeted with the first judge's childhood, and asked the first judge's family questions. *Try it* asks for a name and a language and creates a visitor persona, remembered in that browser. The judge talks as themselves. A second conversation recalls the first, on their own words.
+
+- Its id is 128 random bits, since the link is the only key, as a family page's link already is. Nothing public lists people.
+- The family question is filled in already, and can be changed or cleared: from "Your family", which place from their childhood they still think about. The first conversation then opens with it. No past is invented for them: the interviewer would be recalling something they never said.
+- English, and Japanese once the native-speaker review passes. French is for testing.
+
+**Short conversations still end with the question about sharing.** A judge will talk for two minutes, and a closing cue at six would never come, so nothing would be shared and the family page would stay empty. For visitor personas:
+
+- *Finish* sends the closing cue instead of hanging up, and becomes *End now*.
+- The cue comes on its own at three minutes.
+- If a story still has no answer, because they ended it before the question or before replying, the end screen asks once, naming the stories, after they have been written up: let the family read them, or keep them private. Neither is private. A story they kept private in the conversation is not offered. The choice is recorded as made on screen, apart from consent in their own words.
+
+**The end screen waits for the writing-up,** then links to their family page. The family page says when a conversation is still being written up.
+
+**The showcase family page is read-only.** It holds stories from the demo take and one family question already answered. Questions sent from it would wait forever, and every judge would read the others'.
+
+**Limits and money.** At most 30 visitor conversations a day across all visitors, about $0.10 each, so the worst case over the evaluation is under $60 and the likely one a few dollars. The Gemini key moves to the paid tier (the Cloud trial credit does not cover Gemini), and the nightly eval gets a key of its own so testing cannot use up what judges need. One instance stays warm until Nov 6: a cold start measured 4.6 s, of which the app's own imports are under a second, and startup CPU boost was already on.
+
+**Watching it.** An uptime check on `/api/health`, Error Reporting by email, a budget alert, and `make smoke` by hand every morning, since a health check cannot see a broken key.
+
+**Frozen after submission.** The submitted commit is tagged and deployed; `main` stays as submitted until Nov 6. Only an outage is fixed, and each fix is noted in the README.
+
+**Their data.** The start page says that the conversation is recorded and processed by Gemini, that the family page shows only what they agree to share while the team can see everything, and when it is deleted: every visitor persona goes on Nov 7, unless the project is shortlisted.
+
+**Only an answer settles the question.** Decided 2026-10-12. Extraction used to count a story as asked "whatever the answer", so a judge who pressed *End now* while the interviewer was asking left it private, never offered again, and their family page empty; a senior whose conversation ended on the question was never asked again either. Now a question with no reply leaves the story to be asked again: at the next close, or on a visitor's end screen. Yes, no and hesitation are answers, and stand. For a story from an earlier conversation asked about again, no reply is no decision rather than a decline. The screen and the start page still say to answer aloud first.
+
+This changed the extraction prompt, whose consent cases were measured 12 of 12 and 12 of 12. `tests/live/test_consent.py` gains four cases (no reply asked again, a no and a hesitation not asked again, an earlier story with no reply left waiting), and all of it must be rerun before the take. **Not yet measured**: the Gemini credits had run out.
+
+**Built on 2026-10-12, and what is not yet proven.** Offline checks pass. The visitor's whole path has a browser test (`e2e/visitor.spec.ts`) and a smoke test against the live service, and neither has passed yet: the Gemini key's prepaid credits ran out the same day, and every live connection was refused. That showed one fault, now fixed: a connection refused after opening left the screen on "Connecting…" forever, since the SDK's connect never settles; it now fails at once, or after 20 seconds, with the screen's "not possible just now". Audio capture was probed in Chromium and WebKit, where it works; Firefox would not start in the sandbox, so capture now falls back to the device's own rate if a browser refuses a microphone in a 16 kHz context, which is Firefox's known refusal. Firefox, Safari with a real microphone, and phones are still to be tried by hand.
 
 ## Slices
 
@@ -73,7 +110,7 @@ Prototype deadline **2026-10-18**. A real senior tests from week 2.
 - [~] 4 — It notices you — **cut from the hackathon**, see below
 - [x] **5 — It asks permission** — consent asked in conversation, evidenced by the person's own words; family view shows only shared stories, with audio
 - [x] **6 — The family asks back** — relatives send questions from the family page; the interviewer opens with one, saying who asked; the answer links back to the story, if she shared it
-- [~] **7 — Ready to judge** — deployed on Cloud Run in Tokyo, with Firestore and Cloud Storage, and checked end to end by `make smoke` (see [deploy.md](deploy.md)); the senior's own screen is at `/talk/{senior_id}`; the demo video and the deck are still to do
+- [~] **7 — Ready to judge** — deployed on Cloud Run in Tokyo, with Firestore and Cloud Storage, and checked end to end by `make smoke` (see [deploy.md](deploy.md)); the senior's own screen is at `/talk/{senior_id}`; the start page and visitor personas for judges are built, not yet deployed or run against the live API (see *Judges try it themselves*); the demo video and the deck are still to do
 
 ## Running the week-1 test
 
@@ -229,7 +266,7 @@ So the question moved, and the bookkeeping grew to match:
 
 - **One question, at the close.** The interviewer names today's stories in a few words and asks whether the family may read them, and whether there is one to keep. One yes covers every story it names; a story kept out stays private. Nothing is asked in the middle of a memory.
 - **A painful story is asked about on its own,** worded so that keeping it is the easy answer: 「ご主人のお話は、ここだけのお話にしておきましょうか」. Closing because they are upset skips the question entirely.
-- **A story never asked about waits.** Extraction records whether each story was asked about (`asked_to_share`). One that was not, because the session ended early, because of distress, or because the yes could not be evidenced, goes to the next conversation's close: the latest three, so the question stays one question. A story asked about and kept private is never offered again; that was the answer.
+- **A story never asked about waits.** Extraction records whether each story was asked about and answered (`asked_to_share`). One that was not, because the session ended early, because of distress, because the question got no reply, or because the yes could not be evidenced, goes to the next conversation's close: the latest three, so the question stays one question. A story they answered about and kept private is never offered again; that was the answer. A hesitation is an answer too: asking again someone who already hesitated would be pressing them.
 - **Taking a story back works from any later conversation.** 「あの話は家族に見せないで」 makes it private when that session is processed. It needs no evidence, since the safe direction is private, and the interviewer agrees at once without asking why.
 
 Measured against the real model, three runs each: one yes at the close shared both stories it named; 「工場の話はいいですよ。でも川の話は、私だけのことにしておいてください」 shared the factory and kept the river; a story from last time was taken back; a story never asked about was agreed to at the next close. 12 of 12, alongside the original four consent cases, still 12 of 12.

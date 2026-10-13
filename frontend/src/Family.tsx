@@ -43,7 +43,16 @@ interface View {
   chapters: Chapter[];
   withheld: number;
   questions: Question[];
+  /** A conversation is still being written up, so more may be on its way. */
+  writing: boolean;
+  /** The page the start page shows every visitor: read-only. */
+  showcase: boolean;
+  /** A visitor's own persona, made from the start page. */
+  visitor: boolean;
 }
+
+/** How often the page looks again while a conversation is being written up. */
+const REFRESH_MS = 4000;
 
 /** What the family sees. Only stories the person agreed to share reach this
  *  page, and the filtering happens in the query rather than here — there is no
@@ -62,6 +71,19 @@ export default function Family({ seniorId }: { seniorId: string }) {
       .then(setView)
       .catch(() => setError('We could not find that story.'));
   }, [seniorId]);
+
+  // Until the writing-up is done, so a story arrives without anyone reloading.
+  const writing = view?.writing ?? false;
+  useEffect(() => {
+    if (!writing) return;
+    const timer = setInterval(() => {
+      fetch(`/api/family/${seniorId}`)
+        .then((r) => (r.ok ? (r.json() as Promise<View>) : null))
+        .then((seen) => seen && setView(seen))
+        .catch(() => undefined);
+    }, REFRESH_MS);
+    return () => clearInterval(timer);
+  }, [writing, seniorId]);
 
   const ask = async (event: FormEvent) => {
     event.preventDefault();
@@ -109,11 +131,23 @@ export default function Family({ seniorId }: { seniorId: string }) {
           {view.senior.birth_year && `${view.senior.birth_year}年生まれ`}
           {view.senior.birthplace && ` · ${view.senior.birthplace}`}
         </p>
+        {view.visitor && (
+          <p className="yours">
+            Your own page, reachable only by its link. <a href={`/talk/${seniorId}`}>Talk again</a>{' '}
+            · <a href="/">Start page</a>
+          </p>
+        )}
       </header>
 
       <audio ref={player} preload="none" />
 
-      {told === 0 && (
+      {view.writing && (
+        <p className="writing" role="status">
+          A conversation is still being written up. Its stories will appear here shortly.
+        </p>
+      )}
+
+      {told === 0 && !view.writing && (
         <p className="empty">
           There is nothing here yet. Stories appear once they have been told, and only once they
           have been agreed to be shared.
@@ -154,12 +188,18 @@ export default function Family({ seniorId }: { seniorId: string }) {
       ))}
 
       <section className="asking">
-        <h2>Ask {view.senior.name} something</h2>
-        <p className="how">
-          Your question is put to {view.senior.name} in a coming conversation, gently and in their
-          own time, and they will hear that it came from you. If they would rather not answer, it is
-          not pressed.
-        </p>
+        {view.showcase ? (
+          <h2>Questions from the family</h2>
+        ) : (
+          <>
+            <h2>Ask {view.senior.name} something</h2>
+            <p className="how">
+              Your question is put to {view.senior.name} in a coming conversation, gently and in
+              their own time, and they will hear that it came from you. If they would rather not
+              answer, it is not pressed.
+            </p>
+          </>
+        )}
 
         {view.questions.length > 0 && (
           <ul className="questions">
@@ -191,31 +231,39 @@ export default function Family({ seniorId }: { seniorId: string }) {
           </ul>
         )}
 
-        <form onSubmit={ask}>
-          <input
-            aria-label="Who is asking"
-            placeholder="Relation and name, e.g. 孫のゆか"
-            maxLength={40}
-            value={draft.asked_by}
-            onChange={(e) => setDraft({ ...draft, asked_by: e.target.value })}
-          />
-          <textarea
-            aria-label="Your question"
-            placeholder="結婚式のときのお着物は、どんなものでしたか?"
-            maxLength={300}
-            rows={3}
-            value={draft.text}
-            onChange={(e) => setDraft({ ...draft, text: e.target.value })}
-          />
-          <button
-            type="submit"
-            className="start"
-            disabled={sending || !draft.asked_by.trim() || !draft.text.trim()}
-          >
-            Send question
-          </button>
-          {unsent && <p className="unsent">{unsent}</p>}
-        </form>
+        {view.showcase ? (
+          <p className="read-only">
+            This page is shown to every visitor, so it takes no questions. To ask one, start a
+            conversation of your own from the <a href="/">start page</a>: your family page will take
+            questions, and your next conversation opens with them.
+          </p>
+        ) : (
+          <form onSubmit={ask}>
+            <input
+              aria-label="Who is asking"
+              placeholder="Relation and name, e.g. 孫のゆか"
+              maxLength={40}
+              value={draft.asked_by}
+              onChange={(e) => setDraft({ ...draft, asked_by: e.target.value })}
+            />
+            <textarea
+              aria-label="Your question"
+              placeholder="結婚式のときのお着物は、どんなものでしたか?"
+              maxLength={300}
+              rows={3}
+              value={draft.text}
+              onChange={(e) => setDraft({ ...draft, text: e.target.value })}
+            />
+            <button
+              type="submit"
+              className="start"
+              disabled={sending || !draft.asked_by.trim() || !draft.text.trim()}
+            >
+              Send question
+            </button>
+            {unsent && <p className="unsent">{unsent}</p>}
+          </form>
+        )}
       </section>
 
       {view.withheld > 0 && (

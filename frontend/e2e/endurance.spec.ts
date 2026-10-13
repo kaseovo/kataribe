@@ -40,7 +40,7 @@ test(
       [wav, EVERY] as [string, number],
     );
 
-    await page.goto('/');
+    await page.goto('/console');
     await page.getByRole('button', { name: /start conversation/i }).click();
 
     let entries = 0;

@@ -40,7 +40,7 @@ test('keeps the conversation when the connection drops', async ({ page, context 
     };
   });
 
-  await page.goto('/');
+  await page.goto('/console');
   await page.getByRole('button', { name: /start conversation/i }).click();
   await expect(page.locator('.transcript article.senior')).toContainText('長野', {
     timeout: 60_000,

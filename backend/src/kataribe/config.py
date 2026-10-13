@@ -27,16 +27,33 @@ class Settings(BaseSettings):
     """When the screen tells the interviewer it is time to close. Five to ten
     minutes is the session the product means; the close takes a minute more."""
     team_password: str = ""
-    """Closes everything but the family pages. Unset, everything is open."""
-    visitor_seniors: str = ""
-    """Comma-separated ids of demo personas whose talk screen strangers may use.
-    Never a real person: whoever talks there adds to that person's story."""
-    visitor_sessions_per_day: int = 20
-    """Per persona, counted in Japan time. Each conversation is paid for."""
+    """Closes everything but the start page, the family pages and visitors'
+    screens. Unset, everything is open."""
+
+    # --- strangers trying it from the start page, such as judges
+    try_languages: str = "en"
+    """Comma-separated languages a visitor may pick. Japanese joins once a native
+    speaker has reviewed it; until then a visitor hearing it does more harm than
+    one not hearing it."""
+    visitor_sessions_per_day: int = 30
+    """Across every visitor, counted in Japan time. Each conversation is paid for,
+    about ten US cents."""
+    visitor_personas_per_day: int = 100
+    """Across every visitor. Making one costs nothing, but nothing else stops a
+    script making them forever."""
+    visitor_close_after_seconds: int = 180
+    """A visitor talks for two or three minutes. Left to the six-minute cue, the
+    question about sharing would never come and their family page would stay
+    empty."""
+    showcase_senior: str = ""
+    """The persona whose family page the start page shows: stories from the demo
+    take, read-only."""
+    video_url: str = ""
+    repo_url: str = "https://github.com/tpemeja/kataribe"
 
     @property
-    def visitors(self) -> set[str]:
-        return {s.strip() for s in self.visitor_seniors.split(",") if s.strip()}
+    def visitor_languages(self) -> list[str]:
+        return [code.strip() for code in self.try_languages.split(",") if code.strip()]
 
 
 @lru_cache

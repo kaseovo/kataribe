@@ -232,6 +232,45 @@ def test_the_family_never_sees_a_story_that_was_not(tmp_path: Path) -> None:
     assert "生まれた村" not in json.dumps(view, ensure_ascii=False)
 
 
+def test_the_family_page_says_when_a_conversation_is_being_written_up(tmp_path: Path) -> None:
+    client, senior_id, session_id = story_for(tmp_path, visibility="family")
+    store = LocalStore(tmp_path)
+
+    store.set_status(session_id, "processing")
+    writing = client.get(f"/api/family/{senior_id}").json()["writing"]
+    store.set_status(session_id, "processed")
+    written = client.get(f"/api/family/{senior_id}").json()["writing"]
+
+    assert (writing, written) == (True, False)
+
+
+def test_the_showcase_page_takes_no_questions(tmp_path: Path) -> None:
+    # Every visitor sees it: a question sent from it would wait forever, and
+    # every visitor would read the others'.
+    _, senior_id, _ = story_for(tmp_path, visibility="family")
+    client = stored(tmp_path, showcase_senior=senior_id)
+
+    view = client.get(f"/api/family/{senior_id}").json()
+    sent = client.post(
+        f"/api/family/{senior_id}/questions", json={"asked_by": "Judge", "text": "Hello?"}
+    )
+
+    assert view["showcase"] is True
+    assert sent.status_code == 403
+    assert LocalStore(tmp_path).family_questions(senior_id) == []
+
+
+def test_a_family_page_knows_whether_it_is_a_visitors_own(tmp_path: Path) -> None:
+    store = LocalStore(tmp_path)
+    visitor = store.add_senior(name="Alex", language="en", visitor=True)
+    person = store.add_senior(name="田中ハル")
+    client = stored(tmp_path)
+
+    assert client.get(f"/api/family/{visitor}").json()["visitor"] is True
+    assert client.get(f"/api/family/{person}").json()["visitor"] is False
+    assert client.get(f"/api/family/{person}").json()["showcase"] is False
+
+
 def test_a_quote_plays_their_voice_and_not_the_session(tmp_path: Path) -> None:
     # The interviewer greets at 0.5–2 s; she answers at 4–9 s.
     audio = conversation_wav(12.0, left=[(4.0, 9.0)], right=[(0.5, 2.0)])

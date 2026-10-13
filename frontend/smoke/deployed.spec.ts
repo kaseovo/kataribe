@@ -1,9 +1,9 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 
-import { expect, request as fresh, test } from '@playwright/test';
+import { expect, request as fresh, test, type BrowserContext } from '@playwright/test';
 
-import { SAMPLE } from '../e2e/generate-speech';
+import { SAMPLE, SAMPLE_EN } from '../e2e/generate-speech';
 
 /**
  * The deployed service, end to end: what the local suite cannot reach. That a
@@ -11,7 +11,7 @@ import { SAMPLE } from '../e2e/generate-speech';
  * the upload has returned — on Cloud Run, which starves the CPU once a response
  * is sent unless the service is told not to.
  *
- * It makes a person of its own and forgets them afterwards, recordings and all,
+ * It makes people of its own and forgets them afterwards, recordings and all,
  * so the live data is left as it was found.
  */
 
@@ -19,21 +19,43 @@ const base = process.env.KATARIBE_URL!;
 const authorization =
   'Basic ' + Buffer.from(`team:${process.env.KATARIBE_TEAM_PASSWORD}`).toString('base64');
 
-let seniorId: string | undefined;
+const made: string[] = [];
 
 test.afterAll(() => {
-  if (!seniorId) return;
-  execFileSync('uv', ['run', 'python', 'forget.py', '--senior-id', seniorId], {
-    cwd: '../backend',
-    stdio: 'inherit',
-  });
+  for (const seniorId of made) {
+    execFileSync('uv', ['run', 'python', 'forget.py', '--senior-id', seniorId], {
+      cwd: '../backend',
+      stdio: 'inherit',
+    });
+  }
 });
 
-test('a stranger reaches a family page and nothing else', async () => {
+/** The microphone replaced by a recording, played once. */
+async function speak(context: BrowserContext, sample: string) {
+  const wav = readFileSync(sample).toString('base64');
+  await context.addInitScript((b64: string) => {
+    const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+    navigator.mediaDevices.getUserMedia = async () => {
+      const ctx = new AudioContext();
+      const buffer = await ctx.decodeAudioData(bytes.buffer.slice(0) as ArrayBuffer);
+      const destination = ctx.createMediaStreamDestination();
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(destination);
+      source.start();
+      return destination.stream;
+    };
+  }, wav);
+}
+
+test('a stranger reaches the start page and a family page, and nothing else', async () => {
   const stranger = await fresh.newContext({ baseURL: base });
 
-  expect((await stranger.get('/')).status()).toBe(401);
+  expect((await stranger.get('/')).status()).toBe(200);
+  expect((await stranger.get('/api/try')).status()).toBe(200);
+  expect((await stranger.get('/console')).status()).toBe(401);
   expect((await stranger.get('/api/sessions')).status()).toBe(401);
+  expect((await stranger.get('/api/seniors')).status()).toBe(401);
   expect((await stranger.post('/api/sessions', { data: {} })).status()).toBe(401);
   expect((await stranger.get('/family/someone')).status()).toBe(200);
 
@@ -50,28 +72,16 @@ test('a conversation is kept in the cloud and read', async ({ page, context }) =
   );
   const request = await fresh.newContext({ baseURL: base, extraHTTPHeaders: { authorization } });
 
-  const wav = readFileSync(SAMPLE).toString('base64');
-  await context.addInitScript((b64: string) => {
-    const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-    navigator.mediaDevices.getUserMedia = async () => {
-      const ctx = new AudioContext();
-      const buffer = await ctx.decodeAudioData(bytes.buffer.slice(0) as ArrayBuffer);
-      const destination = ctx.createMediaStreamDestination();
-      const source = ctx.createBufferSource();
-      source.buffer = buffer;
-      source.connect(destination);
-      source.start();
-      return destination.stream;
-    };
-  }, wav);
+  await speak(context, SAMPLE);
 
   const created = await request.post('/api/seniors', {
     data: { name: 'Smoke test', birthplace: '長野', family: [], language: 'ja' },
   });
   expect(created.ok()).toBe(true);
-  seniorId = (await created.json()).id as string;
+  const seniorId = (await created.json()).id as string;
+  made.push(seniorId);
 
-  await page.goto('/');
+  await page.goto('/console');
   await page.locator('.interviewee select').selectOption(seniorId);
 
   const [started] = await Promise.all([
@@ -104,4 +114,43 @@ test('a conversation is kept in the cloud and read', async ({ page, context }) =
   expect(body.length).toBeGreaterThan(100_000);
 
   await request.dispose();
+});
+
+test('a judge tries it from the start page, with nothing to sign in to', async ({
+  page,
+  context,
+}) => {
+  // No password anywhere in this test: it is a stranger's whole path.
+  await speak(context, SAMPLE_EN);
+
+  await page.goto('/');
+  await page.getByLabel('Your name').fill('Smoke test');
+  await page.getByRole('button', { name: 'Start talking' }).click();
+  await expect(page).toHaveURL(/\/talk\/[\w-]{22,}$/);
+  made.push(new URL(page.url()).pathname.split('/').pop()!);
+
+  await page.getByRole('button', { name: 'Talk', exact: true }).click();
+  await expect(page.locator('.talk-caption')).toContainText(
+    /Brittany|grandfather|boat|fish|sea|town|summer|dawn/i,
+    { timeout: 90_000 },
+  );
+  await page.getByRole('button', { name: 'Finish' }).click();
+  await page.getByRole('button', { name: 'End now' }).click();
+
+  // Written up after the upload returned, on Cloud Run, then asked on screen.
+  await expect(page.getByText('Before you go: may your family read these?')).toBeVisible({
+    timeout: 150_000,
+  });
+  await page.getByRole('button', { name: 'Let my family read them' }).click();
+  await page.getByRole('link', { name: 'Open your family page' }).click();
+  await expect(page.locator('.told blockquote').first()).toBeVisible();
+
+  // Each quote plays their own voice, cut from the recording in the bucket,
+  // and reachable without the password.
+  const familyApi = new URL(page.url()).pathname.replace('/family/', '/api/family/');
+  const view = await (await page.request.get(familyApi)).json();
+  const audio: string = view.chapters[0].stories[0].quotes[0].audio;
+  const clip = await page.request.get(audio);
+  expect(clip.ok()).toBe(true);
+  expect((await clip.body()).subarray(0, 4).toString()).toBe('RIFF');
 });

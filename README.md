@@ -4,6 +4,19 @@
 
 A *kataribe* is a traditional keeper of oral history — the person who remembers the stories and passes them to the next generation. That is the job this does.
 
+## For judges
+
+**Try it: <https://kataribe-uxxefqeqqq-an.a.run.app>.** The start page makes you a persona of your own, so the interviewer talks with you about your own life, in English. It takes about three minutes:
+
+1. Allow the microphone. The interviewer speaks first.
+2. Talk as yourself. It follows where you go, one question at a time.
+3. Press **Finish** when you want to stop. It wraps up and asks whether your family may read today's story. Answer aloud, then press **End now**.
+4. Your story appears on your own family page, with your voice behind each quote. Talk again, and it remembers.
+
+The product itself is Japanese. The start page also links a family page from the demo, in Japanese, and the [demo video](docs/demo/demo-script.md) shows a whole conversation with English subtitles. Content in Japanese can be read with Chrome's built-in Translate.
+
+Best in Chrome or Edge on a computer. Your conversation is recorded and processed by Gemini; your family page is reachable only by its link and shows only what you agree to share; the team can see full conversations to fix problems. Everything recorded from the start page is deleted once judging ends.
+
 ---
 
 ## Why
@@ -84,13 +97,13 @@ Synthesized speech is clean and evenly paced, so it proves correctness rather th
 
 ## Project status
 
-**Live:** <https://kataribe-uxxefqeqqq-an.a.run.app>. Family pages open to anyone with their link; the console is behind a team password. See [docs/deploy.md](docs/deploy.md).
+**Live:** <https://kataribe-uxxefqeqqq-an.a.run.app>. The start page and family pages are open to anyone with their link; the console, at `/console`, is behind a team password. See [docs/deploy.md](docs/deploy.md).
 
 Prototype, built in the open over four weeks. See [docs/plan.md](docs/plan.md) for the full plan and [docs/roadmap.md](docs/roadmap.md) for what is built and what is next.
 
 ## Privacy
 
-Face detection runs on the device; no video is ever sent anywhere or stored. Recording starts only after the senior agrees to talk. Stories stay private until the senior says their family may read them.
+Recording starts only when the senior presses Talk. Stories stay private until the senior says, in their own words, that their family may read them, and those words are checked against the recording. A story can be taken back in any later conversation. Presence detection, which would run on the device and never send video anywhere, is on the roadmap, not in this build.
 
 ## License
 
