@@ -244,11 +244,37 @@ def test_the_family_page_says_when_a_conversation_is_being_written_up(tmp_path: 
     assert (writing, written) == (True, False)
 
 
+def test_how_to_refer_to_someone_is_said_never_guessed(tmp_path: Path) -> None:
+    client = stored(tmp_path)
+
+    said = client.post("/api/seniors", json={"name": "田中ハル", "pronouns": "she"})
+    unsaid = client.post("/api/seniors", json={"name": "佐藤茂"})
+    odd = client.post("/api/seniors", json={"name": "佐藤茂", "pronouns": "it"})
+
+    assert said.json()["pronouns"] == "she"
+    assert unsaid.json()["pronouns"] == ""
+    assert odd.status_code == 422
+
+
+def test_a_quote_comes_with_all_they_said_in_that_answer(tmp_path: Path) -> None:
+    # So a reader can check the quote against the whole answer, which is what
+    # its clip plays. Never the interviewer's words: a question can name what
+    # they refused to talk about.
+    client, senior_id, _ = story_for(tmp_path, visibility="family")
+
+    [quote] = client.get(f"/api/family/{senior_id}").json()["chapters"][0]["stories"][0]["quotes"]
+
+    assert quote["said"] == "長野で生まれました。"
+    assert "こんにちは" not in json.dumps(quote, ensure_ascii=False)
+
+
 def fake_translation(monkeypatch: pytest.MonkeyPatch) -> list[list[str]]:
     """Every batch sent to be translated, answered with "EN:" before each text."""
     sent: list[list[str]] = []
 
-    def translate(settings: Settings, texts: list[str], language: object) -> list[str]:
+    def translate(
+        settings: Settings, texts: list[str], language: object, senior: object
+    ) -> list[str]:
         sent.append(texts)
         return [f"EN:{text}" for text in texts]
 

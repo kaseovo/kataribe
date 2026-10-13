@@ -62,6 +62,7 @@ class CloudStore:
         family: list[str] | None = None,
         language: str = "ja",
         visitor: bool = False,
+        pronouns: str = "",
     ) -> str:
         senior_id = new_senior_id(visitor)
         self._collection("seniors").document(senior_id).set(
@@ -73,6 +74,7 @@ class CloudStore:
                 "family": family or [],
                 "language": language,
                 "visitor": visitor,
+                "pronouns": pronouns,
                 "created_at": _now(),
             }
         )
@@ -363,6 +365,7 @@ def _senior(senior_id: str, data: dict[str, Any]) -> Senior:
         language=data.get("language", "ja"),
         visitor=data.get("visitor", False),
         created_at=data.get("created_at"),
+        pronouns=data.get("pronouns", ""),
     )
 
 

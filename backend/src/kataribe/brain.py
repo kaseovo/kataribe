@@ -11,10 +11,10 @@ import uuid
 from dataclasses import dataclass
 from typing import Literal
 
-from google import genai
 from google.genai import types
 from pydantic import BaseModel, Field
 
+from kataribe import gemini
 from kataribe.config import Settings
 from kataribe.languages import DEFAULT, Language, get
 from kataribe.store import LIFE_STAGES, FamilyQuestion, Plan, Quote, Senior, Story, Turn
@@ -108,6 +108,23 @@ def _numbered(turns: list[Turn]) -> str:
     )
 
 
+POSSESSIVE = {"she": "her", "he": "his", "they": "their"}
+
+
+def _referred(senior: Senior) -> str:
+    """How English writes about them: as whoever entered them said, or, when
+    nobody said, by name and with no pronoun at all. A guess from the name is
+    wrong often enough, and "they" for one person read oddly in a memoir."""
+    if senior.pronouns in POSSESSIVE:
+        return (
+            f"as '{senior.pronouns}' ('{POSSESSIVE[senior.pronouns]} father'), as their family said"
+        )
+    return (
+        "by their name, with no 'he', 'she', 'they' or 'their' for them, since "
+        "nothing says which: write so that none is needed ('Haru's father')"
+    )
+
+
 def _who(senior: Senior) -> str:
     facts = [f"お名前: {senior.name}"]
     if senior.name_reading:
@@ -152,7 +169,7 @@ def extract(
     copies would drift apart.
     """
     spoken = language or get(senior.language)
-    client = genai.Client(api_key=settings.gemini_api_key)
+    client = gemini.client(settings)
     response = client.models.generate_content(
         model=settings.text_model,
         contents=(
@@ -175,18 +192,24 @@ def extract(
             "- Only what the speaker actually said. Never the interviewer's words.\n"
             "- Do not fill in anything the conversation does not contain.\n"
             "- summary: the story in a few plain, natural sentences, as their\n"
-            "  family will read it. About them, in the third person, by name:\n"
-            "  never 'I', since these are not their words, and never 'he' or\n"
-            "  'she'. Every fact must be one they said. Add no detail, feeling\n"
+            "  family will read it. About them, in the third person, never 'I',\n"
+            "  since these are not their words. If you write in English, refer\n"
+            f"  to them {_referred(senior)}.\n"
+            "  Every fact must be one they said. Add no detail, feeling\n"
             "  or judgement ('wonderful', 'cherished'), and do not assert a\n"
             "  relationship they did not state: if they said 'my father's\n"
             "  factory' it is their father's factory, not 'the family\n"
-            "  factory'. Keep their word for each thing rather than swapping in\n"
-            "  another. What you may add is only what turns their words into\n"
+            "  factory'. Keep their names for people, places and things rather\n"
+            "  than swapping in others. What you may add is only what turns their words into\n"
             "  sentences: who did it, linking words, tense and order. Do not\n"
             "  string their phrases together as they came, and do not keep their\n"
             "  grammar where it faltered: a halting phrase becomes a correct\n"
-            "  sentence that means the same.\n"
+            "  sentence that means the same. Their names for things are kept;\n"
+            "  their verbs and grammar are not. 'we was there till I'm ten, the flat, it\n"
+            "  were tiny' becomes 'Sam lived in the flat until the age of ten; it\n"
+            "  was tiny'. Where they said 'we' and nothing says who, rephrase so\n"
+            "  that no one need be named: 'we had a dog, we called him Pip'\n"
+            "  becomes 'There was a dog called Pip'.\n"
             "- title: a few words naming the story, as a chapter heading would,\n"
             "  with their words for the things in it.\n"
             "- quotes must be the speaker's words exactly, not one character\n"
@@ -412,7 +435,7 @@ def _hear(
         parts.append(types.Part.from_text(text=f"[{number}] Words to check: 「{text}」"))
         parts.append(types.Part.from_bytes(data=audio, mime_type="audio/wav"))
 
-    client = genai.Client(api_key=settings.gemini_api_key)
+    client = gemini.client(settings)
     response = client.models.generate_content(
         model=settings.text_model,
         contents=[
@@ -458,7 +481,7 @@ def screen(settings: Settings, questions: list[FamilyQuestion], avoid: list[str]
     if not questions or not avoid:
         return set()
 
-    client = genai.Client(api_key=settings.gemini_api_key)
+    client = gemini.client(settings)
     response = client.models.generate_content(
         model=settings.text_model,
         contents=(
@@ -488,7 +511,9 @@ class Translated(BaseModel):
     english: list[str] = Field(description="One translation per passage, in order")
 
 
-def translate(settings: Settings, texts: list[str], language: Language) -> list[str]:
+def translate(
+    settings: Settings, texts: list[str], language: Language, senior: Senior
+) -> list[str]:
     """English for what a family page shows in another language, one for each
     text and in its order: names, titles, summaries, the person's own words, and
     the family's questions.
@@ -500,7 +525,7 @@ def translate(settings: Settings, texts: list[str], language: Language) -> list[
     if not texts:
         return []
 
-    client = genai.Client(api_key=settings.gemini_api_key)
+    client = gemini.client(settings)
     response = client.models.generate_content(
         model=settings.text_model,
         contents=(
@@ -515,10 +540,10 @@ def translate(settings: Settings, texts: list[str], language: Language) -> list[
             "family name first as in the original: 田中ハル is Tanaka Haru, 長野 is Nagano. "
             "A relation stays a relation, no more precise than it was said: 孫のゆか "
             "is grandchild Yuka.\n"
-            "- Where the original leaves out who, as Japanese does, say it with their "
-            "name, or 'they', never 'he' or 'she': nothing here says which they are.\n"
+            f"- The life story is {senior.name}'s. Where the original leaves out who, "
+            f"as Japanese does, refer to them {_referred(senior)}.\n"
             "- A family word takes its owner, as English needs: 'my father' in the "
-            "person's own spoken words, 'their father' in a summary about them, never "
+            "person's own spoken words, and in a title or summary as above. Never "
             "'Father' alone.\n"
             "- One translation per passage, in the same order, without the numbers.\n\n"
             + "\n".join(f"[{i}] {text}" for i, text in enumerate(texts))
@@ -549,7 +574,7 @@ def plan_next(
     )
     thin = [stage for stage in LIFE_STAGES if not any(s.life_stage == stage for s in stories)]
 
-    client = genai.Client(api_key=settings.gemini_api_key)
+    client = gemini.client(settings)
     response = client.models.generate_content(
         model=settings.text_model,
         contents=(

@@ -6,6 +6,7 @@ place, or is the guard having to catch it every time?
 """
 
 import re
+from dataclasses import replace
 
 import pytest
 
@@ -123,8 +124,11 @@ async def test_the_summary_reads_as_sentences_and_adds_nothing(settings: Setting
         "by the person: any added detail, feeling or judgement fails ('wonderful', "
         "'happy memories'). And each summary reads as plain, grammatical sentences "
         "about the person in the third person, by name: phrases strung together as "
-        "they were spoken, a sentence with no subject, or 'I' fails.",
-        senior="\n".join(t.text for t in HALTING if t.speaker == "senior"),
+        "they were spoken, a sentence with no subject, or 'I' fails. Nothing says "
+        "how to refer to them, so 'he', 'she', 'they' or 'their' for them fails.",
+        # Their name, from their profile, is the summary's subject.
+        senior=f"Known beforehand:\n{brain._who(ALEX)}\n\nWhat they said:\n"
+        + "\n".join(t.text for t in HALTING if t.speaker == "senior"),
         interviewer=written,
     )
     assert verdict.passes, f"{verdict.reason}\n\n{written}"
@@ -132,15 +136,16 @@ async def test_the_summary_reads_as_sentences_and_adds_nothing(settings: Setting
 
 async def test_a_family_page_is_translated_faithfully(settings: Settings) -> None:
     # Under the original, for a reader without Japanese, such as a judge.
-    texts = [
-        "田中ハル",
-        "長野",
-        "父の織物工場",
-        "田中ハルさんの父は、村で小さな織物の工場をやっていた。",
-        "母の白無垢を、仕立て直してもらったんですよ。",
-        "孫のゆか",
+    kinds = [
+        ("her name", "田中ハル"),
+        ("a place", "長野"),
+        ("a story's title", "父の織物工場"),
+        ("a story's summary", "田中ハルさんの父は、村で小さな織物の工場をやっていた。"),
+        ("her own spoken words", "母の白無垢を、仕立て直してもらったんですよ。"),
+        ("who sent a question", "孫のゆか"),
     ]
-    english = brain.translate(settings, texts, get("ja"))
+    texts = [text for _, text in kinds]
+    english = brain.translate(settings, texts, get("ja"), HARU)
 
     assert len(english) == len(texts)
     assert not any(re.search(r"[\u3040-\u30ff\u4e00-\u9fff]", line) for line in english), english
@@ -148,12 +153,25 @@ async def test_a_family_page_is_translated_faithfully(settings: Settings) -> Non
         settings,
         "Each English line translates the Japanese line with the same number. It "
         "passes only if each says what its original says and nothing more: an added "
-        "detail, feeling or explanation fails, as does 'he' or 'she' where the "
-        "original does not say which. Names are written in the Latin alphabet.",
-        senior="\n".join(f"[{i}] {t}" for i, t in enumerate(texts)),
+        "detail, feeling or explanation fails. All of it is Tanaka Haru's life "
+        "story, and English needs an owner where Japanese leaves it out: 父 is "
+        "'my father' in their own words and 'Haru's father' about them, and that "
+        "is not an addition. Nothing says how to refer to Tanaka Haru, so 'he', "
+        "'she', 'they' or 'their' for them fails. Names are in the Latin alphabet.",
+        # Labelled for the judge only, as the page uses them; the translation is
+        # given the bare texts, as the page sends them.
+        senior="\n".join(f"[{i}] ({kind}) {t}" for i, (kind, t) in enumerate(kinds)),
         interviewer="\n".join(f"[{i}] {t}" for i, t in enumerate(english)),
     )
     assert verdict.passes, f"{verdict.reason}\n\n{english}"
+
+
+async def test_pronouns_given_are_used(settings: Settings) -> None:
+    told = "田中ハルさんは長野の村で育った。父は村で小さな織物の工場をやっていた。"
+    [english] = brain.translate(settings, [told], get("ja"), replace(HARU, pronouns="she"))
+
+    assert re.search(r"\bher\b", english, re.IGNORECASE), english
+    assert not re.search(r"\btheir\b", english, re.IGNORECASE), english
 
 
 async def test_the_recap_repeats_rather_than_embellishes(settings: Settings) -> None:

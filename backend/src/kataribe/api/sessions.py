@@ -76,6 +76,9 @@ class SeniorRequest(BaseModel):
     birthplace: str = ""
     family: list[str] = Field(default_factory=list)
     language: str = "ja"
+    pronouns: Literal["", "she", "he", "they"] = ""
+    """How English about them refers to them, as whoever entered them says.
+    Left empty, it uses their name."""
 
 
 class SeniorView(SeniorRequest):
@@ -105,6 +108,10 @@ class FamilyQuoteView(QuoteView):
     """Their voice saying it, and nothing else from the session. Neither the
     session nor its full recording is named anywhere on the family page, since
     the recording also holds whatever they chose not to share."""
+    said: str = ""
+    """All they said in the answer the quote comes from, which is what the clip
+    plays, so a reader can check the quote against it. Not the interviewer's
+    words around it: a question can name what they refused to talk about."""
 
 
 class FamilyStoryView(BaseModel):
@@ -497,6 +504,16 @@ def read_family_view(
     shared = store.stories_for_senior(senior_id, shared_only=True)
     everything = store.stories_for_senior(senior_id)
     recorded = {s.session_id for s in shared if store.has_audio(s.session_id)}
+    transcripts: dict[str, list[Turn]] = {}
+
+    def answer(session_id: str, turn: int) -> str:
+        if session_id not in transcripts:
+            session = store.get(session_id)
+            transcripts[session_id] = session.turns if session else []
+        turns = transcripts[session_id]
+        if 0 <= turn < len(turns) and turns[turn].speaker == "senior":
+            return turns[turn].text
+        return ""
 
     chapters = []
     for stage in LIFE_STAGES:
@@ -522,6 +539,7 @@ def read_family_view(
                                 audio=f"/api/family/{senior_id}/stories/{story.id}/quotes/{i}/audio"
                                 if story.session_id in recorded
                                 else None,
+                                said=answer(story.session_id, quote.turn),
                             )
                             for i, quote in enumerate(story.quotes)
                         ],
@@ -570,7 +588,7 @@ def read_family_translations(
     for chapter in view.chapters:
         for told in chapter.stories:
             shown += [told.title, told.summary, told.approx_period, *told.people, *told.places]
-            shown += [quote.text for quote in told.quotes]
+            shown += [text for quote in told.quotes for text in (quote.text, quote.said)]
     for question in view.questions:
         shown += [question.asked_by, question.text]
     return _in_english(settings, store, senior, shown)
@@ -588,7 +606,7 @@ def _in_english(
     missing = [text for text in wanted if text not in kept]
     if missing:
         try:
-            english = brain.translate(settings, missing, get(senior.language))
+            english = brain.translate(settings, missing, get(senior.language), senior)
         except Exception:
             log.exception("could not translate the family page of %s", senior.id)
         else:

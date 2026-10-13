@@ -85,6 +85,7 @@ Each of these was a real failure, or would have been.
 - **Recordings upload in 16 MiB parts.** Cloud Run refuses any HTTP/1 request over 32 MiB, and ten minutes of conversation is close to 60 MB. The parts are joined inside the bucket, so a recording never passes through the server whole.
 - **`--no-cpu-throttling`.** Stories are extracted after the upload's response has been sent. By default Cloud Run all but stops the CPU at that point, and processing would stall. The cost is that an instance is billed for as long as it is up, which `--max-instances 2` caps.
 - **The microphone worklet is public.** `/capture-processor.js` is fetched apart from the page's other requests. Behind the password it got 401 in the smoke test and the microphone never opened.
+- **Every Gemini request has a timeout, and is retried when busy.** Without one, a request Gemini never answered waited for ever: twice in an hour on 2026-10-13, in the live tests. On the service that is a story never written up, and a visitor's screen saying "writing up" until someone looks. Three minutes for extraction and listening, thirty seconds for the token a waiting person needs; a 429 or 5xx is tried three times (`gemini.client`).
 - **No startup recovery of stalled processing.** With more than one instance, each would claim the same session. A session whose processing stalled shows "Process again" in the console instead.
 
 ## Setting it up again from nothing

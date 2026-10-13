@@ -8,6 +8,8 @@ export interface Senior {
   birthplace: string;
   family: string[];
   language: string;
+  /** How English about them refers to them; empty, by name. */
+  pronouns: string;
 }
 
 export interface Language {
@@ -38,6 +40,7 @@ export default function Seniors({ selected, onSelect, disabled }: Props) {
     birth_year: '',
     birthplace: '',
     language: 'ja',
+    pronouns: '',
   });
 
   // Once, on mount. Re-running this on every selection change reset the form
@@ -68,13 +71,21 @@ export default function Seniors({ selected, onSelect, disabled }: Props) {
         birthplace: draft.birthplace,
         family: [],
         language: draft.language,
+        pronouns: draft.pronouns,
       }),
     });
     const created: Senior = await response.json();
     setSeniors([...(seniors ?? []), created]);
     onSelect(created);
     setAdding(false);
-    setDraft({ name: '', name_reading: '', birth_year: '', birthplace: '', language: 'ja' });
+    setDraft({
+      name: '',
+      name_reading: '',
+      birth_year: '',
+      birthplace: '',
+      language: 'ja',
+      pronouns: '',
+    });
   };
 
   // Nothing is rendered until we know whether anyone exists, so the form and
@@ -117,6 +128,17 @@ export default function Seniors({ selected, onSelect, disabled }: Props) {
             value={draft.birthplace}
             onChange={(e) => setDraft({ ...draft, birthplace: e.target.value })}
           />
+          {/* Asked, never guessed from a name. Unset, English uses their name. */}
+          <select
+            aria-label="In English, refer to them as"
+            value={draft.pronouns}
+            onChange={(e) => setDraft({ ...draft, pronouns: e.target.value })}
+          >
+            <option value="">In English: by name</option>
+            <option value="she">In English: she</option>
+            <option value="he">In English: he</option>
+            <option value="they">In English: they</option>
+          </select>
           <button className="start" onClick={save} disabled={!draft.name.trim()}>
             Save
           </button>

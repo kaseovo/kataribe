@@ -11,6 +11,22 @@ from kataribe.prompts import interviewer_instruction
 TOKEN_LIFETIME = datetime.timedelta(minutes=30)
 NEW_SESSION_WINDOW = datetime.timedelta(minutes=2)
 
+
+def client(settings: Settings, timeout_ms: int = 180_000) -> genai.Client:
+    """A client whose requests end. Without a timeout, a request Gemini never
+    answered waited for ever, twice in an hour on 2026-10-13: a story would
+    never be written up, and the screen would say "writing up" until someone
+    looked. The default leaves room for a ten-minute conversation or a batch of
+    clips to listen to. Busy and rate-limited answers are retried."""
+    return genai.Client(
+        api_key=settings.gemini_api_key,
+        http_options=types.HttpOptions(
+            timeout=timeout_ms,
+            retry_options=types.HttpRetryOptions(attempts=3),
+        ),
+    )
+
+
 # Shortlisted from the prebuilt TTS voices for an elderly listener. A native
 # speaker picks the final one by ear during the week-1 test.
 VOICES: dict[str, str] = {
@@ -105,11 +121,12 @@ def build_live_config(tuning: InterviewTuning, context: str = "") -> types.LiveC
 def mint_session_credentials(
     settings: Settings, tuning: InterviewTuning, context: str = ""
 ) -> SessionCredentials:
-    client = genai.Client(api_key=settings.gemini_api_key)
+    # Someone is waiting on this to start talking.
+    minting = client(settings, timeout_ms=30_000)
     now = datetime.datetime.now(tz=datetime.UTC)
     expires_at = now + TOKEN_LIFETIME
 
-    token = client.auth_tokens.create(
+    token = minting.auth_tokens.create(
         config=types.CreateAuthTokenConfig(
             uses=1,
             expire_time=expires_at,

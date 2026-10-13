@@ -11,6 +11,21 @@ interface Quote {
    *  never learns where the whole recording is: it also holds whatever they
    *  chose not to share. Null when the session was not recorded. */
   audio: string | null;
+  /** All they said in the answer it comes from: what the clip plays. */
+  said: string;
+}
+
+/** Their whole answer, with the words quoted from it marked. */
+function Answer({ said, quoted }: { said: string; quoted: string }) {
+  const at = said.indexOf(quoted);
+  if (at < 0) return <>{said}</>;
+  return (
+    <>
+      {said.slice(0, at)}
+      <mark>{quoted}</mark>
+      {said.slice(at + quoted.length)}
+    </>
+  );
 }
 
 interface Story {
@@ -238,6 +253,17 @@ export default function Family({ seniorId }: { seniorId: string }) {
                     「{quote.text}」
                     {inEnglish && english(quote.text) && (
                       <span className="translation">“{english(quote.text)}”</span>
+                    )}
+                    {quote.said && quote.said !== quote.text && (
+                      <details className="said">
+                        <summary>All they said</summary>
+                        <span lang={view.senior.language}>
+                          <Answer said={quote.said} quoted={quote.text} />
+                        </span>
+                        {inEnglish && english(quote.said) && (
+                          <span className="translation">{english(quote.said)}</span>
+                        )}
+                      </details>
                     )}
                   </span>
                 </blockquote>

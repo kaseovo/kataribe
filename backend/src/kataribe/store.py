@@ -90,6 +90,7 @@ LATER_COLUMNS = {
         "language": "TEXT NOT NULL DEFAULT 'ja'",
         # Made by a stranger from the start page, to try it themselves.
         "visitor": "INTEGER NOT NULL DEFAULT 0",
+        "pronouns": "TEXT NOT NULL DEFAULT ''",
     },
     # Private unless the person said otherwise, and said so in words we kept.
     "stories": {
@@ -169,6 +170,9 @@ class Senior:
     """A persona a stranger made from the start page, such as a judge trying it
     on their own life. Only these may be talked to without the team password."""
     created_at: datetime | None = None
+    pronouns: str = ""
+    """"she", "he" or "they", as whoever entered them said. Empty when nobody
+    said: English about them then uses their name, never a guess from it."""
 
 
 def new_senior_id(visitor: bool) -> str:
@@ -252,6 +256,7 @@ class Store(Protocol):
         family: list[str] | None = None,
         language: str = "ja",
         visitor: bool = False,
+        pronouns: str = "",
     ) -> str: ...
     def get_senior(self, senior_id: str) -> Senior | None: ...
     def list_seniors(self) -> list[Senior]: ...
@@ -377,12 +382,13 @@ class LocalStore:
         family: list[str] | None = None,
         language: str = "ja",
         visitor: bool = False,
+        pronouns: str = "",
     ) -> str:
         senior_id = new_senior_id(visitor)
         with self._connect() as db:
             db.execute(
                 "INSERT INTO seniors (id, name, name_reading, birth_year, birthplace, family,"
-                " language, visitor, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                " language, visitor, pronouns, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (
                     senior_id,
                     name,
@@ -392,6 +398,7 @@ class LocalStore:
                     json.dumps(family or [], ensure_ascii=False),
                     language,
                     int(visitor),
+                    pronouns,
                     datetime.now(UTC).isoformat(),
                 ),
             )
@@ -414,6 +421,7 @@ class LocalStore:
             language=row["language"] if "language" in columns else "ja",
             visitor=bool(row["visitor"]) if "visitor" in columns else False,
             created_at=datetime.fromisoformat(row["created_at"]),
+            pronouns=row["pronouns"] if "pronouns" in columns else "",
         )
 
     def list_seniors(self) -> list[Senior]:

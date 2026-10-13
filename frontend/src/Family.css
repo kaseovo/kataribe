@@ -149,6 +149,29 @@
   color: var(--muted);
 }
 
+/* The whole answer a quote was taken from, so it can be checked: what the
+   play button plays, with the quoted words marked. */
+.told .said {
+  margin-top: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.told .said summary {
+  cursor: pointer;
+  color: var(--accent);
+  font-size: 0.8rem;
+}
+
+.told .said[open] summary {
+  margin-bottom: 0.4rem;
+}
+
+.told .said mark {
+  background: rgb(217 143 78 / 0.22);
+  color: inherit;
+  border-radius: 0.15rem;
+}
+
 .told .tags {
   margin: 0;
   font-size: 0.8rem;

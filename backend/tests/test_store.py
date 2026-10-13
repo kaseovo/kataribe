@@ -231,6 +231,7 @@ def test_a_senior_reads_back_as_entered(store: Store) -> None:
         birthplace="長野",
         family=["孫のゆか"],
         language="ja",
+        pronouns="she",
     )
 
     senior = store.get_senior(senior_id)
@@ -238,7 +239,11 @@ def test_a_senior_reads_back_as_entered(store: Store) -> None:
     assert senior is not None
     assert (senior.name, senior.name_reading, senior.birth_year) == ("田中ハル", "たなかはる", 1947)
     assert (senior.birthplace, senior.family, senior.language) == ("長野", ["孫のゆか"], "ja")
+    assert senior.pronouns == "she"
     assert store.get_senior("nobody") is None
+    # Nobody said: none is guessed.
+    unsaid = store.get_senior(store.add_senior(name="佐藤茂"))
+    assert unsaid is not None and unsaid.pronouns == ""
 
 
 def test_a_visitor_persona_reads_back_as_one_with_an_id_nobody_can_guess(store: Store) -> None:
