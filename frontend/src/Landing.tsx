@@ -149,15 +149,17 @@ export default function Landing() {
       <section className="try">
         <h2>Try it on your own life</h2>
         <p>
-          The interviewer asks about your memories for about three minutes, then writes up what you
+          The interviewer asks about your memories for two minutes or so, then writes up what you
           told it the way a family would see it.
         </p>
         <ol className="steps">
           <li>Allow the microphone. The interviewer speaks first.</li>
           <li>Talk as yourself. It follows where you go, one question at a time.</li>
           <li>
-            When you want to stop, press <strong>Finish</strong>. It wraps up and asks whether your
-            family may read today’s story. Answer aloud, then press <strong>End now</strong>.
+            At two minutes it asks whether you want to go on. When you are done, say so or press{' '}
+            <strong>Finish</strong>: it asks whether your family may read today’s story. Answer
+            aloud, or press <strong>Share with my family</strong> or{' '}
+            <strong>Keep it private</strong>.
           </li>
           <li>Your story then appears on your own family page, with your voice behind each quote.</li>
         </ol>

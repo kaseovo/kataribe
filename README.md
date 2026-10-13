@@ -10,10 +10,10 @@ A *kataribe* is a traditional keeper of oral history — the person who remember
 
 1. Allow the microphone. The interviewer speaks first.
 2. Talk as yourself. It follows where you go, one question at a time.
-3. Press **Finish** when you want to stop. It wraps up and asks whether your family may read today's story. Answer aloud, then press **End now**.
+3. At two minutes it asks whether you want to go on. When you are done, say so or press **Finish**: it asks whether your family may read today's story. Answer aloud, or press **Share with my family** or **Keep it private**.
 4. Your story appears on your own family page, with your voice behind each quote. Talk again, and it remembers.
 
-The product itself is Japanese. The start page also links a family page from the demo, in Japanese, and the [demo video](docs/demo/demo-script.md) shows a whole conversation with English subtitles. Content in Japanese can be read with Chrome's built-in Translate.
+The product itself is Japanese. The start page also links a family page from the demo, in Japanese with an English translation under each passage, and the [demo video](docs/demo/demo-script.md) shows a whole conversation with English subtitles.
 
 Best in Chrome or Edge on a computer. Your conversation is recorded and processed by Gemini; your family page is reachable only by its link and shows only what you agree to share; the team can see full conversations to fix problems. Everything recorded from the start page is deleted once judging ends.
 
