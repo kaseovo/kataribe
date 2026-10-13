@@ -146,6 +146,35 @@ export default function Landing() {
         </p>
       </header>
 
+      {/* First, so a judge can see it at work before talking to it. */}
+      {(start?.showcase || start?.video) && (
+        <section className="showcase">
+          <h2>See how it works</h2>
+          {start.showcase && (
+            <p>
+              The family page of the person in our demo: their life story as their family reads it,
+              told in Japanese with English under each passage. Only the stories they agreed to share
+              are there, and every quote plays in their own voice.
+            </p>
+          )}
+          {start.video && (
+            <p>A whole conversation in Japanese, with English subtitles, in the demo video.</p>
+          )}
+          <p className="actions">
+            {start.showcase && (
+              <a className="secondary" href={`/family/${start.showcase}`}>
+                Open the family page
+              </a>
+            )}
+            {start.video && (
+              <a className="secondary" href={start.video}>
+                Watch the demo video
+              </a>
+            )}
+          </p>
+        </section>
+      )}
+
       <section className="try">
         <h2>Try it on your own life</h2>
         <p>
@@ -274,21 +303,7 @@ export default function Landing() {
         </p>
       </section>
 
-      {start?.showcase && (
-        <section className="showcase">
-          <h2>Read a life story</h2>
-          <p>
-            The family page of the person in our demo, in Japanese. Only the stories they agreed to
-            share are there, and every quote plays in their own voice.
-          </p>
-          <a className="secondary" href={`/family/${start.showcase}`}>
-            Open the family page
-          </a>
-        </section>
-      )}
-
       <footer>
-        {start?.video && <a href={start.video}>Watch the demo video</a>}
         {start?.repo && <a href={start.repo}>Source code</a>}
       </footer>
     </div>
