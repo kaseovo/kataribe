@@ -9,6 +9,10 @@ import { expect, test, type APIRequestContext } from '@playwright/test';
  * upstream, what matters is that nothing private appears on the screen a
  * relative actually opens.
  */
+// A Japanese family's browser, so the page opens on the words as told. The
+// first test switches to English, as a judge's browser would open it.
+test.use({ locale: 'ja-JP' });
+
 async function seed(
   request: APIRequestContext,
   visibility: 'family' | 'private',
@@ -62,10 +66,14 @@ test('a shared story reaches the family, with her voice behind it', async ({ pag
   await expect(page.locator('.told h3')).toContainText('織物工場のこと');
   await expect(page.locator('.told blockquote')).toContainText('織物の工場');
   await expect(page.locator('.withheld')).toHaveCount(0);
-  // English follows, under the original, for a reader without Japanese.
-  await expect(page.locator('.told blockquote .translation')).toContainText(/factory|mill/i, {
-    timeout: 60_000,
-  });
+  await expect(page.locator('.told blockquote .translation')).toHaveCount(0);
+
+  // In English, once it is translated: the story in English, and the quote
+  // still in her words, with the English beneath.
+  await page.getByRole('button', { name: 'English' }).click({ timeout: 60_000 });
+  await expect(page.locator('.told h3')).toContainText(/factory|mill/i);
+  await expect(page.locator('.told blockquote')).toContainText('織物の工場');
+  await expect(page.locator('.told blockquote .translation')).toContainText(/factory|mill/i);
 
   // Her own voice one tap away is the whole claim — her voice saying this,
   // not the session it came from.

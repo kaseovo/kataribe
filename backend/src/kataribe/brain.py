@@ -517,6 +517,9 @@ def translate(settings: Settings, texts: list[str], language: Language) -> list[
             "is grandchild Yuka.\n"
             "- Where the original leaves out who, as Japanese does, say it with their "
             "name, or 'they', never 'he' or 'she': nothing here says which they are.\n"
+            "- A family word takes its owner, as English needs: 'my father' in the "
+            "person's own spoken words, 'their father' in a summary about them, never "
+            "'Father' alone.\n"
             "- One translation per passage, in the same order, without the numbers.\n\n"
             + "\n".join(f"[{i}] {text}" for i, text in enumerate(texts))
         ),

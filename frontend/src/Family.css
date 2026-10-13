@@ -102,18 +102,39 @@
   color: #1a1206;
 }
 
-/* English under the original, for a reader without the language, such as a
-   judge. Smaller and quieter, so the person's own words stay first. */
+/* English, or the language it was told in: one at a time, so the page reads
+   once rather than twice. Only a quote keeps both. */
+.family .reading {
+  float: right;
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.family .reading button {
+  padding: 0.35rem 0.9rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.family .reading button[aria-pressed='true'] {
+  background: var(--panel);
+  color: var(--text);
+}
+
+/* English under a quote, for a reader without the language, such as a judge.
+   Smaller and quieter, so the person's own words stay first. */
 .family .translation {
   display: block;
   margin-top: 0.25rem;
   font-size: 0.9em;
   line-height: 1.6;
   color: var(--muted);
-}
-
-.told > p.translation {
-  margin: -0.35rem 0 0.75rem;
 }
 
 .family .translation.name {

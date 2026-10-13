@@ -53,6 +53,7 @@ interface View {
 }
 
 const SPOKEN: Record<string, string> = { ja: 'Japanese', fr: 'French' };
+const ENDONYM: Record<string, string> = { ja: '日本語', fr: 'Français' };
 
 /** How often the page looks again while a conversation is being written up. */
 const REFRESH_MS = 4000;
@@ -69,6 +70,8 @@ export default function Family({ seniorId }: { seniorId: string }) {
   /** English for the page's text, by the text, when they speak another
    *  language. Shown under the original, never in its place. */
   const [translations, setTranslations] = useState<Record<string, string>>({});
+  /** The reader's own choice of language, once they have made one. */
+  const [picked, setReading] = useState<'en' | 'original' | null>(null);
   const player = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
@@ -145,24 +148,45 @@ export default function Family({ seniorId }: { seniorId: string }) {
     view.questions.filter((q) => q.answered_in.includes(storyId));
   const english = (text: string) => (text ? translations[text] : undefined);
   const translated = Object.keys(translations).length > 0;
-  const tag = (text: string) => (english(text) ? `${text} (${english(text)})` : text);
+  // Until they pick: English, unless their browser is in the language the story
+  // was told in. A judge reads English, a Japanese family the words as said.
+  const reading =
+    picked ?? (navigator.language.toLowerCase().startsWith(view.senior.language) ? 'original' : 'en');
+  // One language at a time, except in a quote: the English where there is one,
+  // or the original. A quote keeps the original, which is what their voice says.
+  const inEnglish = translated && reading === 'en';
+  const shown = (text: string) => (inEnglish && english(text)) || text;
 
   return (
     <div className="family">
       <header>
+        {translated && (
+          <div className="reading" role="group" aria-label="Language">
+            <button aria-pressed={reading === 'en'} onClick={() => setReading('en')}>
+              English
+            </button>
+            <button
+              lang={view.senior.language}
+              aria-pressed={reading === 'original'}
+              onClick={() => setReading('original')}
+            >
+              {ENDONYM[view.senior.language] ?? view.senior.language}
+            </button>
+          </div>
+        )}
         <h1>{view.senior.name}</h1>
-        {english(view.senior.name) && (
+        {inEnglish && english(view.senior.name) && (
           <p className="translation name">{english(view.senior.name)}</p>
         )}
         <p className="life">
           {view.senior.birth_year && `Born in ${view.senior.birth_year}`}
-          {view.senior.birthplace && ` · ${tag(view.senior.birthplace)}`}
+          {view.senior.birthplace && ` · ${shown(view.senior.birthplace)}`}
         </p>
-        {translated && (
+        {inEnglish && (
           <p className="translated-note">
-            Told in {SPOKEN[view.senior.language] ?? 'their own language'}. The grey lines are
-            English translations made by AI, so that you can follow. The quotes are{' '}
-            {view.senior.name}’s own words, and the play buttons their voice.
+            Told in {SPOKEN[view.senior.language] ?? 'their own language'}, and translated into
+            English by AI so that you can follow. Each quote keeps {shown(view.senior.name)}’s own
+            words, with the English beneath.
           </p>
         )}
         {view.visitor && (
@@ -195,30 +219,14 @@ export default function Family({ seniorId }: { seniorId: string }) {
             <article key={story.id} id={story.id} className="told">
               {askedFor(story.id).map((q) => (
                 <p key={q.id} className="asked-for">
-                  {q.asked_by} asked: {q.text}
-                  {english(q.text) && (
-                    <span className="translation">
-                      {english(q.asked_by) ?? q.asked_by} asked: {english(q.text)}
-                    </span>
-                  )}
+                  {shown(q.asked_by)} asked: {shown(q.text)}
                 </p>
               ))}
               <h3>
-                {story.title}
-                {story.approx_period && <em>{story.approx_period}</em>}
+                {shown(story.title)}
+                {story.approx_period && <em>{shown(story.approx_period)}</em>}
               </h3>
-              {english(story.title) && (
-                <p className="translation">
-                  {english(story.title)}
-                  {english(story.approx_period) && ` · ${english(story.approx_period)}`}
-                </p>
-              )}
-              <p>
-                {story.summary}
-                {english(story.summary) && (
-                  <span className="translation">{english(story.summary)}</span>
-                )}
-              </p>
+              <p>{shown(story.summary)}</p>
               {story.quotes.map((quote, i) => (
                 <blockquote key={i}>
                   {quote.audio && (
@@ -228,14 +236,14 @@ export default function Family({ seniorId }: { seniorId: string }) {
                   )}
                   <span>
                     「{quote.text}」
-                    {english(quote.text) && (
+                    {inEnglish && english(quote.text) && (
                       <span className="translation">“{english(quote.text)}”</span>
                     )}
                   </span>
                 </blockquote>
               ))}
               {[...story.people, ...story.places].length > 0 && (
-                <p className="tags">{[...story.people, ...story.places].map(tag).join(' · ')}</p>
+                <p className="tags">{[...story.people, ...story.places].map(shown).join(' · ')}</p>
               )}
             </article>
           ))}
@@ -247,9 +255,9 @@ export default function Family({ seniorId }: { seniorId: string }) {
           <h2>Questions from the family</h2>
         ) : (
           <>
-            <h2>Ask {view.senior.name} something</h2>
+            <h2>Ask {shown(view.senior.name)} something</h2>
             <p className="how">
-              Your question is put to {view.senior.name} in a coming conversation, gently and in
+              Your question is put to {shown(view.senior.name)} in a coming conversation, gently and in
               their own time, and they will hear that it came from you. If they would rather not
               answer, it is not pressed.
             </p>
@@ -261,9 +269,8 @@ export default function Family({ seniorId }: { seniorId: string }) {
             {view.questions.map((q) => (
               <li key={q.id} className={`question ${q.status}`}>
                 <p>
-                  <span className="who">{tag(q.asked_by)}</span>
-                  {q.text}
-                  {english(q.text) && <span className="translation">{english(q.text)}</span>}
+                  <span className="who">{shown(q.asked_by)}</span>
+                  {shown(q.text)}
                 </p>
                 <p className="state">
                   {q.status === 'waiting' && 'Waiting to be asked'}
@@ -273,7 +280,7 @@ export default function Family({ seniorId }: { seniorId: string }) {
                       {q.answered_in.map((id, i) => (
                         <span key={id}>
                           {i > 0 && ', '}
-                          <a href={`#${id}`}>{tag(titles.get(id) ?? '')}</a>
+                          <a href={`#${id}`}>{shown(titles.get(id) ?? '')}</a>
                         </span>
                       ))}
                     </>
