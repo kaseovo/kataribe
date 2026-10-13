@@ -1,6 +1,6 @@
 # Demo video
 
-Not yet recorded. Screen capture (QuickTime/OBS) of a real session + the family view, no actors, narrated afterward.
+Not yet recorded. Screen capture (QuickTime/OBS) of a real session + the family view, no actors, narrated afterward. Recorded during the Japanese review on Oct 14–15: the steps are in [japanese-review.md](japanese-review.md).
 
 ## Shot list
 
