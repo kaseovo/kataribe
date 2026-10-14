@@ -632,7 +632,7 @@ def technologies(slide):
         ("MdFactCheck", "Quality", [
             "pytest and Playwright against the live API, with synthesized Japanese speech",
             "AI-vs-AI sparring: three personas, real audio both ways",
-            "GitHub Actions: checks on every push, the live eval nightly",
+            "GitHub Actions: checks on every push, the live eval on demand",
         ]),
     ]
     gap = 0.2
@@ -710,7 +710,7 @@ def benchmarks(slide):
         ("12 / 12", "Consent: a clear yes shared the story; a no, a hesitation or never being asked kept it private"),
         ("9 / 9", "Family questions: answered, never raised, or let pass, each reported correctly"),
         ("6 / 6", "Openings that recall last time, then put the family's question"),
-        ("6 min", "A browser session with no drop, 34 transcript entries. Run every night"),
+        ("6 min", "A browser session with no drop, 34 transcript entries. Run with every live eval"),
     ]
     gap = 0.2
     w = (WIDTH - 3 * gap) / 4

@@ -80,7 +80,9 @@ Measured once each way on live audio, with the check-in brought forward to 30 se
 
 **The showcase family page is read-only.** It holds stories from the demo take and one family question already answered. Questions sent from it would wait forever, and every judge would read the others'. Its form is shown all the same, so a judge sees how a question is put and hears it as the interviewer would say it, but *Send* is greyed and a line says nothing is sent from the example, with the way to a page of their own; the server refuses one sent anyway.
 
-**Limits and money.** At most 30 visitor conversations a day across all visitors, about $0.10 each, so the worst case over the evaluation is under $60 and the likely one a few dollars. The Gemini key moves to the paid tier (the Cloud trial credit does not cover Gemini), and the nightly eval gets a key of its own so testing cannot use up what judges need. One instance stays warm until Nov 6: a cold start measured 4.6 s, of which the app's own imports are under a second, and startup CPU boost was already on.
+**Limits and money.** At most 30 visitor conversations a day across all visitors, about $0.10 each, so the worst case over the evaluation is under $60 and the likely one a few dollars. The Gemini key moves to the paid tier (the Cloud trial credit does not cover Gemini), and the live eval gets a key of its own so testing cannot use up what judges need. One instance stays warm until Nov 6: a cold start measured 4.6 s, of which the app's own imports are under a second, and startup CPU boost was already on.
+
+**The live eval runs by hand, from 2026-10-15.** It ran every night against the real API, tens of minutes of Live audio and many text calls, on a macOS runner. With the credit spent it failed every night from Oct 10 and caught nothing, and topped up it would have spent credit every night of judging, when nothing changes. Its schedule is gone and its button kept (Actions, *Eval*, *Run workflow*): run after topping up, after any change to how the interviewer speaks or listens, and before the submission. The deployed service is checked by `make smoke`, which was never part of it.
 
 **Watching it.** An uptime check on `/api/health`, Error Reporting by email, a budget alert, and `make smoke` by hand every morning, since a health check cannot see a broken key.
 
@@ -227,7 +229,7 @@ The cause was ours. The SDK hands the Python websockets library its default 20 s
 Two things follow:
 
 - Harness clients are built through `tests/live/connection.py`, which turns the ping timeout off.
-- The browser does its own keepalive and exposes no such setting, so the product path was never affected by this particular cause. Confirmed rather than assumed: a browser session ran a full six minutes with 34 transcript entries and no drop. `pnpm test:endurance` keeps it that way, nightly.
+- The browser does its own keepalive and exposes no such setting, so the product path was never affected by this particular cause. Confirmed rather than assumed: a browser session ran a full six minutes with 34 transcript entries and no drop. `pnpm test:endurance` keeps it that way, with every live eval.
 
 Session resumption was also verified to work — `SessionResumptionConfig`, a handle on every `session_resumption_update`, and a reconnect that carries the conversation across. It is not needed for this cause, but it is the documented answer for a genuine server-side drop and the mechanism is proven should a long session need it.
 

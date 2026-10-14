@@ -1,11 +1,14 @@
 name: Eval
 
 # Streams real Japanese audio at the Live API. Kept off the push path because it
-# runs in real time and costs quota — but run nightly, because the failure it
-# catches is a config that only breaks against the live service.
+# runs in real time and costs Gemini credit. The failure it catches is a config
+# that only breaks against the live service.
+#
+# Run by hand: Actions, Eval, Run workflow (or `gh workflow run eval.yml`).
+# After topping up the key, after any change to how the interviewer speaks or
+# listens, and before a release. It ran nightly until 2026-10-15: every run
+# spends credit, and through judging nothing changes from one night to the next.
 on:
-  schedule:
-    - cron: '0 18 * * *' # 03:00 JST
   workflow_dispatch:
 
 jobs:

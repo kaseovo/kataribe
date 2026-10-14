@@ -50,7 +50,7 @@ The `gcloud` CLI needs a Python with SSL. If it fails to load, point it at one: 
 From the submission on Oct 17 to the end of judging on Nov 6. Decided in [roadmap.md](roadmap.md), *Judges try it themselves*.
 
 - **Gemini must be paid for.** The key bills against prepaid credits in AI Studio, and when they ran out on 2026-10-12 every conversation was refused with `1011 Your prepayment credits are depleted`. Token minting kept working, so nothing but a real conversation shows it. The Cloud trial credit does not cover Gemini.
-- **The nightly eval gets a key of its own**, in the repository's `KATARIBE_GEMINI_API_KEY` secret, so testing cannot use up what judges need.
+- **The live eval gets a key of its own**, in the repository's `KATARIBE_GEMINI_API_KEY` secret, so testing cannot use up what judges need.
 - **One instance stays warm**, `MIN_INSTANCES=1`, the Makefile's default until Nov 6. A cold start measured 4.6 s, nearly all of it Cloud Run starting the container; startup CPU boost was already on.
 - **The deploy sets** `TRY_LANGUAGES=en` (`en,ja` once the native-speaker review passes), `SHOWCASE` to the demo persona and `VIDEO_URL` to the video.
 - **Watched by** an uptime check on `/api/health`, Error Reporting by email, the budget above, and `make smoke` each morning.

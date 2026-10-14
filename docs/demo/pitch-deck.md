@@ -53,7 +53,7 @@ Find gaps → Plan next questions → Back into the next session
 | Processing | Gemini text model — extraction, timeline, gap analysis, question planning |
 | Storage | SQLite + local disk now; Firestore + Cloud Storage when deployed |
 
-Offline checks (lint, types, unit tests) pass on every push. A nightly eval streams real Japanese audio at the Live API end to end.
+Offline checks (lint, types, unit tests) pass on every push. A live eval, run on demand, streams real Japanese audio at the Live API end to end.
 
 ## 8. Where we are
 
