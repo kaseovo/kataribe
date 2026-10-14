@@ -271,6 +271,8 @@ For the native speaker: the Japanese summaries moved from です/ます to だ/�
 
 **Asked, not guessed: how English refers to someone.** Told never to guess "he" or "she" from a name, the translation wrote "Father ran a small weaving mill", then, told to give the word an owner, "Their father's weaving workshop", which reads oddly in a memoir. A person's profile now says how to refer to them, she, he or they, as whoever entered them said, in the console. Unset, as for a visitor, English uses their name and no pronoun: "Haru's father". Summaries follow the same rule. Live tests: a summary with no pronoun given uses none, 3 of 3; with "she" given, "her", 3 of 3; the translation test, its lines now labelled for the judge, who took a title for her own words, 3 of 3.
 
+**Read as a book.** Chosen on 2026-10-14 from prototypes: a timeline, a scrapbook, and four books (on screen, on paper, page by page, an open spread). The page is a cover, contents by life stage, and chapters to read through. Each story is its text; its quotes are behind one button, "All 3 quotes in Haru's own words, with their voice", for whoever wants to check the retelling or hear it said. Each quote has its own player, play, progress and length, greyed with "No recording" where there is none, as on a page made up for a demo.
+
 **All they said.** Under each quote, *All they said* opens the whole answer it was taken from, with the quoted words marked, so a reader can check a quote against what was said. That is exactly what the play button plays, and nothing more: not the interviewer's question before it, since a question can name what they refused to talk about.
 
 ## Consent is evidence, not inference

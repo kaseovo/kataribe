@@ -64,6 +64,9 @@ test('a shared story reaches the family, with her voice behind it', async ({ pag
   await expect(page.locator('h1')).toContainText('田中ハル');
   await expect(page.locator('.chapter h2')).toContainText('Childhood');
   await expect(page.locator('.told h3')).toContainText('織物工場のこと');
+  // Read as text; the quotes, with her voice, are a press away.
+  await expect(page.locator('.told blockquote')).toHaveCount(0);
+  await page.getByRole('button', { name: /quote in .* own words/ }).click();
   await expect(page.locator('.told blockquote')).toContainText('織物の工場');
   await expect(page.locator('.withheld')).toHaveCount(0);
   await expect(page.locator('.told blockquote .translation')).toHaveCount(0);

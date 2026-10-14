@@ -309,3 +309,212 @@
   font-size: 0.9rem;
   line-height: 1.7;
 }
+
+/* The family page as a book, chosen on 2026-10-14 from four prototypes: a
+   cover, contents and chapters to read through, and each story's quotes, with
+   their voice, one press away. */
+
+.family.book {
+  max-width: 38rem;
+}
+
+.book .cover,
+.book .contents,
+.book .told h3,
+.book .period,
+.book .asked-for,
+.book .text {
+  font-family: Georgia, 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+}
+
+.book .kicker {
+  margin: 0 0 0.75rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.book header.cover {
+  margin: 2.5rem 0 3rem;
+  padding: 3rem 0 2.5rem;
+  text-align: center;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.book .cover h1 {
+  margin: 0;
+  font-size: 3rem;
+  font-weight: 400;
+}
+
+.book .cover .original {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+}
+
+.book .cover .life {
+  margin: 1rem 0 0;
+  font-size: 1rem;
+  font-style: italic;
+  color: var(--text);
+}
+
+.book .cover .translated-note {
+  max-width: 26rem;
+  margin: 1.25rem auto 0;
+}
+
+.book .cover .yours {
+  margin: 1.25rem 0 0;
+  font-family: system-ui, sans-serif;
+}
+
+.book .contents {
+  margin-bottom: 4rem;
+}
+
+.book .contents > ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.book .contents > ol > li {
+  display: grid;
+  grid-template-columns: 9rem 1fr;
+  padding: 0.5rem 0;
+  border-bottom: 1px dotted var(--line);
+}
+
+.book .contents span {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.book .contents ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.book .contents a {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.book .contents a:hover {
+  color: var(--accent);
+}
+
+.book .chapter {
+  margin-bottom: 4rem;
+}
+
+.book .told {
+  margin-bottom: 3rem;
+}
+
+.book .told h3 {
+  display: block;
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 400;
+}
+
+.book .period {
+  margin: 0.2rem 0 1.25rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.book .asked-for {
+  margin: 0 0 1.25rem;
+  padding-left: 1rem;
+  border-left: 2px solid var(--accent);
+  font-size: 1rem;
+  font-style: italic;
+}
+
+.book .text {
+  font-size: 1.15rem;
+  line-height: 1.9;
+}
+
+.book .text::first-letter {
+  float: left;
+  margin: 0.15rem 0.5rem 0 0;
+  font-size: 3.4rem;
+  line-height: 0.9;
+  color: var(--accent);
+}
+
+.book .quotes {
+  margin: 0.5rem 0 1rem;
+}
+
+.book .toggle {
+  margin-bottom: 0.75rem;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.book .toggle:hover {
+  border-color: var(--accent);
+}
+
+.book .told blockquote {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.15rem;
+}
+
+/* A quote's voice: play, how far it has got, how long it is. Greyed where
+   there is no recording. */
+.player {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+}
+
+.player .bar {
+  flex: 1;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--line);
+}
+
+.player .bar span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+
+.player .time {
+  min-width: 2.5rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+  text-align: right;
+}
+
+.player.none {
+  opacity: 0.45;
+}
+
+.player.none .listen {
+  cursor: not-allowed;
+}
+
+.book .asking {
+  border-top: 1px solid var(--line);
+}

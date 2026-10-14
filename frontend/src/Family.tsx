@@ -76,6 +76,105 @@ const REFRESH_MS = 4000;
 /** What the family sees. Only stories the person agreed to share reach this
  *  page, and the filtering happens in the query rather than here — there is no
  *  path through which a private story arrives and is merely not rendered. */
+const clock = (seconds: number) =>
+  `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
+
+/** Their voice saying it: the clip of the answer the quote comes from. Where
+ *  there is no recording, as on a page made up for a demo, it is shown greyed,
+ *  so the place the voice belongs is still there. */
+function Player({ audio }: { audio: string | null }) {
+  const sound = useRef<HTMLAudioElement | null>(null);
+  const [playing, setPlaying] = useState(false);
+  const [done, setDone] = useState(0);
+  const [length, setLength] = useState<number | null>(null);
+  if (!audio) {
+    return (
+      <div className="player none">
+        <button className="listen" disabled aria-label="No recording">
+          ▶
+        </button>
+        <span className="bar" />
+        <span className="time">No recording</span>
+      </div>
+    );
+  }
+  const toggle = () => {
+    const clip = sound.current;
+    if (!clip) return;
+    if (clip.paused) void clip.play();
+    else clip.pause();
+  };
+  return (
+    <div className="player">
+      <audio
+        ref={sound}
+        src={audio}
+        preload="none"
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
+        onEnded={() => setDone(0)}
+        onLoadedMetadata={(e) => setLength(e.currentTarget.duration)}
+        onTimeUpdate={(e) => {
+          const clip = e.currentTarget;
+          if (clip.duration) setDone(clip.currentTime / clip.duration);
+        }}
+      />
+      <button className="listen" onClick={toggle} aria-label={playing ? 'Pause' : 'Listen'}>
+        {playing ? '❚❚' : '▶'}
+      </button>
+      <span className="bar">
+        <span style={{ width: `${done * 100}%` }} />
+      </span>
+      <span className="time">{length ? clock(length) : ''}</span>
+    </div>
+  );
+}
+
+/** The story is read as text. Its quotes, the words it was retold from, with
+ *  their voice, are one press away, for whoever wants to check it against what
+ *  was said or hear them say it. */
+function Quotes({
+  story,
+  name,
+  language,
+  english,
+}: {
+  story: Story;
+  name: string;
+  language: string;
+  english: (text: string) => string | undefined;
+}) {
+  const [open, setOpen] = useState(false);
+  const count = story.quotes.length;
+  if (count === 0) return null;
+  return (
+    <div className="quotes">
+      <button className="toggle" aria-expanded={open} onClick={() => setOpen(!open)}>
+        {open
+          ? 'Hide the quotes'
+          : `${count === 1 ? 'The quote' : `All ${count} quotes`} in ${name}’s own words, with their voice`}
+      </button>
+      {open &&
+        story.quotes.map((quote, i) => (
+          <blockquote key={i}>
+            <span lang={language}>「{quote.text}」</span>
+            {english(quote.text) && <span className="translation">“{english(quote.text)}”</span>}
+            <Player audio={quote.audio} />
+            {quote.said && quote.said !== quote.text && (
+              <details className="said">
+                <summary>All they said</summary>
+                <span lang={language}>
+                  <Answer said={quote.said} quoted={quote.text} />
+                </span>
+                {english(quote.said) && <span className="translation">{english(quote.said)}</span>}
+              </details>
+            )}
+          </blockquote>
+        ))}
+    </div>
+  );
+}
+
 export default function Family({ seniorId }: { seniorId: string }) {
   const [view, setView] = useState<View | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -87,7 +186,6 @@ export default function Family({ seniorId }: { seniorId: string }) {
   const [translations, setTranslations] = useState<Record<string, string>>({});
   /** The reader's own choice of language, once they have made one. */
   const [picked, setReading] = useState<'en' | 'original' | null>(null);
-  const player = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     fetch(`/api/family/${seniorId}`)
@@ -146,14 +244,6 @@ export default function Family({ seniorId }: { seniorId: string }) {
     }
   };
 
-  const play = (quote: Quote) => {
-    const audio = player.current;
-    if (!audio || !quote.audio) return;
-    if (!audio.src.endsWith(quote.audio)) audio.src = quote.audio;
-    audio.currentTime = 0;
-    void audio.play();
-  };
-
   if (error) return <p className="empty">{error}</p>;
   if (!view) return null;
 
@@ -172,36 +262,41 @@ export default function Family({ seniorId }: { seniorId: string }) {
   const inEnglish = translated && reading === 'en';
   const shown = (text: string) => (inEnglish && english(text)) || text;
 
+  const name = shown(view.senior.name);
+
   return (
-    <div className="family">
-      <header>
-        {translated && (
-          <div className="reading" role="group" aria-label="Language">
-            <button aria-pressed={reading === 'en'} onClick={() => setReading('en')}>
-              English
-            </button>
-            <button
-              lang={view.senior.language}
-              aria-pressed={reading === 'original'}
-              onClick={() => setReading('original')}
-            >
-              {ENDONYM[view.senior.language] ?? view.senior.language}
-            </button>
-          </div>
-        )}
-        <h1>{view.senior.name}</h1>
+    <div className="family book">
+      {translated && (
+        <div className="reading" role="group" aria-label="Language">
+          <button aria-pressed={reading === 'en'} onClick={() => setReading('en')}>
+            English
+          </button>
+          <button
+            lang={view.senior.language}
+            aria-pressed={reading === 'original'}
+            onClick={() => setReading('original')}
+          >
+            {ENDONYM[view.senior.language] ?? view.senior.language}
+          </button>
+        </div>
+      )}
+
+      <header className="cover">
+        <p className="kicker">A life story</p>
+        <h1>{name}</h1>
         {inEnglish && english(view.senior.name) && (
-          <p className="translation name">{english(view.senior.name)}</p>
+          <p className="original" lang={view.senior.language}>
+            {view.senior.name}
+          </p>
         )}
         <p className="life">
           {view.senior.birth_year && `Born in ${view.senior.birth_year}`}
-          {view.senior.birthplace && ` · ${shown(view.senior.birthplace)}`}
+          {view.senior.birthplace && `, ${shown(view.senior.birthplace)}`}
         </p>
         {inEnglish && (
           <p className="translated-note">
             Told in {SPOKEN[view.senior.language] ?? 'their own language'}, and translated into
-            English by AI so that you can follow. Each quote keeps {shown(view.senior.name)}’s own
-            words, with the English beneath.
+            English by AI so that you can follow. The quotes are {name}’s own words.
           </p>
         )}
         {view.visitor && (
@@ -211,8 +306,6 @@ export default function Family({ seniorId }: { seniorId: string }) {
           </p>
         )}
       </header>
-
-      <audio ref={player} preload="none" />
 
       {view.writing && (
         <p className="writing" role="status">
@@ -227,47 +320,47 @@ export default function Family({ seniorId }: { seniorId: string }) {
         </p>
       )}
 
-      {view.chapters.map((chapter) => (
+      {told > 0 && (
+        <nav className="contents" aria-label="Contents">
+          <p className="kicker">Contents</p>
+          <ol>
+            {view.chapters.map((chapter) => (
+              <li key={chapter.life_stage}>
+                <span>{lifeStage(chapter.life_stage)}</span>
+                <ul>
+                  {chapter.stories.map((story) => (
+                    <li key={story.id}>
+                      <a href={`#${story.id}`}>{shown(story.title)}</a>
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ol>
+        </nav>
+      )}
+
+      {view.chapters.map((chapter, i) => (
         <section key={chapter.life_stage} className="chapter">
-          <h2>{lifeStage(chapter.life_stage)}</h2>
+          <h2 className="kicker">
+            Chapter {i + 1} · {lifeStage(chapter.life_stage)}
+          </h2>
           {chapter.stories.map((story) => (
             <article key={story.id} id={story.id} className="told">
+              <h3>{shown(story.title)}</h3>
+              {story.approx_period && <p className="period">{shown(story.approx_period)}</p>}
               {askedFor(story.id).map((q) => (
                 <p key={q.id} className="asked-for">
-                  {shown(q.asked_by)} asked: {shown(q.text)}
+                  {shown(q.asked_by)} asked: “{shown(q.text)}”
                 </p>
               ))}
-              <h3>
-                {shown(story.title)}
-                {story.approx_period && <em>{shown(story.approx_period)}</em>}
-              </h3>
-              <p>{shown(story.summary)}</p>
-              {story.quotes.map((quote, i) => (
-                <blockquote key={i}>
-                  {quote.audio && (
-                    <button className="listen" onClick={() => play(quote)} aria-label="Listen">
-                      ▶
-                    </button>
-                  )}
-                  <span>
-                    「{quote.text}」
-                    {inEnglish && english(quote.text) && (
-                      <span className="translation">“{english(quote.text)}”</span>
-                    )}
-                    {quote.said && quote.said !== quote.text && (
-                      <details className="said">
-                        <summary>All they said</summary>
-                        <span lang={view.senior.language}>
-                          <Answer said={quote.said} quoted={quote.text} />
-                        </span>
-                        {inEnglish && english(quote.said) && (
-                          <span className="translation">{english(quote.said)}</span>
-                        )}
-                      </details>
-                    )}
-                  </span>
-                </blockquote>
-              ))}
+              <p className="text">{shown(story.summary)}</p>
+              <Quotes
+                story={story}
+                name={name}
+                language={view.senior.language}
+                english={(text) => (inEnglish ? english(text) : undefined)}
+              />
               {[...story.people, ...story.places].length > 0 && (
                 <p className="tags">{[...story.people, ...story.places].map(shown).join(' · ')}</p>
               )}
@@ -277,17 +370,13 @@ export default function Family({ seniorId }: { seniorId: string }) {
       ))}
 
       <section className="asking">
-        {view.showcase ? (
-          <h2>Questions from the family</h2>
-        ) : (
-          <>
-            <h2>Ask {shown(view.senior.name)} something</h2>
-            <p className="how">
-              Your question is put to {shown(view.senior.name)} in a coming conversation, gently and in
-              their own time, and they will hear that it came from you. If they would rather not
-              answer, it is not pressed.
-            </p>
-          </>
+        <h2 className="kicker">{view.showcase ? 'Questions from the family' : `Write to ${name}`}</h2>
+        {!view.showcase && (
+          <p className="how">
+            Your question is put to {name} in a coming conversation, gently and in their own time,
+            and they will hear that it came from you. If they would rather not answer, it is not
+            pressed.
+          </p>
         )}
 
         {view.questions.length > 0 && (
