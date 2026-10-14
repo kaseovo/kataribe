@@ -135,7 +135,7 @@ test('a judge tries it from the start page, with nothing to sign in to', async (
   await expect(page).toHaveURL(/\/talk\/[\w-]{22,}$/);
   made.push(new URL(page.url()).pathname.split('/').pop()!);
 
-  await page.getByRole('button', { name: 'Talk', exact: true }).click();
+  await page.getByRole('button', { name: 'Start talking' }).click();
   await expect(page.locator('.talk-caption')).not.toBeEmpty({ timeout: 60_000 });
   await expect(page.locator('.talk-phase')).toHaveText('Listening', { timeout: 60_000 });
   await page.evaluate(() => (window as unknown as { answer: () => void }).answer());
@@ -146,6 +146,7 @@ test('a judge tries it from the start page, with nothing to sign in to', async (
   await page.getByRole('button', { name: 'Share with my family' }).click();
   await expect(page.getByText(/now on your family page/)).toBeVisible({ timeout: 150_000 });
   await page.getByRole('link', { name: 'Open your family page' }).click();
+  await page.getByRole('button', { name: /own words/ }).first().click();
   await expect(page.locator('.told blockquote').first()).toBeVisible();
 
   // Each quote plays their own voice, cut from the recording in the bucket,

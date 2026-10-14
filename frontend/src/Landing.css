@@ -1,38 +1,46 @@
 /* The start page. Read once, by a stranger deciding whether to press Start, in
    the order they need it: what it is, how it works, a real story, their turn.
-   One column at reading measure, like the family page. */
+   One column on a phone; on a desktop, the width of the screen, each section
+   in two columns (the words beside what they are about), and paragraphs kept
+   at reading measure. */
 
 .landing {
-  max-width: 42rem;
+  max-width: 76rem;
   margin: 0 auto;
   padding: 3rem 1rem 4rem;
   line-height: 1.7;
 }
 
 .landing .hero {
-  display: block;
-  padding: 2rem 0 1rem;
+  display: grid;
+  gap: 2rem;
+  padding: 2rem 0 3.5rem;
 }
 
+/* The name, large enough to be the page's mark. */
 .landing .brand {
-  margin: 0 0 1.5rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  margin: 0 0 2rem;
+  font-size: clamp(1.6rem, 2.6vw, 2.1rem);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
 }
 
 .landing .brand span {
-  margin-left: 0.4rem;
+  margin-left: 0.5rem;
   color: var(--accent);
+  font-weight: 600;
 }
 
 .landing h1 {
   margin: 0 0 1rem;
-  font-size: clamp(2rem, 5vw, 2.8rem);
-  line-height: 1.2;
+  font-size: clamp(2rem, 4.2vw, 3.4rem);
+  line-height: 1.15;
 }
 
 .landing .lede {
-  margin: 0 0 1.5rem;
+  max-width: 38rem;
+  margin: 0 0 1.75rem;
   font-size: 1.15rem;
   color: var(--muted);
 }
@@ -46,7 +54,7 @@
 
 .landing h2 {
   margin: 0 0 0.6rem;
-  font-size: 1.35rem;
+  font-size: clamp(1.35rem, 2.4vw, 1.75rem);
 }
 
 /* The loop, in four steps: what a judge should leave knowing. */
@@ -64,7 +72,7 @@
   counter-increment: loop;
   padding-top: 0.75rem;
   border-top: 2px solid var(--accent);
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   color: var(--muted);
 }
 
@@ -82,7 +90,7 @@
 }
 
 .example {
-  margin-bottom: 3rem;
+  margin-bottom: 4rem;
 }
 
 .example .note {
@@ -91,86 +99,151 @@
   font-size: 0.9rem;
 }
 
-/* One story from the demo's family page, as the family page sets it. */
-.story {
-  margin: 1rem 0;
-  padding: 1.25rem;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 0.75rem;
-}
-
-.story h3 {
-  margin: 0.1rem 0 0.5rem;
-  font-size: 1.25rem;
-}
-
-.story > p {
-  margin: 0 0 0.9rem;
-}
-
-.story .asked {
-  margin: 0 0 0.6rem;
-  color: var(--accent);
-  font-size: 0.85rem;
-}
-
-.story .stage {
-  margin: 0;
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--accent);
-}
-
-.story blockquote {
-  display: flex;
-  gap: 0.75rem;
-  align-items: flex-start;
-  margin: 0 0 0.6rem;
-  padding: 0.8rem 1rem;
-  background: var(--bg);
-  border-left: 2px solid var(--accent);
-  border-radius: 0 0.4rem 0.4rem 0;
-}
-
-.story .english {
-  display: block;
-  margin-top: 0.25rem;
-  color: var(--muted);
-  font-size: 0.92em;
-}
-
-.story .listen {
-  flex: none;
-  width: 2rem;
-  height: 2rem;
-  padding: 0;
+/* What to look for on the page, for a judge about to open it. */
+.example .look {
   display: grid;
-  place-items: center;
-  border-radius: 50%;
-  border: 1px solid var(--accent);
-  background: transparent;
-  color: var(--accent);
-  font-size: 0.7rem;
+  gap: 0.6rem;
+  margin: 1.25rem 0 0;
+  padding: 0;
+  list-style: none;
 }
 
-.landing .story button.more {
-  padding: 0.25rem 0;
+.example .look li {
+  padding-left: 1.4rem;
+  text-indent: -1.4rem;
+}
+
+.example .look li::before {
+  content: '→';
+  display: inline-block;
+  width: 1.4rem;
+  text-indent: 0;
   color: var(--accent);
+}
+
+/* The demo's family page, by its cover, set as the family page sets its own:
+   the whole of it a press that opens the page. */
+.landing .cover-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  margin-top: 1.25rem;
+  padding: 2.25rem 1.5rem 1.75rem;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 0.9rem;
+  box-shadow: 0 20px 60px rgb(0 0 0 / 0.35);
+  color: var(--text);
+  font-family: Georgia, 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  font-weight: 400;
+  text-align: center;
+}
+
+.landing .cover-card:hover {
+  border-color: var(--accent);
+}
+
+.cover-card .kicker {
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.cover-card .title {
+  margin-top: 0.6rem;
+  font-size: clamp(2rem, 6vw, 2.75rem);
+  line-height: 1.1;
+}
+
+.cover-card .original {
+  margin-top: 0.3rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.cover-card .born {
+  margin-top: 0.75rem;
+  font-style: italic;
+}
+
+.cover-card .toc {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 30rem;
+  margin-top: 1.75rem;
+  border-top: 1px solid var(--line);
+  text-align: left;
+}
+
+.cover-card .toc-row {
+  display: grid;
+  grid-template-columns: 9rem 1fr;
+  gap: 1rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.95rem;
+}
+
+/* One story to a line, as in the page's own contents. */
+.cover-card .toc-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.cover-card .toc-stage {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.cover-card .toc-questions {
+  margin-top: 1rem;
+  color: var(--muted);
   font-size: 0.9rem;
 }
 
+.cover-card .open {
+  margin-top: 1.5rem;
+  padding: 0.7rem 1.4rem;
+  border-radius: 0.5rem;
+  background: var(--accent);
+  color: #1a1206;
+  font-family: system-ui, sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+@media (max-width: 30rem) {
+  .cover-card .toc-row {
+    grid-template-columns: 1fr;
+    gap: 0.15rem;
+  }
+}
+
+/* The family page itself, over the start page, its own guide leading back.
+   Outside .landing, so none of the start page's styles reach it. */
+.sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  overflow: auto;
+  background: var(--bg);
+  outline: none;
+}
+
 .landing .try {
-  margin-bottom: 2rem;
+  margin-bottom: 4rem;
   padding: 1.5rem;
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 0.75rem;
 }
 
-.landing .try > p {
+.landing .try-text p {
   margin: 0 0 1rem;
 }
 
@@ -286,15 +359,85 @@
   text-decoration: underline;
 }
 
-.returning p {
-  margin: 0 0 1rem;
+/* A visitor coming back: who they are, where they are, the two ways on, and
+   below a line, the way to start as someone else. */
+.returning {
+  padding: 1.75rem;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 0.9rem;
 }
 
-.returning .actions {
+.returning .who {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
+  gap: 1rem;
+}
+
+.returning .initial {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #1a1206;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.returning .who p {
+  margin: 0;
+}
+
+.returning .kicker {
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.landing .returning .name {
+  color: var(--text);
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.returning .where {
+  margin: 1.25rem 0 1.5rem;
+  color: var(--muted);
+}
+
+.returning-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
   gap: 0.75rem;
+}
+
+.landing .returning-actions a {
+  align-self: stretch;
+  text-align: center;
+}
+
+.returning .someone-else {
+  margin: 1.5rem 0 0;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.landing .returning .someone-else button {
+  padding: 0;
+  background: none;
+  color: var(--accent);
+  font-size: inherit;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
 }
 
 .landing .notice {
@@ -304,22 +447,18 @@
   background: var(--bg);
 }
 
+/* What happens to what they say, across the foot of the page. */
+.landing .privacy p {
+  max-width: 52rem;
+  margin: 0;
+}
+
 .landing .privacy {
-  margin: 1.5rem 0 0;
-  padding-top: 1rem;
+  margin: 0;
+  padding-top: 2rem;
   border-top: 1px solid var(--line);
   color: var(--muted);
   font-size: 0.85rem;
-}
-
-.landing footer {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem 1.5rem;
-}
-
-.landing footer a {
-  color: var(--accent);
 }
 
 .landing a:focus-visible,
@@ -328,4 +467,183 @@
 .landing textarea:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+/* The demo video, beside the opening words: the quickest way in. */
+.watch {
+  margin: 0;
+}
+
+.watch figcaption {
+  margin-top: 0.6rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.landing .try .note {
+  margin: 0 0 1rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: #000;
+}
+
+.video.placeholder {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 0.75rem;
+  background: var(--panel);
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.video.placeholder span {
+  display: grid;
+  place-items: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #1a1206;
+  font-size: 1.2rem;
+}
+
+.loop ol {
+  margin: 1.25rem 0 4rem;
+}
+
+/* For technical judges: the path from a voice to a family page, a step to a
+   card. */
+.hood {
+  margin: 0 0 4.5rem;
+}
+
+.hood .note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.hood ol {
+  counter-reset: hood;
+  display: grid;
+  gap: 0.75rem;
+  margin: 1.5rem 0 1.25rem;
+  padding: 0;
+  list-style: none;
+}
+
+.hood li {
+  counter-increment: hood;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1.1rem 1.2rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.hood li strong {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--text);
+  font-size: 1.05rem;
+}
+
+.hood li strong::before {
+  content: counter(hood);
+  display: grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border: 1px solid var(--accent);
+  border-radius: 50%;
+  color: var(--accent);
+  font-size: 0.8rem;
+}
+
+.hood .stack {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 1.5rem;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.hood a {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.hood a:hover {
+  text-decoration: underline;
+}
+
+/* A desktop: the five steps in a row, each leading to the next. */
+@media (min-width: 60rem) {
+  .hood ol {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 1.25rem;
+  }
+
+  .hood li:not(:last-child)::after {
+    content: '→';
+    position: absolute;
+    top: 1.15rem;
+    right: -1.05rem;
+    color: var(--accent);
+    font-size: 0.9rem;
+  }
+}
+
+/* A desktop: each section's words beside what they are about. */
+@media (min-width: 60rem) {
+  .landing {
+    padding: 3rem 2rem 4rem;
+  }
+
+  .landing .hero {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 3.5rem;
+  }
+
+  .landing .example {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    align-items: center;
+    gap: 3.5rem;
+  }
+
+  .landing .example .cover-card {
+    margin-top: 0;
+  }
+
+  .landing .try {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    gap: 3.5rem;
+    padding: 2.25rem 2.5rem;
+  }
+
+  .landing .try-form {
+    padding-top: 0.4rem;
+  }
 }

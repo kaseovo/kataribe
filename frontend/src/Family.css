@@ -1,83 +1,299 @@
 /* The family page. Read by relatives rather than by whoever is tuning the
-   thing, so it is set for reading: narrower measure, larger type, no controls
-   competing for attention. */
+   thing, so it is set for reading. On a desktop, a guide beside the stories:
+   who this is, the language, and the contents, in view all the way down and
+   showing where the reader is, with the stories in a column of their own,
+   each on a card. On a phone, the guide comes first and the stories follow.
+   Chosen on 2026-10-14 over a book in one narrow column, every story as a
+   card to open one at a time, and a timeline of the life. */
 
 .family {
-  max-width: 42rem;
+  max-width: 76rem;
   margin: 0 auto;
-  padding: 3rem 1.25rem 5rem;
+  padding: 2.5rem 1.25rem 5rem;
 }
 
-.family header {
-  display: block;
+.family .kicker {
+  margin: 0;
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+/* The guide. */
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
   margin-bottom: 2.5rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid var(--line);
 }
 
-.family h1 {
-  font-size: 2.25rem;
-  margin-bottom: 0.4rem;
+.cover {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
 }
 
-.family .life {
+.cover h1 {
+  margin: 0.15rem 0 0;
+  font-family: Georgia, 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  font-size: 2.3rem;
+  font-weight: 400;
+  line-height: 1.15;
+}
+
+.cover .original {
   margin: 0;
   color: var(--muted);
+}
+
+.cover .life {
+  margin: 0.2rem 0 0;
+  font-family: Georgia, 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  font-style: italic;
+}
+
+.side .reading {
+  align-self: flex-start;
+  margin-top: 0.5rem;
+}
+
+.contents {
+  display: grid;
+  gap: 1.1rem;
+  margin-top: 0.75rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--line);
+}
+
+.contents .stage {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0 0 0.35rem;
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.contents .stage span {
+  display: grid;
+  place-items: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  border: 1px solid var(--accent);
+  border-radius: 50%;
+  font-size: 0.72rem;
+  letter-spacing: 0;
+}
+
+.contents ul {
+  display: grid;
+  gap: 0.1rem;
+  margin: 0;
+  padding: 0 0 0 1.95rem;
+  list-style: none;
+}
+
+.contents a {
+  display: block;
+  padding: 0.35rem 0.6rem;
+  border-radius: 0.4rem;
+  color: var(--muted);
   font-size: 0.95rem;
+  line-height: 1.4;
+  text-decoration: none;
+}
+
+.contents a:hover,
+.contents a[aria-current] {
+  background: var(--panel);
+  color: var(--text);
+}
+
+.contents a[aria-current] {
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+/* Asking, in the guide on a desktop; on a phone, the button in the corner. */
+.side-ask {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  background: var(--accent);
+  color: #1a1206;
+}
+
+.side-ask .count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.4rem;
+  height: 1.4rem;
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  background: #1a1206;
+  color: var(--accent);
+  font-size: 0.75rem;
+}
+
+/* The stories. */
+.family .pages > .translated-note {
+  max-width: 44rem;
+  margin: 0 0 2.5rem;
+}
+
+.family .pages > .yours {
+  margin: 0 0 2rem;
+}
+
+.family .pages > .empty {
+  color: var(--muted);
+  font-size: 1.05rem;
+  line-height: 1.7;
 }
 
 .chapter {
-  margin-bottom: 3rem;
+  margin-bottom: 3.5rem;
 }
 
-.chapter h2 {
+.chapter > h2 {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
   margin: 0 0 1.25rem;
-  font-size: 0.8rem;
-  font-weight: 600;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--accent);
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--line);
+  font-family: Georgia, 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  font-size: 2rem;
+  font-weight: 400;
+}
+
+.chapter > h2 .kicker {
+  font-family: system-ui, sans-serif;
+}
+
+.site-bar + .family .told {
+  scroll-margin-top: 5.5rem;
 }
 
 .told {
-  margin-bottom: 2.25rem;
+  margin-bottom: 1.5rem;
+  padding: 1.6rem 1.75rem 1.1rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 0.9rem;
+  scroll-margin-top: 1.5rem;
 }
 
 .told h3 {
-  margin: 0 0 0.5rem;
-  font-size: 1.3rem;
-  font-weight: 600;
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 1rem;
-}
-
-.told h3 em {
-  flex: none;
-  font-style: normal;
-  font-size: 0.8rem;
+  margin: 0;
+  font-family: Georgia, 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  font-size: 1.6rem;
   font-weight: 400;
-  color: var(--muted);
+  line-height: 1.25;
 }
 
-.told > p {
-  margin: 0 0 1rem;
-  font-size: 1.05rem;
-  line-height: 1.9;
+.told .period {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+  font-family: Georgia, 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  font-style: italic;
+}
+
+/* A question from the family, over the story that answered it. The loop
+   closing, "you asked, and this is what was said", is the moment the page
+   exists for. */
+.told .asked-for {
+  margin: 1rem 0 0;
+  padding: 0.6rem 0.9rem;
+  border-left: 3px solid var(--accent);
+  border-radius: 0 0.5rem 0.5rem 0;
+  background: var(--bg);
+  font-size: 0.95rem;
+}
+
+.told .text {
+  margin: 1.1rem 0 1rem;
+  font-size: 1.1rem;
+  line-height: 1.8;
+}
+
+.told .quotes {
+  margin: 0.25rem 0 0.5rem;
+}
+
+.told .toggle {
+  margin-bottom: 0.75rem;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.told .toggle:hover {
+  border-color: var(--accent);
 }
 
 .told blockquote {
   display: flex;
-  gap: 0.75rem;
-  align-items: flex-start;
+  flex-direction: column;
+  gap: 0.15rem;
   margin: 0 0 0.75rem;
   padding: 0.9rem 1.1rem;
-  background: var(--panel);
+  background: var(--bg);
   border-left: 2px solid var(--accent);
   border-radius: 0 0.4rem 0.4rem 0;
   font-size: 1.05rem;
-  line-height: 1.9;
+  line-height: 1.8;
+}
+
+/* A desktop: the guide beside the stories, in view all the way down. */
+@media (min-width: 60rem) {
+  .family {
+    display: grid;
+    grid-template-columns: 18rem minmax(0, 52rem);
+    justify-content: center;
+    align-items: start;
+    gap: 4rem;
+    padding: 3rem 2rem 5rem;
+  }
+
+  .side {
+    position: sticky;
+    top: 2rem;
+    max-height: calc(100vh - 4rem);
+    overflow: auto;
+    margin-bottom: 0;
+    padding: 0 0.5rem 1rem 0;
+  }
+
+  /* Below the bar across the top, where there is one. */
+  .site-bar + .family .side {
+    top: 5.5rem;
+    max-height: calc(100vh - 7rem);
+  }
+
+  .family .ask-button {
+    display: none;
+  }
+}
+
+@media (max-width: 59.99rem) {
+  .side-ask {
+    display: none;
+  }
+
+  .told {
+    padding: 1.25rem 1.2rem 0.9rem;
+  }
 }
 
 /* Her own voice, one tap away. The whole claim of the thing is that a passage
@@ -102,10 +318,10 @@
   color: #1a1206;
 }
 
+
 /* English, or the language it was told in: one at a time, so the page reads
    once rather than twice. Only a quote keeps both. */
 .family .reading {
-  float: right;
   display: inline-flex;
   border: 1px solid var(--line);
   border-radius: 999px;
@@ -170,15 +386,6 @@
   background: rgb(217 143 78 / 0.22);
   color: inherit;
   border-radius: 0.15rem;
-}
-
-/* A question from the family, shown over the story that answered it. The loop
-   closing — "you asked, and this is what she said" — is the moment the page
-   exists for. */
-.told .asked-for {
-  margin: 0 0 0.4rem;
-  font-size: 0.85rem;
-  color: var(--accent);
 }
 
 .asking {
@@ -393,182 +600,6 @@
   line-height: 1.7;
 }
 
-/* The family page as a book, chosen on 2026-10-14 from four prototypes: a
-   cover, contents and chapters to read through, and each story's quotes, with
-   their voice, one press away. */
-
-.family.book {
-  max-width: 38rem;
-}
-
-.book .cover,
-.book .contents,
-.book .told h3,
-.book .period,
-.book .asked-for,
-.book .text {
-  font-family: Georgia, 'Hiragino Mincho ProN', 'Yu Mincho', serif;
-}
-
-.book .kicker {
-  margin: 0 0 0.75rem;
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--accent);
-}
-
-.book header.cover {
-  margin: 2.5rem 0 3rem;
-  padding: 3rem 0 2.5rem;
-  text-align: center;
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
-}
-
-.book .cover h1 {
-  margin: 0;
-  font-size: 3rem;
-  font-weight: 400;
-}
-
-.book .cover .original {
-  margin: 0.25rem 0 0;
-  color: var(--muted);
-}
-
-.book .cover .life {
-  margin: 1rem 0 0;
-  font-size: 1rem;
-  font-style: italic;
-  color: var(--text);
-}
-
-.book .cover .translated-note {
-  max-width: 26rem;
-  margin: 1.25rem auto 0;
-}
-
-.book .cover .yours {
-  margin: 1.25rem 0 0;
-  font-family: system-ui, sans-serif;
-}
-
-.book .contents {
-  margin-bottom: 4rem;
-}
-
-.book .contents > ol {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.book .contents > ol > li {
-  display: grid;
-  grid-template-columns: 9rem 1fr;
-  padding: 0.5rem 0;
-  border-bottom: 1px dotted var(--line);
-}
-
-.book .contents span {
-  color: var(--muted);
-  font-style: italic;
-}
-
-.book .contents ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.book .contents a {
-  color: var(--text);
-  text-decoration: none;
-}
-
-.book .contents a:hover {
-  color: var(--accent);
-}
-
-.book .chapter {
-  margin-bottom: 4rem;
-}
-
-.book .told {
-  margin-bottom: 3rem;
-}
-
-.book .told h3 {
-  display: block;
-  margin: 0;
-  font-size: 1.8rem;
-  font-weight: 400;
-}
-
-.book .period {
-  margin: 0.2rem 0 1.25rem;
-  color: var(--muted);
-  font-style: italic;
-}
-
-.book .asked-for {
-  margin: 0 0 1.25rem;
-  padding-left: 1rem;
-  border-left: 2px solid var(--accent);
-  font-size: 1rem;
-  font-style: italic;
-}
-
-.book .text {
-  font-size: 1.15rem;
-  line-height: 1.9;
-}
-
-.book .text::first-letter {
-  float: left;
-  margin: 0.15rem 0.5rem 0 0;
-  font-size: 3.4rem;
-  line-height: 0.9;
-  color: var(--accent);
-}
-
-/* Japanese books set no initial: a large first character splits a word. */
-.book .text:lang(ja)::first-letter {
-  float: none;
-  margin: 0;
-  font-size: inherit;
-  line-height: inherit;
-  color: inherit;
-}
-
-.book .quotes {
-  margin: 0.5rem 0 1rem;
-}
-
-.book .toggle {
-  margin-bottom: 0.75rem;
-  padding: 0.45rem 0.9rem;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--accent);
-  font-size: 0.85rem;
-  font-weight: 500;
-}
-
-.book .toggle:hover {
-  border-color: var(--accent);
-}
-
-.book .told blockquote {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0.15rem;
-}
-
 /* A quote's voice: play, how far it has got, how long it is. Greyed where
    there is no recording. */
 .player {
@@ -607,12 +638,9 @@
   cursor: not-allowed;
 }
 
-.book .asking {
-  border-top: 1px solid var(--line);
-}
 
-/* Asking, from anywhere in the book: a button that stays in the corner, and a
-   panel from the right with the questions already sent, then the form. */
+/* The questions from anywhere on the page: in the guide on a desktop, and on a
+   phone a button that stays in the corner. */
 .ask-button {
   position: fixed;
   right: 1.5rem;
@@ -644,41 +672,142 @@
   font-weight: 700;
 }
 
-.shade {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  background: rgb(0 0 0 / 0.6);
+/* The life story and the family's questions, as two tabs at the top of the
+   page, so the questions are in sight from the first screen. */
+.page-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 0 0 2.5rem;
+  border-bottom: 1px solid var(--line);
 }
 
-.drawer {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: min(34rem, 100%);
-  padding: 2rem 1.75rem 3rem;
-  overflow: auto;
-  background: var(--bg);
-  border-left: 1px solid var(--line);
-}
-
-.drawer .asking {
-  margin: 0;
-  padding: 0;
+.family .page-tabs button {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: -1px;
+  padding: 0.85rem 1.1rem;
   border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 1.05rem;
+  font-weight: 600;
 }
 
-.drawer .close {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  width: 2rem;
-  height: 2rem;
-  padding: 0;
-  border: 1px solid var(--line);
-  border-radius: 50%;
-  background: transparent;
+.family .page-tabs button[aria-selected='true'] {
+  border-bottom-color: var(--accent);
   color: var(--text);
+}
+
+.page-tabs span {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.4rem;
+  height: 1.4rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #1a1206;
+  font-size: 0.75rem;
+  letter-spacing: 0;
+}
+
+.pages > .asking {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+/* Large enough to read and fill in without leaning in: the questions tab is
+   where a relative does the one thing the page asks of them. */
+.pages > .asking .kicker {
+  font-size: 0.8rem;
+}
+
+.family .asking h2.kicker {
+  margin-bottom: 0.9rem;
+}
+
+.pages > .asking .question {
+  padding: 1.25rem 1.5rem;
+}
+
+.pages > .asking .question .from {
+  font-size: 0.9rem;
+}
+
+.pages > .asking .question .asked {
+  font-size: 1.3rem;
+}
+
+.pages > .asking .question .state,
+.pages > .asking .question a {
+  font-size: 0.95rem;
+}
+
+.pages > .asking form.ask {
+  gap: 0.9rem;
+  padding: 1.75rem 2rem;
+}
+
+.pages > .asking .ask .step {
   font-size: 1.1rem;
+}
+
+.pages > .asking .ask .step span {
+  width: 1.75rem;
+  height: 1.75rem;
+  font-size: 0.9rem;
+}
+
+.pages > .asking .ask .relations button {
+  padding: 0.5rem 1.05rem;
+  font-size: 0.95rem;
+}
+
+.pages > .asking .ask .relations.sub button {
+  font-size: 0.9rem;
+}
+
+.pages > .asking .ask input {
+  max-width: 22rem;
+}
+
+.pages > .asking input,
+.pages > .asking textarea {
+  padding: 0.8rem 0.95rem;
+  font-size: 1.1rem;
+}
+
+.pages > .asking .ask .preview {
+  font-size: 1rem;
+  line-height: 1.65;
+}
+
+.pages > .asking .read-only {
+  font-size: 0.95rem;
+}
+
+@media (max-width: 40rem) {
+  .pages > .asking form.ask {
+    padding: 1.25rem;
+  }
+}
+
+/* A phone: both tabs on one line. */
+@media (max-width: 30rem) {
+  .page-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
+
+  .family .page-tabs button {
+    flex: none;
+    gap: 0.4rem;
+    padding: 0.75rem 0.6rem;
+    font-size: 0.95rem;
+  }
 }

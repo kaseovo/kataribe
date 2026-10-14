@@ -247,3 +247,156 @@ a.talk-button {
     animation: none;
   }
 }
+
+/* A visitor's screen before it starts: who they are about to talk with, what
+   it opens with, and what follows, beside one button. Read at a desk, so set
+   like the start page rather than for a chair across the room. */
+.welcome {
+  max-width: 76rem;
+  margin: 0 auto;
+  padding: clamp(2rem, 6vh, 4rem) 1.25rem 3rem;
+  line-height: 1.7;
+}
+
+.welcome-main {
+  display: grid;
+  gap: 2.5rem;
+}
+
+.welcome .kicker {
+  margin: 0;
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.welcome h1 {
+  margin: 0.4rem 0 1rem;
+  font-size: clamp(2.2rem, 4.5vw, 3.4rem);
+  line-height: 1.15;
+}
+
+.welcome .intro {
+  max-width: 36rem;
+  margin: 0 0 1.5rem;
+  color: var(--muted);
+  font-size: 1.2rem;
+}
+
+/* What it opens with, as the family asked it. */
+.welcome .opens {
+  max-width: 36rem;
+  margin: 0 0 2rem;
+  padding: 1.1rem 1.4rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 0.75rem 0.75rem 0;
+}
+
+.welcome .opens p {
+  margin: 0;
+}
+
+.welcome .opens .by {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.welcome .opens .asked {
+  margin-top: 0.3rem;
+  font-family: Georgia, 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  font-size: 1.4rem;
+  line-height: 1.4;
+}
+
+.welcome .notice {
+  max-width: 36rem;
+  margin: 0 0 1.5rem;
+  padding: 0.75rem 1rem;
+  border-left: 3px solid var(--accent);
+  background: var(--panel);
+}
+
+.welcome .go {
+  padding: 1rem 2.4rem;
+  border: none;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #1a1206;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.welcome .go:disabled {
+  opacity: 0.75;
+}
+
+.welcome .microphone {
+  margin: 0.75rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* What to expect, a step at a time. */
+.welcome .expect {
+  padding: 1.75rem 2rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 0.9rem;
+}
+
+.welcome .expect h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.welcome .expect ol {
+  counter-reset: expect;
+  display: grid;
+  gap: 1.1rem;
+  margin: 1.25rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.welcome .expect li {
+  counter-increment: expect;
+  display: grid;
+  grid-template-columns: 1.9rem minmax(0, 1fr);
+  column-gap: 0.85rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.welcome .expect li::before {
+  content: counter(expect);
+  grid-row: span 2;
+  display: grid;
+  place-items: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  border: 1px solid var(--accent);
+  border-radius: 50%;
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.welcome .expect strong {
+  color: var(--text);
+}
+
+@media (min-width: 60rem) {
+  .welcome {
+    padding: clamp(2rem, 7vh, 4.5rem) 2rem 4rem;
+  }
+
+  .welcome-main {
+    grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+    align-items: start;
+    gap: 4.5rem;
+  }
+}

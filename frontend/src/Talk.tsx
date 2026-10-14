@@ -2,7 +2,14 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties } from 're
 
 import './App.css';
 import './Talk.css';
-import { StartRefused, startInterview, type Interview, type Phase, type Speaker } from './interview';
+import {
+  StartRefused,
+  startInterview,
+  type Interview,
+  type Phase,
+  type Speaker,
+} from './interview';
+import SiteBar from './SiteBar';
 
 /** The senior's own screen: their name, one button, and the interviewer's
  *  words in large type while it speaks. Everything the console shows the team
@@ -105,6 +112,17 @@ const WORDS: Record<string, Words> = {
 
 /** Only on a visitor's screen. Visitors may pick English or Japanese. */
 interface VisitorWords {
+  /** Before it starts: who they are about to talk with, and what follows. */
+  kicker: string;
+  hello: (name: string) => string;
+  intro: string;
+  opensWith: (askedBy: string) => string;
+  returning: string;
+  begin: string;
+  microphone: string;
+  expect: string;
+  steps: [string, string][];
+  page: string;
   closing: string;
   checkIn: string;
   /** Asked on screen while it closes, as the interviewer asks it aloud. */
@@ -126,6 +144,35 @@ interface VisitorWords {
 
 const VISITOR_WORDS: Record<string, VisitorWords> = {
   en: {
+    kicker: 'Your conversation',
+    hello: (name) => `Hello, ${name}.`,
+    intro:
+      'You are about to talk with Kataribe about your own life, as an elder would. It speaks first, and asks one thing at a time.',
+    opensWith: (askedBy) =>
+      `It opens with a question from ${askedBy.toLowerCase() === 'your family' ? 'your family' : askedBy}:`,
+    returning: 'It remembers what you told it last time, and carries on from there.',
+    begin: 'Start talking',
+    microphone: 'Your browser will ask to use the microphone.',
+    expect: 'What to expect',
+    steps: [
+      [
+        'Take your time',
+        'Answer as you would a curious grandchild, at your own pace. A pause to remember is fine.',
+      ],
+      [
+        'Two minutes or so',
+        'At two minutes it asks whether you want to go on. Carry on as long as you like.',
+      ],
+      [
+        'You choose what is shared',
+        'To end, say so or press Finish. It asks whether your family may read today’s story: answer aloud, or press the button.',
+      ],
+      [
+        'Then read it',
+        'Within a minute or two, your story is on your family page, with your own words beneath it.',
+      ],
+    ],
+    page: 'Your family page',
     closing: 'Wrapping up. Answer its question aloud, or choose here.',
     checkIn: 'Keep talking if you like. When you are done, tell it so, or choose here.',
     question: 'May your family read today’s story?',
@@ -149,6 +196,28 @@ const VISITOR_WORDS: Record<string, VisitorWords> = {
     home: 'Back to the start page',
   },
   ja: {
+    kicker: 'お話の時間',
+    hello: (name) => `${name}さん、ようこそ。`,
+    intro:
+      '語り部の聞き手と、ご自身の人生についてお話しします。聞き手から話しかけ、ひとつずつお尋ねします。',
+    opensWith: (askedBy) => `${askedBy}からのご質問で始まります。`,
+    returning: '前回のお話を覚えていて、その続きからお聞きします。',
+    begin: 'お話を始める',
+    microphone: 'マイクの使用を求められたら、許可してください。',
+    expect: 'お話の流れ',
+    steps: [
+      [
+        'ゆっくりで大丈夫です',
+        'お孫さんに話すように、ご自分のペースでお話しください。思い出す間があっても大丈夫です。',
+      ],
+      ['二分ほどで', '二分たつと、続けるかどうかをお尋ねします。好きなだけ続けられます。'],
+      [
+        '載せるかどうかは、ご自分で',
+        '終わるときは、そうおっしゃるか「おわる」を押してください。今日のお話をご家族が読んでもよいか、お尋ねします。声でも、ボタンでもお答えいただけます。',
+      ],
+      ['ご家族のページで読めます', '一、二分ほどで、ご自身の言葉とともにページに載ります。'],
+    ],
+    page: 'ご家族のページ',
     closing: 'お話をしめくくっています。声でお答えいただくか、こちらでお選びください。',
     checkIn:
       '続けたいときは、そのままお話しください。終わるときは、そうおっしゃるか、こちらでお選びください。',
@@ -168,7 +237,7 @@ const VISITOR_WORDS: Record<string, VisitorWords> = {
     keep: '自分だけのものにする',
     read: 'ご家族のページを開く',
     full: '本日お話しできる回数は終わりました。日本時間の午前0時に、また始まります。',
-    home: '最初のページへ',
+    home: '最初のページに戻る',
   },
 };
 
@@ -214,6 +283,32 @@ export default function Talk({ seniorId }: { seniorId: string }) {
   useEffect(() => {
     if (person) document.documentElement.lang = person.language;
   }, [person]);
+
+  // What a visitor's conversation opens with: the family question still
+  // waiting, from their own family page. And whether they have talked before,
+  // so it can say it carries on.
+  const [opening, setOpening] = useState<{ asked_by: string; text: string } | null>(null);
+  const [returning, setReturning] = useState(false);
+  useEffect(() => {
+    if (!person?.visitor) return;
+    fetch(`/api/family/${seniorId}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then(
+        (
+          page: {
+            chapters: unknown[];
+            questions: { asked_by: string; text: string; status: string }[];
+          } | null,
+        ) => {
+          if (!page) return;
+          setOpening(page.questions.find((q) => q.status === 'waiting') ?? null);
+          setReturning(
+            page.chapters.length > 0 || page.questions.some((q) => q.status === 'asked'),
+          );
+        },
+      )
+      .catch(() => undefined);
+  }, [person?.visitor, seniorId]);
 
   useEffect(() => () => void awake.current?.release(), []);
 
@@ -364,6 +459,57 @@ export default function Talk({ seniorId }: { seniorId: string }) {
           This page is not available.
         </p>
       </main>
+    );
+  }
+
+  // A visitor arrives from the start page knowing nothing of what follows:
+  // who they will talk with, what it opens with, and how it ends. A senior's
+  // own screen stays one name and one button.
+  if (person.visitor && (stage === 'ready' || stage === 'starting')) {
+    return (
+      <>
+        <SiteBar
+          back={visitorWords.home}
+          on={{ href: `/family/${seniorId}`, label: visitorWords.page }}
+        />
+        <main className="welcome">
+          <div className="welcome-main">
+            <section>
+              <p className="kicker">{visitorWords.kicker}</p>
+              <h1>{visitorWords.hello(person.name)}</h1>
+              <p className="intro">{visitorWords.intro}</p>
+              {opening ? (
+                <div className="opens">
+                  <p className="by">{visitorWords.opensWith(opening.asked_by)}</p>
+                  <p className="asked">“{opening.text}”</p>
+                </div>
+              ) : (
+                returning && <p className="intro">{visitorWords.returning}</p>
+              )}
+              {problem && (
+                <p className="notice" role="status">
+                  {problem === 'full' ? visitorWords.full : words[problem]}
+                </p>
+              )}
+              <button className="go" onClick={start} disabled={stage === 'starting'}>
+                {stage === 'starting' ? words.connecting : visitorWords.begin}
+              </button>
+              <p className="microphone">{visitorWords.microphone}</p>
+            </section>
+            <aside className="expect">
+              <h2>{visitorWords.expect}</h2>
+              <ol>
+                {visitorWords.steps.map(([title, text]) => (
+                  <li key={title}>
+                    <strong>{title}</strong>
+                    <span>{text}</span>
+                  </li>
+                ))}
+              </ol>
+            </aside>
+          </div>
+        </main>
+      </>
     );
   }
 

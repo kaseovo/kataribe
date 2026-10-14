@@ -76,7 +76,8 @@ test('a shared story reaches the family, with her voice behind it', async ({ pag
   // still in her words, with the English beneath.
   await page.getByRole('button', { name: 'English' }).click({ timeout: 60_000 });
   await expect(page.locator('.told h3')).toContainText(/factory|mill/i);
-  await expect(page.locator('.chapter h2')).toContainText('Chapter 1 · Childhood');
+  await expect(page.locator('.chapter h2')).toContainText('Chapter 1');
+  await expect(page.locator('.chapter h2')).toContainText('Childhood');
   await expect(page.locator('.told blockquote')).toContainText('織物の工場');
   await expect(page.locator('.told blockquote .translation')).toContainText(/factory|mill/i);
 
@@ -111,8 +112,13 @@ test('a relative can send a question, and sees it waiting', async ({ page, reque
   const seniorId = await seed(request, 'family', '織物工場のこと');
 
   await page.goto(`/family/${seniorId}`);
-  // Asking is a press away from anywhere in the book.
+  // Asking is a press away from anywhere in the book, and opens the
+  // questions' tab.
   await page.getByRole('button', { name: /さんに質問する/ }).click();
+  await expect(page.getByRole('tab', { name: /ご家族からのご質問/ })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
   // Who they are, by group and then exactly, as the interviewer will say it:
   // 孫のゆか.
   await page
@@ -144,8 +150,8 @@ test('her answer comes back to the one who asked', async ({ page, request }) => 
 
   const question = page.locator('.question');
   await expect(question.locator('.stamp')).toHaveText('お答えあり');
-  await expect(question.getByRole('link', { name: /織物工場のこと/ })).toBeVisible();
-  // And on the story itself, who it answered.
+  // The answer leads back to the story, which says who it answered.
+  await question.getByRole('link', { name: /織物工場のこと/ }).click();
   await expect(page.locator('.told .asked-for')).toContainText('孫のゆかさんからのご質問');
 });
 

@@ -43,9 +43,11 @@ async function talkThenFinish(page: Page, context: BrowserContext) {
 
   // A persona of their own, behind an id nobody could guess.
   await expect(page).toHaveURL(/\/talk\/[\w-]{22,}$/);
-  await expect(page.getByRole('heading')).toHaveText('Alex');
+  // Told before it starts what it opens with and what follows.
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Hello, Alex.');
+  await expect(page.getByText('Which place from your childhood')).toBeVisible();
 
-  await page.getByRole('button', { name: 'Talk', exact: true }).click();
+  await page.getByRole('button', { name: 'Start talking' }).click();
   await expect(page.locator('.talk-caption')).not.toBeEmpty({ timeout: 60_000 });
   await expect(page.locator('.talk-phase')).toHaveText('Listening', { timeout: 60_000 });
   await page.evaluate(() => (window as unknown as { answer: () => void }).answer());
@@ -61,6 +63,8 @@ async function talkThenFinish(page: Page, context: BrowserContext) {
 async function storyOnTheirFamilyPage(page: Page) {
   await page.getByRole('link', { name: 'Open your family page' }).click();
   await expect(page.locator('.told').first()).toBeVisible();
+  // Read as text; the quotes, in their words, are a press away.
+  await page.getByRole('button', { name: /own words/ }).first().click();
   await expect(page.locator('.told blockquote').first()).toContainText(
     /Brittany|grandfather|boat|fishing|sea/i,
   );

@@ -68,11 +68,9 @@ On the family page and in the console:
 - [ ] The transcript matches what was said, names and places included
 - [ ] Story titles and summaries read naturally in Japanese
 - [ ] Every quote is what they actually said, word for word
-- [ ] The Japanese screens read well: the senior's screen, and a visitor's question about sharing while it closes and on the end screen (`frontend/src/Talk.tsx`), and the start page's family question 「子どもの頃の場所で、今も思い出すところはどこですか？」 (`frontend/src/Landing.tsx`)
+- [ ] The Japanese screens read well: the senior's screen, a visitor's welcome before it starts (「さん、ようこそ。」, 「お話の流れ」 and its four steps), and a visitor's question about sharing while it closes and on the end screen (`frontend/src/Talk.tsx`), and the start page's family question 「子どもの頃の場所で、今も思い出すところはどこですか？」 (`frontend/src/Landing.tsx`)
 - [ ] The English under each passage on the family page says what the Japanese says, and no more
-- [ ] The family page read in Japanese (`WORDS.ja` in `frontend/src/Family.tsx`): 人生の物語, 目次, 第1章, the quotes button 「田中ハルさんご本人の言葉と声で」, the question panel (送ったご質問, お答えあり / これから, 田中ハルさんとのご関係は？ and its relations, the preview 「…と知りたがっていらっしゃいますよ」)
-
-The family page's own labels are English over Japanese content. That stays for the hackathon.
+- [ ] The family page read in Japanese (`WORDS.ja` in `frontend/src/Family.tsx`): 人生の物語, 目次, 第1章, the quotes button 「田中ハルさんご本人の言葉と声で」, the question panel (送ったご質問, お答えあり / これから, 田中ハルさんとのご関係は？ and its relations, the preview 「…と知りたがっていらっしゃいますよ」), the link back to the start page on the example 「ご自分のお話で試してみる」, and the line under its greyed Send 「この見本のページはどなたにも公開しているため、ここからは送られません。…」
 
 ## 6. Fix and retake
 

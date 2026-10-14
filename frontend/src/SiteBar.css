@@ -1,0 +1,83 @@
+/* The bar across the top of a page reached from the start page. It stays in
+   view, so the way back is never a scroll away. */
+.site-bar {
+  position: sticky;
+  top: 0;
+  z-index: 45;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  padding: 0.7rem 1.5rem;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  line-height: 1.4;
+}
+
+.site-bar a {
+  text-decoration: none;
+}
+
+.site-bar .brand {
+  color: var(--text);
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.site-bar .brand span {
+  margin-left: 0.35rem;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.site-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.site-bar .home,
+.site-bar .on {
+  padding: 0.55rem 1.15rem;
+  border-radius: 999px;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.site-bar .home {
+  border: 1.5px solid var(--line);
+  color: var(--text);
+}
+
+.site-bar .home:hover {
+  border-color: var(--accent);
+}
+
+.site-bar .on {
+  border: 1.5px solid var(--accent);
+  color: var(--accent);
+}
+
+.site-bar .on:hover {
+  background: var(--accent);
+  color: #1a1206;
+}
+
+/* A phone: the two buttons, without the name, so the bar stays short. */
+@media (max-width: 40rem) {
+  .site-bar {
+    padding: 0.6rem 1rem;
+  }
+
+  .site-bar .brand {
+    display: none;
+  }
+
+  .site-bar .home,
+  .site-bar .on {
+    padding: 0.45rem 0.9rem;
+    font-size: 0.9rem;
+  }
+}

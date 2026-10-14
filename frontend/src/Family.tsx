@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type MouseEvent } from 'react';
 
 import './App.css';
 import './Family.css';
 import { lifeStage } from './lifeStages';
+import SiteBar from './SiteBar';
 
 interface Quote {
   text: string;
@@ -83,7 +84,7 @@ interface Words {
   lifeStory: string;
   born: (year: number | null, place: string) => string;
   contents: string;
-  chapter: (n: number, stage: string) => string;
+  chapter: (n: number) => string;
   stage: (stored: string) => string;
   quotes: (count: number, name: string) => string;
   hideQuotes: string;
@@ -99,6 +100,7 @@ interface Words {
   yours: string;
   talkAgain: string;
   startPage: string;
+  tryIt: string;
   askButton: (name: string) => string;
   familyQuestions: string;
   sent: string;
@@ -115,7 +117,6 @@ interface Words {
   waitingNote: (name: string) => string;
   askedNote: string;
   readOnly: [string, string, string];
-  close: string;
   relations: Record<string, string[]>;
   other: string;
   otherPlaceholder: string;
@@ -131,15 +132,15 @@ const WORDS: Record<string, Words> = {
     lifeStory: 'A life story',
     born: (year, place) => [year && `Born in ${year}`, place].filter(Boolean).join(', '),
     contents: 'Contents',
-    chapter: (n, stage) => `Chapter ${n} · ${stage}`,
+    chapter: (n) => `Chapter ${n}`,
     stage: lifeStage,
     quotes: (count, name) =>
-      `${count === 1 ? 'The quote' : `All ${count} quotes`} in ${name}’s own words, with their voice`,
+      `${count === 1 ? 'The quote' : `All ${count} quotes`}, in ${name}’s own words and voice`,
     hideQuotes: 'Hide the quotes',
     noRecording: 'No recording',
     listen: 'Listen',
     pause: 'Pause',
-    allTheySaid: 'All they said',
+    allTheySaid: 'The whole answer',
     askedFor: (by, text) => `${by} asked: “${text}”`,
     quoted: (text) => `“${text}”`,
     writing: 'A conversation is still being written up. Its stories will appear here shortly.',
@@ -147,7 +148,8 @@ const WORDS: Record<string, Words> = {
       'There is nothing here yet. Stories appear once they have been told, and only once they have been agreed to be shared.',
     yours: 'Your own page, reachable only by its link.',
     talkAgain: 'Talk again',
-    startPage: 'Start page',
+    startPage: 'Back to the start page',
+    tryIt: 'Try it on your own life',
     askButton: (name) => `Ask ${name} a question`,
     familyQuestions: 'Questions from the family',
     sent: 'Questions sent',
@@ -156,7 +158,7 @@ const WORDS: Record<string, Words> = {
     step2: 'What would you like to ask?',
     placeholder: 'What did you wear on your wedding day?',
     preview: (name, by, text) =>
-      `${name} will hear something like: “Your ${by} would love to know: ${text}” It is asked in a coming conversation, gently, and if they would rather not answer, it is not pressed.`,
+      `${name} will hear something like: “Your ${by} would love to know: ${text}” It is asked gently in a coming conversation, and never pressed.`,
     send: 'Send question',
     unsent: 'Your question could not be sent just now. Please try again in a moment.',
     stamp: { answered: 'Answered', waiting: 'Waiting', asked: 'Asked' },
@@ -165,11 +167,10 @@ const WORDS: Record<string, Words> = {
     waitingNote: (name) => `Waiting to be asked: ${name} will hear it in a coming conversation.`,
     askedNote: 'Asked. No reply has been shared.',
     readOnly: [
-      'This page is shown to every visitor, so it takes no questions. To ask one, start a conversation of your own from the ',
-      'start page',
-      ': your family page will take questions, and your next conversation opens with them.',
+      'This example is shown to every visitor, so nothing is sent from it. ',
+      'Try it on your own life',
+      ': your own family page takes questions, and your next conversation opens with them.',
     ],
-    close: 'Close',
     relations: {
       Grandchildren: ['granddaughter', 'grandson', 'great-granddaughter', 'great-grandson'],
       Children: ['daughter', 'son'],
@@ -192,7 +193,7 @@ const WORDS: Record<string, Words> = {
     born: (year, place) =>
       [year && `${year}年生まれ`, place && `${place}出身`].filter(Boolean).join('・'),
     contents: '目次',
-    chapter: (n, stage) => `第${n}章　${stage}`,
+    chapter: (n) => `第${n}章`,
     stage: (stored) => stored,
     quotes: (count, name) => `${name}さんご本人の言葉と声で（${count}件）`,
     hideQuotes: 'ご本人の言葉を閉じる',
@@ -207,7 +208,8 @@ const WORDS: Record<string, Words> = {
       'まだお話は載っていません。お話しいただき、ご家族に読んでもらってよいとおっしゃったお話だけが、ここに載ります。',
     yours: 'このページは、リンクを知っている方だけが開けます。',
     talkAgain: 'もう一度お話しする',
-    startPage: '最初のページへ',
+    startPage: '最初のページに戻る',
+    tryIt: 'ご自分のお話で試してみる',
     askButton: (name) => `${name}さんに質問する`,
     familyQuestions: 'ご家族からのご質問',
     sent: '送ったご質問',
@@ -225,11 +227,10 @@ const WORDS: Record<string, Words> = {
     waitingNote: (name) => `まだお尋ねしていません。次のお話のときに、${name}さんにお伝えします。`,
     askedNote: 'お尋ねしました。共有されたお答えは、まだありません。',
     readOnly: [
-      'このページはどなたにも公開しているため、ご質問は受け付けていません。',
-      '最初のページ',
-      'からご自身のお話を始めると、ご質問を受け付けるページができます。',
+      'この見本のページはどなたにも公開しているため、ここからは送られません。',
+      'ご自分のお話で試してみる',
+      'と、ご自身のページから質問を送ることができ、次のお話はその質問から始まります。',
     ],
-    close: '閉じる',
     relations: {
       孫: ['孫', 'ひ孫'],
       子ども: ['娘', '息子'],
@@ -450,19 +451,55 @@ export default function Family({ seniorId }: { seniorId: string }) {
   const [draft, setDraft] = useState({ asked_by: '', text: '' });
   const [sending, setSending] = useState(false);
   const [unsent, setUnsent] = useState<string | null>(null);
-  /** The panel for asking, and the questions already sent, is open. */
-  const [asking, setAsking] = useState(false);
-  useEffect(() => {
-    if (!asking) return;
-    const close = (event: KeyboardEvent) => event.key === 'Escape' && setAsking(false);
-    window.addEventListener('keydown', close);
-    return () => window.removeEventListener('keydown', close);
-  }, [asking]);
+  /** The life story, or the family's questions and the form for asking. */
+  const [tab, setTab] = useState<'story' | 'questions'>('story');
+  const pages = useRef<HTMLDivElement | null>(null);
   /** English for the page's text, by the text, when they speak another
    *  language. Shown under the original, never in its place. */
   const [translations, setTranslations] = useState<Record<string, string>>({});
   /** The reader's own choice of language, once they have made one. */
   const [picked, setReading] = useState<'en' | 'original' | null>(null);
+  /** The story being read, which the contents show: the last one whose title
+   *  has passed the top third of the screen, or the last one once the page
+   *  has scrolled to its end, however short that story is. One chosen from the
+   *  contents stays chosen until the reader scrolls on their own. */
+  const [here, setHere] = useState<string | null>(null);
+  const root = useRef<HTMLDivElement | null>(null);
+  const chosen = useRef(false);
+  useEffect(() => {
+    const page = root.current;
+    if (!page) return;
+    // The window, or whatever the page scrolls within, as over the start page.
+    let scroller: Element | null = page.parentElement;
+    while (scroller && !/(auto|scroll)/.test(getComputedStyle(scroller).overflowY)) {
+      scroller = scroller.parentElement;
+    }
+    const scrolled = scroller ?? document.scrollingElement;
+    const follow = () => {
+      if (chosen.current || !scrolled) return;
+      const stories = [...page.querySelectorAll<HTMLElement>('.told')];
+      if (stories.length === 0) return;
+      const atEnd =
+        scrolled.scrollTop > 0 &&
+        scrolled.scrollTop + scrolled.clientHeight >= scrolled.scrollHeight - 2;
+      const passed = stories.filter((s) => s.getBoundingClientRect().top <= innerHeight / 3);
+      setHere((atEnd ? stories[stories.length - 1] : (passed.pop() ?? stories[0])).id);
+    };
+    const release = () => {
+      chosen.current = false;
+    };
+    follow();
+    document.addEventListener('scroll', follow, { capture: true, passive: true });
+    window.addEventListener('wheel', release, { passive: true });
+    window.addEventListener('touchmove', release, { passive: true });
+    window.addEventListener('keydown', release);
+    return () => {
+      document.removeEventListener('scroll', follow, { capture: true });
+      window.removeEventListener('wheel', release);
+      window.removeEventListener('touchmove', release);
+      window.removeEventListener('keydown', release);
+    };
+  }, [view]);
 
   useEffect(() => {
     fetch(`/api/family/${seniorId}`)
@@ -533,7 +570,8 @@ export default function Family({ seniorId }: { seniorId: string }) {
   // Until they pick: English, unless their browser is in the language the story
   // was told in. A judge reads English, a Japanese family the words as said.
   const reading =
-    picked ?? (navigator.language.toLowerCase().startsWith(view.senior.language) ? 'original' : 'en');
+    picked ??
+    (navigator.language.toLowerCase().startsWith(view.senior.language) ? 'original' : 'en');
   // One language at a time, except in a quote: the English where there is one,
   // or the original. A quote keeps the original, which is what their voice says.
   const inEnglish = translated && reading === 'en';
@@ -541,219 +579,283 @@ export default function Family({ seniorId }: { seniorId: string }) {
 
   const name = shown(view.senior.name);
   const w = (!inEnglish && WORDS[view.senior.language]) || WORDS.en;
+  // The example and a visitor's own page are reached from the start page, so
+  // they lead back to it, the example also opened over it. A family's own
+  // page is theirs alone.
+  const back = view.showcase || view.visitor;
 
-  return (
-    <div className="family book">
-      {translated && (
-        <div className="reading" role="group" aria-label="Language">
-          <button aria-pressed={reading === 'en'} onClick={() => setReading('en')}>
-            English
-          </button>
-          <button
-            lang={view.senior.language}
-            aria-pressed={reading === 'original'}
-            onClick={() => setReading('original')}
-          >
-            {ENDONYM[view.senior.language] ?? view.senior.language}
-          </button>
-        </div>
+  const questions = (
+    <section id="asking" className="asking">
+      {view.questions.length > 0 && (
+        <>
+          <h2 className="kicker">{view.showcase ? w.familyQuestions : w.sent}</h2>
+          <ul className="questions">
+            {view.questions.map((q) => {
+              const answer = q.answered_in.find((id) => titles.has(id));
+              return (
+                <li key={q.id} className={`question ${answer ? 'answered' : q.status}`}>
+                  <span className="stamp">
+                    {answer
+                      ? w.stamp.answered
+                      : q.status === 'waiting'
+                        ? w.stamp.waiting
+                        : w.stamp.asked}
+                  </span>
+                  <p className="from">{w.from(shown(q.asked_by))}</p>
+                  <p className="asked">{w.quoted(shown(q.text))}</p>
+                  {answer ? (
+                    <a href={`#${answer}`}>{w.readAnswer(shown(titles.get(answer) ?? ''))}</a>
+                  ) : (
+                    <p className="state">
+                      {q.status === 'waiting' ? w.waitingNote(name) : w.askedNote}
+                    </p>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </>
       )}
 
-      <header className="cover">
-        <p className="kicker">{w.lifeStory}</p>
-        <h1>{name}</h1>
-        {inEnglish && english(view.senior.name) && (
-          <p className="original" lang={view.senior.language}>
-            {view.senior.name}
-          </p>
-        )}
-        <p className="life">
-          {w.born(view.senior.birth_year, shown(view.senior.birthplace))}
+      {/* On the example too, so a judge sees how a question is put; but it
+          sends nothing, since every visitor reads that page and nobody would
+          ever answer there. */}
+      <h2 className="kicker ask-head">{w.askHead(name)}</h2>
+      <form className="ask" onSubmit={view.showcase ? (e) => e.preventDefault() : ask}>
+        <p className="step">
+          <span>1</span>
+          {w.step1(name)}
         </p>
-        {inEnglish && (
-          <p className="translated-note">
-            Told in {SPOKEN[view.senior.language] ?? 'their own language'}, and translated into
-            English by AI so that you can follow. The quotes are {name}’s own words.
+        <Who name={name} w={w} onChange={(asked_by) => setDraft({ ...draft, asked_by })} />
+        <p className="step">
+          <span>2</span>
+          {w.step2}
+        </p>
+        <textarea
+          aria-label={w.step2}
+          placeholder={w.placeholder}
+          maxLength={300}
+          rows={3}
+          value={draft.text}
+          onChange={(e) => setDraft({ ...draft, text: e.target.value })}
+        />
+        {draft.asked_by.trim() && draft.text.trim() && (
+          <p className="preview">{w.preview(name, draft.asked_by.trim(), draft.text.trim())}</p>
+        )}
+        <button
+          type="submit"
+          className="start"
+          disabled={view.showcase || sending || !draft.asked_by.trim() || !draft.text.trim()}
+        >
+          {w.send}
+        </button>
+        {view.showcase && (
+          <p className="read-only">
+            {w.readOnly[0]}
+            <a href="/#try">{w.readOnly[1]}</a>
+            {w.readOnly[2]}
           </p>
         )}
-        {view.visitor && (
-          <p className="yours">
-            {w.yours} <a href={`/talk/${seniorId}`}>{w.talkAgain}</a> ·{' '}
-            <a href="/">{w.startPage}</a>
-          </p>
-        )}
-      </header>
+        {unsent && <p className="unsent">{w.unsent}</p>}
+      </form>
+    </section>
+  );
 
+  const languages = translated && (
+    <div className="reading" role="group" aria-label="Language">
+      <button aria-pressed={reading === 'en'} onClick={() => setReading('en')}>
+        English
+      </button>
+      <button
+        lang={view.senior.language}
+        aria-pressed={reading === 'original'}
+        onClick={() => setReading('original')}
+      >
+        {ENDONYM[view.senior.language] ?? view.senior.language}
+      </button>
+    </div>
+  );
+
+  // The way on from here: the example leads to trying it, a visitor's own
+  // page to talking again.
+  const bar = back && (
+    <SiteBar
+      back={w.startPage}
+      on={
+        view.showcase
+          ? { href: '/#try', label: w.tryIt }
+          : { href: `/talk/${seniorId}`, label: w.talkAgain }
+      }
+    />
+  );
+
+  const coverNotes = (
+    <>
+      {inEnglish && (
+        <p className="translated-note">
+          Told in {SPOKEN[view.senior.language] ?? 'their own language'}, and translated into
+          English by AI so that you can follow. The quotes are {name}’s own words.
+        </p>
+      )}
+      {view.visitor && <p className="yours">{w.yours}</p>}
+    </>
+  );
+
+  const notices = (
+    <>
       {view.writing && (
         <p className="writing" role="status">
           {w.writing}
         </p>
       )}
+      {told === 0 && !view.writing && <p className="empty">{w.empty}</p>}
+    </>
+  );
 
-      {told === 0 && !view.writing && (
-        <p className="empty">
-          {w.empty}
-        </p>
-      )}
+  const quotesOf = (story: Story) => (
+    <Quotes
+      w={w}
+      story={story}
+      name={name}
+      language={view.senior.language}
+      english={(text) => (inEnglish ? english(text) : undefined)}
+    />
+  );
 
-      {told > 0 && (
-        <nav className="contents" aria-label={w.contents}>
-          <p className="kicker">{w.contents}</p>
-          <ol>
-            {view.chapters.map((chapter) => (
-              <li key={chapter.life_stage}>
-                <span>{w.stage(chapter.life_stage)}</span>
-                <ul>
-                  {chapter.stories.map((story) => (
-                    <li key={story.id}>
-                      <a href={`#${story.id}`}>{shown(story.title)}</a>
-                    </li>
-                  ))}
-                </ul>
-              </li>
-            ))}
-          </ol>
-        </nav>
-      )}
+  // The questions are a tab beside the life story, chosen on 2026-10-14 so a
+  // judge sees them from the first screen, over a panel behind a button, a
+  // last chapter, and a card above the first one. Asking, from the guide or
+  // the button in a phone's corner, opens that tab.
+  const toQuestions = () => {
+    setTab('questions');
+    requestAnimationFrame(() => pages.current?.scrollIntoView());
+  };
+  /** A story, from the contents or a question's answer, back in the life story. */
+  const toStory = (id: string) => {
+    setTab('story');
+    requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView());
+  };
+  const answerLink = (event: MouseEvent) => {
+    const href = (event.target as HTMLElement).closest('a')?.getAttribute('href');
+    if (tab !== 'questions' || !href?.startsWith('#')) return;
+    event.preventDefault();
+    toStory(href.slice(1));
+  };
 
-      {view.chapters.map((chapter, i) => (
-        <section key={chapter.life_stage} className="chapter">
-          <h2 className="kicker">
-            {w.chapter(i + 1, w.stage(chapter.life_stage))}
-          </h2>
-          {chapter.stories.map((story) => (
-            <article key={story.id} id={story.id} className="told">
-              <h3>{shown(story.title)}</h3>
-              {story.approx_period && <p className="period">{shown(story.approx_period)}</p>}
-              {askedFor(story.id).map((q) => (
-                <p key={q.id} className="asked-for">
-                  {w.askedFor(shown(q.asked_by), shown(q.text))}
-                </p>
-              ))}
-              <p className="text" lang={inEnglish ? 'en' : view.senior.language}>
-                {shown(story.summary)}
+  // A guide beside the stories: who this is, the language, and the contents,
+  // in view all the way down on a desktop, showing where the reader is.
+  return (
+    <>
+      {bar}
+      <div className="family" ref={root}>
+        <aside className="side">
+          <header className="cover">
+            <p className="kicker">{w.lifeStory}</p>
+            <h1>{name}</h1>
+            {inEnglish && english(view.senior.name) && (
+              <p className="original" lang={view.senior.language}>
+                {view.senior.name}
               </p>
-              <Quotes
-                w={w}
-                story={story}
-                name={name}
-                language={view.senior.language}
-                english={(text) => (inEnglish ? english(text) : undefined)}
-              />
-            </article>
-          ))}
-        </section>
-      ))}
-
-      {/* Asking is a press away from anywhere in the book, at the moment a
-          story makes someone want to ask, rather than at the end of it. */}
-      <button className="ask-button" aria-haspopup="dialog" onClick={() => setAsking(true)}>
-        {view.showcase ? w.familyQuestions : w.askButton(name)}
-        {view.questions.length > 0 && <span className="count">{view.questions.length}</span>}
-      </button>
-
-      {asking && (
-        <div className="shade" onClick={() => setAsking(false)}>
-          <div
-            className="drawer"
-            role="dialog"
-            aria-modal="true"
-            aria-label={view.showcase ? w.familyQuestions : w.askButton(name)}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button className="close" onClick={() => setAsking(false)} aria-label={w.close}>
-              ×
-            </button>
-            <section id="asking" className="asking">
-              {view.questions.length > 0 && (
-                <>
-                  <h2 className="kicker">
-                    {view.showcase ? w.familyQuestions : w.sent}
-                  </h2>
-                  <ul className="questions">
-                    {view.questions.map((q) => {
-                      const answer = q.answered_in.find((id) => titles.has(id));
-                      return (
-                        <li key={q.id} className={`question ${answer ? 'answered' : q.status}`}>
-                          <span className="stamp">
-                            {answer
-                              ? w.stamp.answered
-                              : q.status === 'waiting'
-                                ? w.stamp.waiting
-                                : w.stamp.asked}
-                          </span>
-                          <p className="from">{w.from(shown(q.asked_by))}</p>
-                          <p className="asked">{w.quoted(shown(q.text))}</p>
-                          {answer ? (
-                            <a href={`#${answer}`} onClick={() => setAsking(false)}>
-                              {w.readAnswer(shown(titles.get(answer) ?? ''))}
-                            </a>
-                          ) : (
-                            <p className="state">
-                              {q.status === 'waiting'
-                                ? w.waitingNote(name)
-                                : w.askedNote}
-                            </p>
-                          )}
-                        </li>
-                      );
-                    })}
+            )}
+            <p className="life">{w.born(view.senior.birth_year, shown(view.senior.birthplace))}</p>
+          </header>
+          {languages}
+          {told > 0 && (
+            <nav className="contents" aria-label={w.contents}>
+              {view.chapters.map((chapter, i) => (
+                <div key={chapter.life_stage}>
+                  <p className="stage">
+                    <span>{i + 1}</span>
+                    {w.stage(chapter.life_stage)}
+                  </p>
+                  <ul>
+                    {chapter.stories.map((story) => (
+                      <li key={story.id}>
+                        <a
+                          href={`#${story.id}`}
+                          aria-current={
+                            tab === 'story' && here === story.id ? 'location' : undefined
+                          }
+                          onClick={(event) => {
+                            chosen.current = true;
+                            setHere(story.id);
+                            if (tab === 'questions') {
+                              event.preventDefault();
+                              toStory(story.id);
+                            }
+                          }}
+                        >
+                          {shown(story.title)}
+                        </a>
+                      </li>
+                    ))}
                   </ul>
-                </>
-              )}
+                </div>
+              ))}
+            </nav>
+          )}
+          <button className="side-ask" aria-pressed={tab === 'questions'} onClick={toQuestions}>
+            {view.showcase ? w.familyQuestions : w.askButton(name)}
+            {view.questions.length > 0 && <span className="count">{view.questions.length}</span>}
+          </button>
+        </aside>
 
-              {view.showcase ? (
-                <p className="read-only">
-                  {w.readOnly[0]}
-                  <a href="/">{w.readOnly[1]}</a>
-                  {w.readOnly[2]}
-                </p>
-              ) : (
-                <>
-                  <h2 className="kicker ask-head">{w.askHead(name)}</h2>
-                  <form className="ask" onSubmit={ask}>
-                    <p className="step">
-                      <span>1</span>
-                      {w.step1(name)}
-                    </p>
-                    <Who
-                      name={name}
-                      w={w}
-                      onChange={(asked_by) => setDraft({ ...draft, asked_by })}
-                    />
-                    <p className="step">
-                      <span>2</span>
-                      {w.step2}
-                    </p>
-                    <textarea
-                      aria-label={w.step2}
-                      placeholder={w.placeholder}
-                      maxLength={300}
-                      rows={3}
-                      value={draft.text}
-                      onChange={(e) => setDraft({ ...draft, text: e.target.value })}
-                    />
-                    {draft.asked_by.trim() && draft.text.trim() && (
-                      <p className="preview">
-                        {w.preview(name, draft.asked_by.trim(), draft.text.trim())}
-                      </p>
-                    )}
-                    <button
-                      type="submit"
-                      className="start"
-                      disabled={sending || !draft.asked_by.trim() || !draft.text.trim()}
-                    >
-                      {w.send}
-                    </button>
-                    {unsent && <p className="unsent">{w.unsent}</p>}
-                  </form>
-                </>
-              )}
-            </section>
+        <div className="pages" ref={pages} onClick={answerLink}>
+          {coverNotes}
+          <div className="page-tabs" role="tablist">
+            <button role="tab" aria-selected={tab === 'story'} onClick={() => setTab('story')}>
+              {w.lifeStory} {told > 0 && <span>{told}</span>}
+            </button>
+            <button
+              role="tab"
+              aria-selected={tab === 'questions'}
+              onClick={() => setTab('questions')}
+            >
+              {w.familyQuestions}{' '}
+              {view.questions.length > 0 && <span>{view.questions.length}</span>}
+            </button>
           </div>
+          {tab === 'questions' ? (
+            questions
+          ) : (
+            <>
+              {notices}
+              {view.chapters.map((chapter, i) => (
+                <section key={chapter.life_stage} className="chapter">
+                  <h2>
+                    <span className="kicker">{w.chapter(i + 1)}</span>
+                    {w.stage(chapter.life_stage)}
+                  </h2>
+                  {chapter.stories.map((story) => (
+                    <article key={story.id} id={story.id} className="told">
+                      <h3>{shown(story.title)}</h3>
+                      {story.approx_period && (
+                        <p className="period">{shown(story.approx_period)}</p>
+                      )}
+                      {askedFor(story.id).map((q) => (
+                        <p key={q.id} className="asked-for">
+                          {w.askedFor(shown(q.asked_by), shown(q.text))}
+                        </p>
+                      ))}
+                      <p className="text" lang={inEnglish ? 'en' : view.senior.language}>
+                        {shown(story.summary)}
+                      </p>
+                      {quotesOf(story)}
+                    </article>
+                  ))}
+                </section>
+              ))}
+            </>
+          )}
         </div>
-      )}
 
-    </div>
+        {/* On a phone, where the guide has scrolled away: the questions from
+            anywhere in the story. */}
+        <button className="ask-button" aria-pressed={tab === 'questions'} onClick={toQuestions}>
+          {view.showcase ? w.familyQuestions : w.askButton(name)}
+          {view.questions.length > 0 && <span className="count">{view.questions.length}</span>}
+        </button>
+      </div>
+    </>
   );
 }
