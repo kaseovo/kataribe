@@ -458,9 +458,6 @@ export default function Family({ seniorId }: { seniorId: string }) {
                 language={view.senior.language}
                 english={(text) => (inEnglish ? english(text) : undefined)}
               />
-              {[...story.people, ...story.places].length > 0 && (
-                <p className="tags">{[...story.people, ...story.places].map(shown).join(' · ')}</p>
-              )}
             </article>
           ))}
         </section>

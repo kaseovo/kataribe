@@ -588,7 +588,7 @@ def read_family_translations(
     shown = [view.senior.name, view.senior.birthplace]
     for chapter in view.chapters:
         for told in chapter.stories:
-            shown += [told.title, told.summary, told.approx_period, *told.people, *told.places]
+            shown += [told.title, told.summary, told.approx_period]
             shown += [text for quote in told.quotes for text in (quote.text, quote.said)]
     for question in view.questions:
         shown += [question.asked_by, question.text]

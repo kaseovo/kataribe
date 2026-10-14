@@ -172,12 +172,6 @@
   border-radius: 0.15rem;
 }
 
-.told .tags {
-  margin: 0;
-  font-size: 0.8rem;
-  color: var(--muted);
-}
-
 .withheld {
   margin-top: 3rem;
   padding-top: 1.5rem;
