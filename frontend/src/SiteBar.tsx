@@ -13,6 +13,7 @@ export default function SiteBar({
   return (
     <nav className="site-bar" aria-label="Kataribe">
       <a href="/" className="brand">
+        <img src="/logo.png" alt="" />
         Kataribe <span lang="ja">語り部</span>
       </a>
       <span className="site-links">

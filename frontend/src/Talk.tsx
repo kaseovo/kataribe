@@ -9,6 +9,8 @@ import {
   type Phase,
   type Speaker,
 } from './interview';
+import Path from './Path';
+import { mark } from './pathSteps';
 import SiteBar from './SiteBar';
 
 /** The senior's own screen: their name, one button, and the interviewer's
@@ -389,6 +391,7 @@ export default function Talk({ seniorId }: { seniorId: string }) {
       );
       setSessionId(interview.current.sessionId);
       setStage('live');
+      if (person?.visitor) mark('talk');
       // A tablet on a shelf must not go dark mid-sentence.
       if ('wakeLock' in navigator) {
         awake.current = await navigator.wakeLock.request('screen').catch(() => null);
@@ -509,6 +512,7 @@ export default function Talk({ seniorId }: { seniorId: string }) {
             </aside>
           </div>
         </main>
+        <Path />
       </>
     );
   }
@@ -640,6 +644,9 @@ export default function Talk({ seniorId }: { seniorId: string }) {
           </button>
         </section>
       )}
+      {/* After a visitor's conversation: what is left of their path. Never
+          while talking, and never on a senior's own screen. */}
+      {person.visitor && stage === 'done' && <Path />}
     </main>
   );
 }

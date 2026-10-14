@@ -3,6 +3,8 @@ import { useEffect, useRef, useState, type FormEvent, type MouseEvent } from 're
 import './App.css';
 import './Family.css';
 import { lifeStage } from './lifeStages';
+import Path from './Path';
+import { GO, mark, type Place } from './pathSteps';
 import SiteBar from './SiteBar';
 
 interface Quote {
@@ -445,20 +447,46 @@ function Who({
   );
 }
 
-export default function Family({ seniorId }: { seniorId: string }) {
+export default function Family({
+  seniorId,
+  startOn,
+}: {
+  seniorId: string;
+  /** The questions' tab first, when the judge's path asked for them. */
+  startOn?: 'questions';
+}) {
   const [view, setView] = useState<View | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [draft, setDraft] = useState({ asked_by: '', text: '' });
   const [sending, setSending] = useState(false);
   const [unsent, setUnsent] = useState<string | null>(null);
   /** The life story, or the family's questions and the form for asking. */
-  const [tab, setTab] = useState<'story' | 'questions'>('story');
+  const [tab, setTab] = useState<'story' | 'questions'>(() =>
+    startOn === 'questions' || window.location.hash === '#questions' ? 'questions' : 'story',
+  );
   const pages = useRef<HTMLDivElement | null>(null);
   /** English for the page's text, by the text, when they speak another
    *  language. Shown under the original, never in its place. */
   const [translations, setTranslations] = useState<Record<string, string>>({});
   /** The reader's own choice of language, once they have made one. */
   const [picked, setReading] = useState<'en' | 'original' | null>(null);
+  // The judge's path: the demo's page read, its questions seen, their own page
+  // read; and its Go to the questions when already here.
+  useEffect(() => {
+    if (view?.showcase) mark('read');
+    if (view?.visitor) mark('own');
+  }, [view?.showcase, view?.visitor]);
+  useEffect(() => {
+    if (view?.showcase && tab === 'questions') mark('asked');
+  }, [view?.showcase, tab]);
+  useEffect(() => {
+    const onGo = (event: Event) => {
+      if ((event as CustomEvent<Place>).detail === 'questions') setTab('questions');
+    };
+    window.addEventListener(GO, onGo);
+    return () => window.removeEventListener(GO, onGo);
+  }, []);
+
   /** The story being read, which the contents show: the last one whose title
    *  has passed the top third of the screen, or the last one once the page
    *  has scrolled to its end, however short that story is. One chosen from the
@@ -856,6 +884,8 @@ export default function Family({ seniorId }: { seniorId: string }) {
           {view.questions.length > 0 && <span className="count">{view.questions.length}</span>}
         </button>
       </div>
+      {/* On its own page; over the start page, the start page shows it. */}
+      {back && window.location.pathname.startsWith('/family/') && <Path />}
     </>
   );
 }

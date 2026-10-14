@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom';
 
 import './App.css';
 import Family from './Family';
+import Path from './Path';
+import { GO, mark, type Place } from './pathSteps';
 import './Landing.css';
 import { lifeStage } from './lifeStages';
 
@@ -135,6 +137,8 @@ interface FamilyPage {
  *  Back, returns to the same place, and Try it lands on Your turn. */
 function Example({ cover, showcase }: { cover: Cover; showcase: string }) {
   const [open, setOpen] = useState(false);
+  /** The tab it opens on, when the path asked for the family's questions. */
+  const [startOn, setStartOn] = useState<'questions' | undefined>();
   const opener = useRef<HTMLButtonElement | null>(null);
   const sheet = useRef<HTMLDivElement | null>(null);
   /** Where to go once it has closed, when not back to its cover. */
@@ -156,15 +160,32 @@ function Example({ cover, showcase }: { cover: Cover; showcase: string }) {
     return () => window.removeEventListener('popstate', onPop);
   }, []);
 
-  const show = () => {
+  const show = (on?: 'questions') => {
     window.history.pushState({ family: true }, '');
+    setStartOn(on);
     setOpen(true);
+    mark('read');
   };
   const hide = (after?: () => void) => {
     then.current = after ?? null;
     window.history.back();
   };
   const toTry = () => document.getElementById('try')?.scrollIntoView();
+
+  // The path's Go: this page, opened or on its questions, or somewhere on the
+  // start page under it, once it has closed.
+  useEffect(() => {
+    const onGo = (event: Event) => {
+      const place = (event as CustomEvent<Place>).detail;
+      if (place === 'example' || place === 'questions') {
+        if (!open) show(place === 'questions' ? 'questions' : undefined);
+      } else if (open) {
+        hide(() => document.getElementById(place)?.scrollIntoView({ behavior: 'smooth' }));
+      }
+    };
+    window.addEventListener(GO, onGo);
+    return () => window.removeEventListener(GO, onGo);
+  });
 
   useEffect(() => {
     if (!open) return;
@@ -219,7 +240,7 @@ function Example({ cover, showcase }: { cover: Cover; showcase: string }) {
           <li>The whole page in Japanese, as {their} family reads it</li>
         </ul>
       </div>
-      <button ref={opener} className="cover-card" onClick={show} aria-haspopup="dialog">
+      <button ref={opener} className="cover-card" onClick={() => show()} aria-haspopup="dialog">
         <span className="kicker">A life story</span>
         <span className="title">{cover.name}</span>
         {cover.original !== cover.name && (
@@ -261,7 +282,7 @@ function Example({ cover, showcase }: { cover: Cover; showcase: string }) {
             aria-label={`${cover.name}’s family page`}
             onClickCapture={follow}
           >
-            <Family seniorId={showcase} />
+            <Family seniorId={showcase} startOn={startOn} />
           </div>,
           document.body,
         )}
@@ -300,11 +321,13 @@ function Video({ url }: { url: string }) {
     );
   }
   if (/\.(mp4|webm|mov)(\?|$)/i.test(url)) {
-    return <video className="video" src={url} controls preload="metadata" />;
+    return (
+      <video className="video" src={url} controls preload="metadata" onPlay={() => mark('watch')} />
+    );
   }
   if (url) {
     return (
-      <a className="video placeholder" href={url}>
+      <a className="video placeholder" href={url} onClick={() => mark('watch')}>
         <span aria-hidden>▶</span>
         Watch the demo video
       </a>
@@ -347,6 +370,29 @@ export default function Landing() {
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
       .then(setStart)
       .catch(() => setProblem('The page could not load just now. Please reload it in a moment.'));
+  }, []);
+
+  // The path's Go to somewhere on this page, when the example's page is not
+  // open over it; when it is, the example closes first (see Example).
+  useEffect(() => {
+    const onGo = (event: Event) => {
+      const place = (event as CustomEvent<Place>).detail;
+      if ((place === 'watch' || place === 'try') && !document.querySelector('.sheet')) {
+        document.getElementById(place)?.scrollIntoView({ behavior: 'smooth' });
+      }
+    };
+    window.addEventListener(GO, onGo);
+    return () => window.removeEventListener(GO, onGo);
+  }, []);
+
+  // A video embedded from YouTube or Vimeo keeps its clicks to itself, but
+  // pressing play in it takes the focus from this page: that is watching.
+  useEffect(() => {
+    const onBlur = () => {
+      if (document.activeElement?.closest('#watch')) mark('watch');
+    };
+    window.addEventListener('blur', onBlur);
+    return () => window.removeEventListener('blur', onBlur);
   }, []);
 
   // Arriving at #try from the example family page: the sections above it
@@ -409,6 +455,7 @@ export default function Landing() {
       <header className="hero">
         <div className="hero-text">
           <p className="brand">
+            <img src="/logo.png" alt="" />
             Kataribe <span lang="ja">語り部</span>
           </p>
           <h1>Every grandparent has stories nobody has asked about yet.</h1>
@@ -674,6 +721,7 @@ export default function Landing() {
           from this page is deleted once judging ends.
         </p>
       </footer>
+      <Path />
     </div>
   );
 }
