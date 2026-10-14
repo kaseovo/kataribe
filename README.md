@@ -6,7 +6,7 @@ A *kataribe* is a traditional keeper of oral history — the person who remember
 
 ## For judges
 
-**Try it: <https://kataribe-uxxefqeqqq-an.a.run.app>.** The start page makes you a persona of your own, so the interviewer talks with you about your own life, in English. It takes about three minutes:
+**Try it: <https://kataribe.kaseovo.com>.** The start page makes you a persona of your own, so the interviewer talks with you about your own life, in English. It takes about three minutes:
 
 1. Allow the microphone. The interviewer speaks first.
 2. Talk as yourself. It follows where you go, one question at a time.
@@ -97,7 +97,7 @@ Synthesized speech is clean and evenly paced, so it proves correctness rather th
 
 ## Project status
 
-**Live:** <https://kataribe-uxxefqeqqq-an.a.run.app>. The start page and family pages are open to anyone with their link; the console, at `/console`, is behind a team password. See [docs/deploy.md](docs/deploy.md).
+**Live:** <https://kataribe.kaseovo.com>. The start page and family pages are open to anyone with their link; the console, at `/console`, is behind a team password. See [docs/deploy.md](docs/deploy.md).
 
 Prototype, built in the open over four weeks. See [docs/plan.md](docs/plan.md) for the full plan and [docs/roadmap.md](docs/roadmap.md) for what is built and what is next.
 

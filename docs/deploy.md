@@ -2,7 +2,7 @@
 
 The app runs on Cloud Run in Tokyo, from one image that serves both the API and the built frontend.
 
-**Live:** <https://kataribe-uxxefqeqqq-an.a.run.app> (also <https://kataribe-398069256773.asia-northeast1.run.app>)
+**Live:** <https://kataribe.kaseovo.com>, mapped to the Cloud Run service (also <https://kataribe-uxxefqeqqq-an.a.run.app> and <https://kataribe-398069256773.asia-northeast1.run.app>). The domain is a Cloud Run domain mapping in `asia-northeast1`, with a certificate Google manages; its DNS is a CNAME `kataribe` to `ghs.googlehosted.com` at Cloudflare, where kaseovo.com's DNS lives.
 
 | | |
 | --- | --- |

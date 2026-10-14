@@ -2,7 +2,7 @@
 
 The product is Japanese, and until now nobody has judged it in Japanese. Every prompt change since 2026-09-30 was tested in French and English. This settles the pause length and the voice, judges the Japanese, and records the conversations the demo video and the showcase family page are made from. Whatever the review finds has to be fixed and retaken before the submission. See *Japanese validation is deferred* in [roadmap.md](../roadmap.md).
 
-Everything here runs on the live service, <https://kataribe-uxxefqeqqq-an.a.run.app>, so the showcase persona ends up in the cloud store the start page links to. The console is at `/console`, behind the team password.
+Everything here runs on the live service, <https://kataribe.kaseovo.com>, so the showcase persona ends up in the cloud store the start page links to. The console is at `/console`, behind the team password.
 
 ## 1. Pause and voice (console, about 20 minutes)
 
