@@ -111,6 +111,56 @@ HALTING = [
 ]
 
 
+# One memory told over several answers, each with something in it: the kind of
+# story whose summary drew on more than its one or two quotes.
+WEDDING = [
+    Turn(speaker="ai", text="結婚式のときのお着物は、どんなものでしたか。", started_at=0.0),
+    Turn(
+        speaker="senior",
+        text="白無垢です。母が若いころに着たのを、仕立て直してもらったんですよ。",
+        started_at=4.0,
+    ),
+    Turn(speaker="ai", text="お母様の白無垢を。", started_at=14.0),
+    Turn(
+        speaker="senior",
+        text="袖のところに、母が自分で小さな鶴を刺繍してくれてね。誰にも見えないところなんですけど。",
+        started_at=17.0,
+    ),
+    Turn(speaker="ai", text="旦那さまとは、どんなふうに出会われたんですか。", started_at=30.0),
+    Turn(
+        speaker="senior",
+        text="夫の正夫さんは、小学校の先生でした。二十四のときに結婚しました。"
+        "式の日は、雪が降っていましたね。",
+        started_at=34.0,
+    ),
+]
+
+
+async def test_everything_a_summary_says_is_in_a_quote(settings: Settings) -> None:
+    # The summary is a retelling. Each thing in it should have their words,
+    # and their voice, behind it: "it was snowing" with nothing quoted to back
+    # it left a judge wondering whether it was said.
+    extraction = brain.extract(settings, HARU, WEDDING)
+    stories, _ = brain.verify(extraction, WEDDING)
+    assert stories, "Nothing was extracted from a clear memory"
+    written = "\n\n".join(
+        f"Summary: {s.summary}\nQuotes:\n" + "\n".join(f"- {q.text}" for q in s.quotes)
+        for s in stories
+    )
+
+    verdict = checks.judge(
+        settings,
+        "Each story's summary retells what the person said, and its quotes are their "
+        "words. It passes only if every fact in each summary (a person, a place, a "
+        "date, an age, an event, a detail) is found in that story's own quotes. "
+        "What was known about them beforehand, such as their name, needs no quote.",
+        senior=f"Known beforehand:\n{brain._who(HARU)}\n\nWhat she said:\n"
+        + "\n".join(t.text for t in WEDDING if t.speaker == "senior"),
+        interviewer=written,
+    )
+    assert verdict.passes, f"{verdict.reason}\n\n{written}"
+
+
 async def test_the_summary_reads_as_sentences_and_adds_nothing(settings: Settings) -> None:
     extraction = brain.extract(settings, ALEX, HALTING)
     stories, _ = brain.verify(extraction, HALTING)
