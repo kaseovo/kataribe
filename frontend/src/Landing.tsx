@@ -30,8 +30,9 @@ interface Told {
     title: string;
     summary: string;
     life_stage: string;
-    /** In their words, with the English, and their voice where recorded. */
-    quotes: { text: string; english: string; audio: string | null }[];
+    /** In their words, with the English once it is made, and their voice
+     *  where recorded. */
+    quotes: { text: string; english?: string; audio: string | null }[];
   };
   question: { asked_by: string; text: string } | null;
 }
@@ -111,7 +112,9 @@ function useTold(showcase: string | null): Told | null {
             title: say(story.title),
             summary: say(story.summary),
             life_stage: story.life_stage,
-            quotes: story.quotes.map((q) => ({ ...q, english: say(q.text) })),
+            // No fallback here: a quote with no English yet shows its words
+            // once, rather than again in English quotation marks.
+            quotes: story.quotes.map((q) => ({ ...q, english: en[q.text] })),
           },
           question: question ? { asked_by: say(question.asked_by), text: say(question.text) } : null,
         });
@@ -170,7 +173,7 @@ function Story({ told }: { told: Told }) {
           )}
           <span>
             <span lang="ja">「{quote.text}」</span>
-            <span className="english">“{quote.english}”</span>
+            {quote.english && <span className="english">“{quote.english}”</span>}
           </span>
         </blockquote>
       ))}
