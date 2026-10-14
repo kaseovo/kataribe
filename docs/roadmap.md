@@ -293,7 +293,7 @@ Each quote has a play button, and it plays a clip, never the session. The whole 
 
 The session list in the console still plays whole recordings. That is the team's view; it must not be reachable from a public URL.
 
-**Not yet done:** the family page's chrome is in English, over Japanese content. That stays for the hackathon, whose rules want everything in English; for a Japanese family the page should follow the person's language.
+The family page's own words follow the language it is read in: English when the reader chooses English, Japanese throughout otherwise, from 目次 and 第1章 to the question panel, where a relative is named the way the interviewer says it, 孫のゆか. Done on 2026-10-14; until then the page's labels were English over Japanese stories. Its Japanese is still to be reviewed by a native speaker.
 
 ## Asked once, at the close, and taken back at any time
 
@@ -371,7 +371,6 @@ For the native speaker, two things from these runs. 「とても心に残って�
 
 - Correcting the spelling of names. The page is where a relative could fix 佐藤繁 to 佐藤茂 in one tap, as proposed below; it has not been built.
 - Telling the family when an answer lands. They have to come back and look.
-- The page's own chrome is still English, and the new form made more of it.
 
 ## The interviewer speaks first
 

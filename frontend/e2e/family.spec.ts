@@ -62,11 +62,13 @@ test('a shared story reaches the family, with her voice behind it', async ({ pag
   await page.goto(`/family/${seniorId}`);
 
   await expect(page.locator('h1')).toContainText('田中ハル');
-  await expect(page.locator('.chapter h2')).toContainText('Childhood');
+  // A Japanese page throughout, its own words included.
+  await expect(page.locator('.chapter h2')).toContainText('第1章');
+  await expect(page.locator('.chapter h2')).toContainText('子供時代');
   await expect(page.locator('.told h3')).toContainText('織物工場のこと');
   // Read as text; the quotes, with her voice, are a press away.
   await expect(page.locator('.told blockquote')).toHaveCount(0);
-  await page.getByRole('button', { name: /quote in .* own words/ }).click();
+  await page.getByRole('button', { name: /ご本人の言葉/ }).click();
   await expect(page.locator('.told blockquote')).toContainText('織物の工場');
   await expect(page.locator('.told blockquote .translation')).toHaveCount(0);
 
@@ -74,6 +76,7 @@ test('a shared story reaches the family, with her voice behind it', async ({ pag
   // still in her words, with the English beneath.
   await page.getByRole('button', { name: 'English' }).click({ timeout: 60_000 });
   await expect(page.locator('.told h3')).toContainText(/factory|mill/i);
+  await expect(page.locator('.chapter h2')).toContainText('Chapter 1 · Childhood');
   await expect(page.locator('.told blockquote')).toContainText('織物の工場');
   await expect(page.locator('.told blockquote .translation')).toContainText(/factory|mill/i);
 
@@ -109,23 +112,27 @@ test('a relative can send a question, and sees it waiting', async ({ page, reque
 
   await page.goto(`/family/${seniorId}`);
   // Asking is a press away from anywhere in the book.
-  await page.getByRole('button', { name: /^Ask .* a question/ }).click();
-  // Who they are, by group and then exactly, as the interviewer will say it.
-  await page.getByRole('button', { name: 'Grandchildren' }).click();
-  await page.getByRole('button', { name: 'granddaughter', exact: true }).click();
-  await page.getByLabel('Your name').fill('ゆか');
-  await page.getByLabel('Your question').fill('結婚式のときのお着物は、どんなものでしたか?');
-  await expect(page.locator('.preview')).toContainText('Your granddaughter ゆか would love to know');
-  await page.getByRole('button', { name: 'Send question' }).click();
+  await page.getByRole('button', { name: /さんに質問する/ }).click();
+  // Who they are, by group and then exactly, as the interviewer will say it:
+  // 孫のゆか.
+  await page
+    .getByRole('group', { name: /さんとのご関係/ })
+    .getByRole('button', { name: '孫', exact: true })
+    .click();
+  await page.getByRole('group', { name: '孫' }).getByRole('button', { name: '孫', exact: true }).click();
+  await page.getByLabel('お名前').fill('ゆか');
+  await page.getByLabel('何を聞いてみたいですか？').fill('結婚式のときのお着物は、どんなものでしたか?');
+  await expect(page.locator('.preview')).toContainText('孫のゆかさんが');
+  await page.getByRole('button', { name: '質問を送る' }).click();
 
   const question = page.locator('.question');
-  await expect(question).toContainText('granddaughter ゆか');
+  await expect(question).toContainText('孫のゆか');
   await expect(question).toContainText('お着物');
-  await expect(question).toContainText('Waiting to be asked');
+  await expect(question).toContainText('まだお尋ねしていません');
 
   // Kept, not just shown.
   await page.reload();
-  await page.getByRole('button', { name: /^Ask .* a question/ }).click();
+  await page.getByRole('button', { name: /さんに質問する/ }).click();
   await expect(page.locator('.question')).toContainText('お着物');
 });
 
@@ -133,13 +140,13 @@ test('her answer comes back to the one who asked', async ({ page, request }) => 
   const seniorId = await seed(request, 'family', '織物工場のこと', 'お父さんの工場のことを教えて');
 
   await page.goto(`/family/${seniorId}`);
-  await page.getByRole('button', { name: /^Ask .* a question/ }).click();
+  await page.getByRole('button', { name: /さんに質問する/ }).click();
 
   const question = page.locator('.question');
-  await expect(question.locator('.stamp')).toHaveText('Answered');
+  await expect(question.locator('.stamp')).toHaveText('お答えあり');
   await expect(question.getByRole('link', { name: /織物工場のこと/ })).toBeVisible();
   // And on the story itself, who it answered.
-  await expect(page.locator('.told .asked-for')).toContainText('孫のゆか asked');
+  await expect(page.locator('.told .asked-for')).toContainText('孫のゆかさんからのご質問');
 });
 
 test('an answer she kept private stays private, even from the one who asked', async ({
@@ -149,10 +156,10 @@ test('an answer she kept private stays private, even from the one who asked', as
   const seniorId = await seed(request, 'private', '話したくないこと', '子どものころのことを教えて');
 
   await page.goto(`/family/${seniorId}`);
-  await page.getByRole('button', { name: /^Ask .* a question/ }).click();
+  await page.getByRole('button', { name: /さんに質問する/ }).click();
 
   // They learn it was asked, and nothing about whether or what she answered.
-  await expect(page.locator('.question')).toContainText('No reply has been shared');
+  await expect(page.locator('.question')).toContainText('共有されたお答えは、まだありません');
   await expect(page.locator('.question a')).toHaveCount(0);
   await expect(page.locator('body')).not.toContainText('話したくないこと');
   await expect(page.locator('body')).not.toContainText('織物');

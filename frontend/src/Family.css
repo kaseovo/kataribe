@@ -534,6 +534,15 @@
   color: var(--accent);
 }
 
+/* Japanese books set no initial: a large first character splits a word. */
+.book .text:lang(ja)::first-letter {
+  float: none;
+  margin: 0;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+}
+
 .book .quotes {
   margin: 0.5rem 0 1rem;
 }

@@ -75,6 +75,180 @@ interface View {
 const SPOKEN: Record<string, string> = { ja: 'Japanese', fr: 'French' };
 const ENDONYM: Record<string, string> = { ja: '日本語', fr: 'Français' };
 
+/** The page's own words, in the language it is read in: English, or the
+ *  language the story was told in when the reader chose it, so that a Japanese
+ *  family reads a page that is Japanese throughout. The Japanese is still to be
+ *  reviewed by a native speaker. */
+interface Words {
+  lifeStory: string;
+  born: (year: number | null, place: string) => string;
+  contents: string;
+  chapter: (n: number, stage: string) => string;
+  stage: (stored: string) => string;
+  quotes: (count: number, name: string) => string;
+  hideQuotes: string;
+  noRecording: string;
+  listen: string;
+  pause: string;
+  allTheySaid: string;
+  askedFor: (by: string, text: string) => string;
+  /** Quotation marks as the language sets them: “…” or 「…」. */
+  quoted: (text: string) => string;
+  writing: string;
+  empty: string;
+  yours: string;
+  talkAgain: string;
+  startPage: string;
+  askButton: (name: string) => string;
+  familyQuestions: string;
+  sent: string;
+  askHead: (name: string) => string;
+  step1: (name: string) => string;
+  step2: string;
+  placeholder: string;
+  preview: (name: string, by: string, text: string) => string;
+  send: string;
+  unsent: string;
+  stamp: { answered: string; waiting: string; asked: string };
+  from: (by: string) => string;
+  readAnswer: (title: string) => string;
+  waitingNote: (name: string) => string;
+  askedNote: string;
+  readOnly: [string, string, string];
+  close: string;
+  relations: Record<string, string[]>;
+  other: string;
+  otherPlaceholder: string;
+  relationLabel: string;
+  nameLabel: string;
+  namePlaceholder: string;
+  who: (relation: string, person: string) => string;
+  whoGroup: (name: string) => string;
+}
+
+const WORDS: Record<string, Words> = {
+  en: {
+    lifeStory: 'A life story',
+    born: (year, place) => [year && `Born in ${year}`, place].filter(Boolean).join(', '),
+    contents: 'Contents',
+    chapter: (n, stage) => `Chapter ${n} · ${stage}`,
+    stage: lifeStage,
+    quotes: (count, name) =>
+      `${count === 1 ? 'The quote' : `All ${count} quotes`} in ${name}’s own words, with their voice`,
+    hideQuotes: 'Hide the quotes',
+    noRecording: 'No recording',
+    listen: 'Listen',
+    pause: 'Pause',
+    allTheySaid: 'All they said',
+    askedFor: (by, text) => `${by} asked: “${text}”`,
+    quoted: (text) => `“${text}”`,
+    writing: 'A conversation is still being written up. Its stories will appear here shortly.',
+    empty:
+      'There is nothing here yet. Stories appear once they have been told, and only once they have been agreed to be shared.',
+    yours: 'Your own page, reachable only by its link.',
+    talkAgain: 'Talk again',
+    startPage: 'Start page',
+    askButton: (name) => `Ask ${name} a question`,
+    familyQuestions: 'Questions from the family',
+    sent: 'Questions sent',
+    askHead: (name) => `Ask ${name} something`,
+    step1: (name) => `Who are you to ${name}?`,
+    step2: 'What would you like to ask?',
+    placeholder: 'What did you wear on your wedding day?',
+    preview: (name, by, text) =>
+      `${name} will hear something like: “Your ${by} would love to know: ${text}” It is asked in a coming conversation, gently, and if they would rather not answer, it is not pressed.`,
+    send: 'Send question',
+    unsent: 'Your question could not be sent just now. Please try again in a moment.',
+    stamp: { answered: 'Answered', waiting: 'Waiting', asked: 'Asked' },
+    from: (by) => `From ${by}`,
+    readAnswer: (title) => `Read the answer: ${title} →`,
+    waitingNote: (name) => `Waiting to be asked: ${name} will hear it in a coming conversation.`,
+    askedNote: 'Asked. No reply has been shared.',
+    readOnly: [
+      'This page is shown to every visitor, so it takes no questions. To ask one, start a conversation of your own from the ',
+      'start page',
+      ': your family page will take questions, and your next conversation opens with them.',
+    ],
+    close: 'Close',
+    relations: {
+      Grandchildren: ['granddaughter', 'grandson', 'great-granddaughter', 'great-grandson'],
+      Children: ['daughter', 'son'],
+      Partner: ['wife', 'husband', 'partner'],
+      'Brothers & sisters': ['sister', 'brother'],
+      'In-laws': ['daughter-in-law', 'son-in-law', 'sister-in-law', 'brother-in-law'],
+      'Wider family': ['niece', 'nephew', 'cousin'],
+      'Friends & others': ['friend', 'neighbour', 'carer', 'former colleague'],
+    },
+    other: 'Other…',
+    otherPlaceholder: 'e.g. goddaughter',
+    relationLabel: 'Your relation',
+    nameLabel: 'Your name',
+    namePlaceholder: 'Your first name',
+    who: (relation, person) => [relation, person].filter(Boolean).join(' '),
+    whoGroup: (name) => `Who you are to ${name}`,
+  },
+  ja: {
+    lifeStory: '人生の物語',
+    born: (year, place) =>
+      [year && `${year}年生まれ`, place && `${place}出身`].filter(Boolean).join('・'),
+    contents: '目次',
+    chapter: (n, stage) => `第${n}章　${stage}`,
+    stage: (stored) => stored,
+    quotes: (count, name) => `${name}さんご本人の言葉と声で（${count}件）`,
+    hideQuotes: 'ご本人の言葉を閉じる',
+    noRecording: '録音はありません',
+    listen: '聞く',
+    pause: '一時停止',
+    allTheySaid: 'このときのお話をすべて読む',
+    askedFor: (by, text) => `${by}さんからのご質問：「${text}」`,
+    quoted: (text) => `「${text}」`,
+    writing: 'お話をまとめているところです。まもなく、ここに載ります。',
+    empty:
+      'まだお話は載っていません。お話しいただき、ご家族に読んでもらってよいとおっしゃったお話だけが、ここに載ります。',
+    yours: 'このページは、リンクを知っている方だけが開けます。',
+    talkAgain: 'もう一度お話しする',
+    startPage: '最初のページへ',
+    askButton: (name) => `${name}さんに質問する`,
+    familyQuestions: 'ご家族からのご質問',
+    sent: '送ったご質問',
+    askHead: (name) => `${name}さんに聞いてみる`,
+    step1: (name) => `${name}さんとのご関係は？`,
+    step2: '何を聞いてみたいですか？',
+    placeholder: '結婚式のときのお着物は、どんなものでしたか？',
+    preview: (name, by, text) =>
+      `${name}さんには、たとえば「${by}さんが『${text}』と知りたがっていらっしゃいますよ」と伝わります。次のお話のときにそっとお尋ねし、答えたくないときは無理にはお聞きしません。`,
+    send: '質問を送る',
+    unsent: 'ただいま質問を送れませんでした。少し時間をおいて、もう一度お試しください。',
+    stamp: { answered: 'お答えあり', waiting: 'これから', asked: 'お尋ね済み' },
+    from: (by) => `${by}より`,
+    readAnswer: (title) => `お答えを読む：${title} →`,
+    waitingNote: (name) => `まだお尋ねしていません。次のお話のときに、${name}さんにお伝えします。`,
+    askedNote: 'お尋ねしました。共有されたお答えは、まだありません。',
+    readOnly: [
+      'このページはどなたにも公開しているため、ご質問は受け付けていません。',
+      '最初のページ',
+      'からご自身のお話を始めると、ご質問を受け付けるページができます。',
+    ],
+    close: '閉じる',
+    relations: {
+      孫: ['孫', 'ひ孫'],
+      子ども: ['娘', '息子'],
+      配偶者: ['妻', '夫', 'パートナー'],
+      きょうだい: ['姉', '妹', '兄', '弟'],
+      義理の家族: ['息子の妻', '娘の夫', '義理のきょうだい'],
+      親戚: ['姪', '甥', 'いとこ'],
+      '友人・その他': ['友人', 'ご近所の方', '介護の方', '元同僚'],
+    },
+    other: 'その他…',
+    otherPlaceholder: '例：いとこの子',
+    relationLabel: 'ご関係',
+    nameLabel: 'お名前',
+    namePlaceholder: 'お名前（下のお名前）',
+    who: (relation, person) => [relation, person].filter(Boolean).join('の'),
+    whoGroup: (name) => `${name}さんとのご関係`,
+  },
+};
+
 /** How often the page looks again while a conversation is being written up. */
 const REFRESH_MS = 4000;
 
@@ -87,7 +261,7 @@ const clock = (seconds: number) =>
 /** Their voice saying it: the clip of the answer the quote comes from. Where
  *  there is no recording, as on a page made up for a demo, it is shown greyed,
  *  so the place the voice belongs is still there. */
-function Player({ audio }: { audio: string | null }) {
+function Player({ audio, w }: { audio: string | null; w: Words }) {
   const sound = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState(false);
   const [done, setDone] = useState(0);
@@ -95,11 +269,11 @@ function Player({ audio }: { audio: string | null }) {
   if (!audio) {
     return (
       <div className="player none">
-        <button className="listen" disabled aria-label="No recording">
+        <button className="listen" disabled aria-label={w.noRecording}>
           ▶
         </button>
         <span className="bar" />
-        <span className="time">No recording</span>
+        <span className="time">{w.noRecording}</span>
       </div>
     );
   }
@@ -124,7 +298,7 @@ function Player({ audio }: { audio: string | null }) {
           if (clip.duration) setDone(clip.currentTime / clip.duration);
         }}
       />
-      <button className="listen" onClick={toggle} aria-label={playing ? 'Pause' : 'Listen'}>
+      <button className="listen" onClick={toggle} aria-label={playing ? w.pause : w.listen}>
         {playing ? '❚❚' : '▶'}
       </button>
       <span className="bar">
@@ -143,11 +317,13 @@ function Quotes({
   name,
   language,
   english,
+  w,
 }: {
   story: Story;
   name: string;
   language: string;
   english: (text: string) => string | undefined;
+  w: Words;
 }) {
   const [open, setOpen] = useState(false);
   const count = story.quotes.length;
@@ -155,19 +331,17 @@ function Quotes({
   return (
     <div className="quotes">
       <button className="toggle" aria-expanded={open} onClick={() => setOpen(!open)}>
-        {open
-          ? 'Hide the quotes'
-          : `${count === 1 ? 'The quote' : `All ${count} quotes`} in ${name}’s own words, with their voice`}
+        {open ? w.hideQuotes : w.quotes(count, name)}
       </button>
       {open &&
         story.quotes.map((quote, i) => (
           <blockquote key={i}>
             <span lang={language}>「{quote.text}」</span>
             {english(quote.text) && <span className="translation">“{english(quote.text)}”</span>}
-            <Player audio={quote.audio} />
+            <Player audio={quote.audio} w={w} />
             {quote.said && quote.said !== quote.text && (
               <details className="said">
-                <summary>All they said</summary>
+                <summary>{w.allTheySaid}</summary>
                 <span lang={language}>
                   <Answer said={quote.said} quoted={quote.text} />
                 </span>
@@ -180,21 +354,20 @@ function Quotes({
   );
 }
 
-/** Relations by group, so finding yours is two presses among few, and Other
- *  for whatever is not here. The interviewer says it aloud: "Your
- *  daughter-in-law Aiko would love to know…". */
-const RELATIONS: Record<string, string[]> = {
-  Grandchildren: ['granddaughter', 'grandson', 'great-granddaughter', 'great-grandson'],
-  Children: ['daughter', 'son'],
-  Partner: ['wife', 'husband', 'partner'],
-  'Brothers & sisters': ['sister', 'brother'],
-  'In-laws': ['daughter-in-law', 'son-in-law', 'sister-in-law', 'brother-in-law'],
-  'Wider family': ['niece', 'nephew', 'cousin'],
-  'Friends & others': ['friend', 'neighbour', 'carer', 'former colleague'],
-};
+/* Relations by group, so finding yours is two presses among few, and Other
+   for whatever is not here: see `relations` in WORDS. The interviewer says it
+   aloud: "Your daughter-in-law Aiko would love to know…". */
 
 /** Who is asking, as the interviewer will say it: a relation, then a name. */
-function Who({ name, onChange }: { name: string; onChange: (askedBy: string) => void }) {
+function Who({
+  name,
+  w,
+  onChange,
+}: {
+  name: string;
+  w: Words;
+  onChange: (askedBy: string) => void;
+}) {
   const [group, setGroup] = useState<string | null>(null);
   const [relation, setRelation] = useState('');
   const [other, setOther] = useState(false);
@@ -202,12 +375,12 @@ function Who({ name, onChange }: { name: string; onChange: (askedBy: string) => 
   const update = (r: string, n: string) => {
     setRelation(r);
     setPerson(n);
-    onChange([r.trim(), n.trim()].filter(Boolean).join(' '));
+    onChange(w.who(r.trim(), n.trim()));
   };
   return (
     <>
-      <div className="relations" role="group" aria-label={`Who you are to ${name}`}>
-        {Object.keys(RELATIONS).map((g) => (
+      <div className="relations" role="group" aria-label={w.whoGroup(name)}>
+        {Object.keys(w.relations).map((g) => (
           <button
             key={g}
             type="button"
@@ -224,7 +397,7 @@ function Who({ name, onChange }: { name: string; onChange: (askedBy: string) => 
       </div>
       {group && (
         <div className="relations sub" role="group" aria-label={group}>
-          {RELATIONS[group].map((r) => (
+          {w.relations[group].map((r) => (
             <button
               key={r}
               type="button"
@@ -245,14 +418,14 @@ function Who({ name, onChange }: { name: string; onChange: (askedBy: string) => 
               update('', person);
             }}
           >
-            Other…
+            {w.other}
           </button>
         </div>
       )}
       {other && (
         <input
-          aria-label="Your relation"
-          placeholder="e.g. goddaughter"
+          aria-label={w.relationLabel}
+          placeholder={w.otherPlaceholder}
           maxLength={30}
           value={relation}
           onChange={(e) => update(e.target.value, person)}
@@ -260,8 +433,8 @@ function Who({ name, onChange }: { name: string; onChange: (askedBy: string) => 
       )}
       {group && (
         <input
-          aria-label="Your name"
-          placeholder="Your first name"
+          aria-label={w.nameLabel}
+          placeholder={w.namePlaceholder}
           maxLength={25}
           value={person}
           onChange={(e) => update(relation, e.target.value)}
@@ -342,7 +515,7 @@ export default function Family({ seniorId }: { seniorId: string }) {
       // Whoever is asking is likely to ask again, so their name stays.
       setDraft({ ...draft, text: '' });
     } catch {
-      setUnsent('Your question could not be sent just now. Please try again in a moment.');
+      setUnsent('failed');
     } finally {
       setSending(false);
     }
@@ -367,6 +540,7 @@ export default function Family({ seniorId }: { seniorId: string }) {
   const shown = (text: string) => (inEnglish && english(text)) || text;
 
   const name = shown(view.senior.name);
+  const w = (!inEnglish && WORDS[view.senior.language]) || WORDS.en;
 
   return (
     <div className="family book">
@@ -386,7 +560,7 @@ export default function Family({ seniorId }: { seniorId: string }) {
       )}
 
       <header className="cover">
-        <p className="kicker">A life story</p>
+        <p className="kicker">{w.lifeStory}</p>
         <h1>{name}</h1>
         {inEnglish && english(view.senior.name) && (
           <p className="original" lang={view.senior.language}>
@@ -394,8 +568,7 @@ export default function Family({ seniorId }: { seniorId: string }) {
           </p>
         )}
         <p className="life">
-          {view.senior.birth_year && `Born in ${view.senior.birth_year}`}
-          {view.senior.birthplace && `, ${shown(view.senior.birthplace)}`}
+          {w.born(view.senior.birth_year, shown(view.senior.birthplace))}
         </p>
         {inEnglish && (
           <p className="translated-note">
@@ -405,32 +578,31 @@ export default function Family({ seniorId }: { seniorId: string }) {
         )}
         {view.visitor && (
           <p className="yours">
-            Your own page, reachable only by its link. <a href={`/talk/${seniorId}`}>Talk again</a>{' '}
-            · <a href="/">Start page</a>
+            {w.yours} <a href={`/talk/${seniorId}`}>{w.talkAgain}</a> ·{' '}
+            <a href="/">{w.startPage}</a>
           </p>
         )}
       </header>
 
       {view.writing && (
         <p className="writing" role="status">
-          A conversation is still being written up. Its stories will appear here shortly.
+          {w.writing}
         </p>
       )}
 
       {told === 0 && !view.writing && (
         <p className="empty">
-          There is nothing here yet. Stories appear once they have been told, and only once they
-          have been agreed to be shared.
+          {w.empty}
         </p>
       )}
 
       {told > 0 && (
-        <nav className="contents" aria-label="Contents">
-          <p className="kicker">Contents</p>
+        <nav className="contents" aria-label={w.contents}>
+          <p className="kicker">{w.contents}</p>
           <ol>
             {view.chapters.map((chapter) => (
               <li key={chapter.life_stage}>
-                <span>{lifeStage(chapter.life_stage)}</span>
+                <span>{w.stage(chapter.life_stage)}</span>
                 <ul>
                   {chapter.stories.map((story) => (
                     <li key={story.id}>
@@ -447,7 +619,7 @@ export default function Family({ seniorId }: { seniorId: string }) {
       {view.chapters.map((chapter, i) => (
         <section key={chapter.life_stage} className="chapter">
           <h2 className="kicker">
-            Chapter {i + 1} · {lifeStage(chapter.life_stage)}
+            {w.chapter(i + 1, w.stage(chapter.life_stage))}
           </h2>
           {chapter.stories.map((story) => (
             <article key={story.id} id={story.id} className="told">
@@ -455,11 +627,14 @@ export default function Family({ seniorId }: { seniorId: string }) {
               {story.approx_period && <p className="period">{shown(story.approx_period)}</p>}
               {askedFor(story.id).map((q) => (
                 <p key={q.id} className="asked-for">
-                  {shown(q.asked_by)} asked: “{shown(q.text)}”
+                  {w.askedFor(shown(q.asked_by), shown(q.text))}
                 </p>
               ))}
-              <p className="text">{shown(story.summary)}</p>
+              <p className="text" lang={inEnglish ? 'en' : view.senior.language}>
+                {shown(story.summary)}
+              </p>
               <Quotes
+                w={w}
                 story={story}
                 name={name}
                 language={view.senior.language}
@@ -473,7 +648,7 @@ export default function Family({ seniorId }: { seniorId: string }) {
       {/* Asking is a press away from anywhere in the book, at the moment a
           story makes someone want to ask, rather than at the end of it. */}
       <button className="ask-button" aria-haspopup="dialog" onClick={() => setAsking(true)}>
-        {view.showcase ? 'Questions from the family' : `Ask ${name} a question`}
+        {view.showcase ? w.familyQuestions : w.askButton(name)}
         {view.questions.length > 0 && <span className="count">{view.questions.length}</span>}
       </button>
 
@@ -483,17 +658,17 @@ export default function Family({ seniorId }: { seniorId: string }) {
             className="drawer"
             role="dialog"
             aria-modal="true"
-            aria-label={view.showcase ? 'Questions from the family' : `Ask ${name} a question`}
+            aria-label={view.showcase ? w.familyQuestions : w.askButton(name)}
             onClick={(e) => e.stopPropagation()}
           >
-            <button className="close" onClick={() => setAsking(false)} aria-label="Close">
+            <button className="close" onClick={() => setAsking(false)} aria-label={w.close}>
               ×
             </button>
             <section id="asking" className="asking">
               {view.questions.length > 0 && (
                 <>
                   <h2 className="kicker">
-                    {view.showcase ? 'Questions from the family' : 'Questions sent'}
+                    {view.showcase ? w.familyQuestions : w.sent}
                   </h2>
                   <ul className="questions">
                     {view.questions.map((q) => {
@@ -501,19 +676,23 @@ export default function Family({ seniorId }: { seniorId: string }) {
                       return (
                         <li key={q.id} className={`question ${answer ? 'answered' : q.status}`}>
                           <span className="stamp">
-                            {answer ? 'Answered' : q.status === 'waiting' ? 'Waiting' : 'Asked'}
+                            {answer
+                              ? w.stamp.answered
+                              : q.status === 'waiting'
+                                ? w.stamp.waiting
+                                : w.stamp.asked}
                           </span>
-                          <p className="from">From {shown(q.asked_by)}</p>
-                          <p className="asked">“{shown(q.text)}”</p>
+                          <p className="from">{w.from(shown(q.asked_by))}</p>
+                          <p className="asked">{w.quoted(shown(q.text))}</p>
                           {answer ? (
                             <a href={`#${answer}`} onClick={() => setAsking(false)}>
-                              Read the answer: {shown(titles.get(answer) ?? '')} →
+                              {w.readAnswer(shown(titles.get(answer) ?? ''))}
                             </a>
                           ) : (
                             <p className="state">
                               {q.status === 'waiting'
-                                ? `Waiting to be asked: ${name} will hear it in a coming conversation.`
-                                : 'Asked. No reply has been shared.'}
+                                ? w.waitingNote(name)
+                                : w.askedNote}
                             </p>
                           )}
                         </li>
@@ -525,24 +704,30 @@ export default function Family({ seniorId }: { seniorId: string }) {
 
               {view.showcase ? (
                 <p className="read-only">
-                  This page is shown to every visitor, so it takes no questions. To ask one, start a
-                  conversation of your own from the <a href="/">start page</a>: your family page will
-                  take questions, and your next conversation opens with them.
+                  {w.readOnly[0]}
+                  <a href="/">{w.readOnly[1]}</a>
+                  {w.readOnly[2]}
                 </p>
               ) : (
                 <>
-                  <h2 className="kicker ask-head">Ask {name} something</h2>
+                  <h2 className="kicker ask-head">{w.askHead(name)}</h2>
                   <form className="ask" onSubmit={ask}>
                     <p className="step">
-                      <span>1</span>Who are you to {name}?
+                      <span>1</span>
+                      {w.step1(name)}
                     </p>
-                    <Who name={name} onChange={(asked_by) => setDraft({ ...draft, asked_by })} />
+                    <Who
+                      name={name}
+                      w={w}
+                      onChange={(asked_by) => setDraft({ ...draft, asked_by })}
+                    />
                     <p className="step">
-                      <span>2</span>What would you like to ask?
+                      <span>2</span>
+                      {w.step2}
                     </p>
                     <textarea
-                      aria-label="Your question"
-                      placeholder="What did you wear on your wedding day?"
+                      aria-label={w.step2}
+                      placeholder={w.placeholder}
                       maxLength={300}
                       rows={3}
                       value={draft.text}
@@ -550,9 +735,7 @@ export default function Family({ seniorId }: { seniorId: string }) {
                     />
                     {draft.asked_by.trim() && draft.text.trim() && (
                       <p className="preview">
-                        {name} will hear something like: “Your {draft.asked_by.trim()} would love to
-                        know: {draft.text.trim()}” It is asked in a coming conversation, gently, and
-                        if they would rather not answer, it is not pressed.
+                        {w.preview(name, draft.asked_by.trim(), draft.text.trim())}
                       </p>
                     )}
                     <button
@@ -560,9 +743,9 @@ export default function Family({ seniorId }: { seniorId: string }) {
                       className="start"
                       disabled={sending || !draft.asked_by.trim() || !draft.text.trim()}
                     >
-                      Send question
+                      {w.send}
                     </button>
-                    {unsent && <p className="unsent">{unsent}</p>}
+                    {unsent && <p className="unsent">{w.unsent}</p>}
                   </form>
                 </>
               )}
