@@ -216,7 +216,6 @@ def test_the_family_sees_a_story_that_was_agreed(tmp_path: Path) -> None:
 
     view = client.get(f"/api/family/{senior_id}").json()
 
-    assert view["withheld"] == 0
     assert [c["life_stage"] for c in view["chapters"]] == ["子供時代"]
     assert view["chapters"][0]["stories"][0]["title"] == "生まれた村"
 
@@ -227,9 +226,10 @@ def test_the_family_never_sees_a_story_that_was_not(tmp_path: Path) -> None:
     view = client.get(f"/api/family/{senior_id}").json()
 
     assert view["chapters"] == []
-    assert view["withheld"] == 1
-    # Not even the title leaks through the count.
+    # Not a word of it, and not that it exists: knowing a story was kept
+    # private invites asking what it is.
     assert "生まれた村" not in json.dumps(view, ensure_ascii=False)
+    assert "withheld" not in view
 
 
 def test_the_family_page_says_when_a_conversation_is_being_written_up(tmp_path: Path) -> None:

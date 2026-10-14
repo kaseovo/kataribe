@@ -172,15 +172,6 @@
   border-radius: 0.15rem;
 }
 
-.withheld {
-  margin-top: 3rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--line);
-  color: var(--muted);
-  font-size: 0.9rem;
-  line-height: 1.7;
-}
-
 /* A question from the family, shown over the story that answered it. The loop
    closing — "you asked, and this is what she said" — is the moment the page
    exists for. */

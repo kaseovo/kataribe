@@ -63,7 +63,6 @@ interface View {
     family: string[];
   };
   chapters: Chapter[];
-  withheld: number;
   questions: Question[];
   /** A conversation is still being written up, so more may be on its way. */
   writing: boolean;
@@ -538,14 +537,6 @@ export default function Family({ seniorId }: { seniorId: string }) {
         )}
       </section>
 
-      {view.withheld > 0 && (
-        <p className="withheld">
-          {view.withheld === 1
-            ? 'One story has been kept private.'
-            : `${view.withheld} stories have been kept private.`}{' '}
-          Only the person who told them can choose to share them.
-        </p>
-      )}
     </div>
   );
 }

@@ -158,8 +158,8 @@ class FamilyQuestionView(BaseModel):
 class FamilyView(BaseModel):
     senior: SeniorView
     chapters: list[FamilyChapter]
-    withheld: int
-    """Stories the person has not agreed to share. Counted, never shown."""
+    """Only what they agreed to share. A private story is not counted either:
+    knowing one exists invites asking what it is."""
     questions: list[FamilyQuestionView] = Field(default_factory=list)
     writing: bool = False
     """A conversation is still being written up, so more may be on its way."""
@@ -503,7 +503,6 @@ def read_family_view(
         raise HTTPException(status_code=404, detail=f"No senior {senior_id}")
 
     shared = store.stories_for_senior(senior_id, shared_only=True)
-    everything = store.stories_for_senior(senior_id)
     recorded = {s.session_id for s in shared if store.has_audio(s.session_id)}
     transcripts: dict[str, list[Turn]] = {}
 
@@ -556,7 +555,6 @@ def read_family_view(
     return FamilyView(
         senior=SeniorView(**senior.__dict__),
         chapters=chapters,
-        withheld=len(everything) - len(shared),
         questions=questions,
         # A reading that stalled is not on its way, and saying so would leave
         # them waiting for nothing.

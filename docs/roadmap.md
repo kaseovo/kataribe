@@ -283,7 +283,7 @@ A story reaches the family only when the person agreed and the agreement survive
 
 Measured against the real model, three runs each: a clear yes shared it, and a no, a hesitation (「うーん、そうですねえ……どうしましょうかねえ」) and never being asked all kept it private — 12 of 12.
 
-The family page is `/family/{senior_id}`. Filtering happens in the query, so there is no route by which a private story arrives and is merely not rendered; a browser test checks that not a word of one reaches the page. Private stories appear only as a count.
+The family page is `/family/{senior_id}`. Filtering happens in the query, so there is no route by which a private story arrives and is merely not rendered; a browser test checks that not a word of one reaches the page. Private stories do not appear at all, not even as a count: until 2026-10-14 the page said "One story has been kept private", which invites asking what it was. A family question she declined is treated the same way, looking exactly like one still waiting.
 
 There is deliberately no endpoint that writes stories. The browser tests seed the store through `backend/seed_story.py`, which uses the same code as the processing pipeline, rather than through a test-only route into the one part of the API whose job is to keep things out.
 

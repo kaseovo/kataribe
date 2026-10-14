@@ -68,7 +68,6 @@ test('a shared story reaches the family, with her voice behind it', async ({ pag
   await expect(page.locator('.told blockquote')).toHaveCount(0);
   await page.getByRole('button', { name: /quote in .* own words/ }).click();
   await expect(page.locator('.told blockquote')).toContainText('織物の工場');
-  await expect(page.locator('.withheld')).toHaveCount(0);
   await expect(page.locator('.told blockquote .translation')).toHaveCount(0);
 
   // In English, once it is translated: the story in English, and the quote
@@ -96,8 +95,10 @@ test('a story she did not agree to share never appears', async ({ page, request 
 
   await page.goto(`/family/${seniorId}`);
 
-  await expect(page.locator('.withheld')).toContainText('kept private');
   await expect(page.locator('.told')).toHaveCount(0);
+  // Not even that it exists: the page reads as if nothing had been told.
+  await expect(page.locator('.empty')).toBeVisible();
+  await expect(page.locator('body')).not.toContainText('private');
   // Not the title, not the summary, not a word of it.
   await expect(page.locator('body')).not.toContainText('話したくないこと');
   await expect(page.locator('body')).not.toContainText('織物');
