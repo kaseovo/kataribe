@@ -277,6 +277,14 @@ export default function Family({ seniorId }: { seniorId: string }) {
   const [draft, setDraft] = useState({ asked_by: '', text: '' });
   const [sending, setSending] = useState(false);
   const [unsent, setUnsent] = useState<string | null>(null);
+  /** The panel for asking, and the questions already sent, is open. */
+  const [asking, setAsking] = useState(false);
+  useEffect(() => {
+    if (!asking) return;
+    const close = (event: KeyboardEvent) => event.key === 'Escape' && setAsking(false);
+    window.addEventListener('keydown', close);
+    return () => window.removeEventListener('keydown', close);
+  }, [asking]);
   /** English for the page's text, by the text, when they speak another
    *  language. Shown under the original, never in its place. */
   const [translations, setTranslations] = useState<Record<string, string>>({});
@@ -462,80 +470,106 @@ export default function Family({ seniorId }: { seniorId: string }) {
         </section>
       ))}
 
-      <section id="asking" className="asking">
-        <h2 className="kicker">
-          {view.showcase ? 'Questions from the family' : `Ask ${name} something`}
-        </h2>
-        {view.showcase ? (
-          <p className="read-only">
-            This page is shown to every visitor, so it takes no questions. To ask one, start a
-            conversation of your own from the <a href="/">start page</a>: your family page will take
-            questions, and your next conversation opens with them.
-          </p>
-        ) : (
-          <form className="ask" onSubmit={ask}>
-            <p className="step">
-              <span>1</span>Who are you to {name}?
-            </p>
-            <Who name={name} onChange={(asked_by) => setDraft({ ...draft, asked_by })} />
-            <p className="step">
-              <span>2</span>What would you like to ask?
-            </p>
-            <textarea
-              aria-label="Your question"
-              placeholder="What did you wear on your wedding day?"
-              maxLength={300}
-              rows={3}
-              value={draft.text}
-              onChange={(e) => setDraft({ ...draft, text: e.target.value })}
-            />
-            {draft.asked_by.trim() && draft.text.trim() && (
-              <p className="preview">
-                {name} will hear something like: “Your {draft.asked_by.trim()} would love to know:{' '}
-                {draft.text.trim()}” It is asked in a coming conversation, gently, and if they would
-                rather not answer, it is not pressed.
-              </p>
-            )}
-            <button
-              type="submit"
-              className="start"
-              disabled={sending || !draft.asked_by.trim() || !draft.text.trim()}
-            >
-              Send question
-            </button>
-            {unsent && <p className="unsent">{unsent}</p>}
-          </form>
-        )}
+      {/* Asking is a press away from anywhere in the book, at the moment a
+          story makes someone want to ask, rather than at the end of it. */}
+      <button className="ask-button" aria-haspopup="dialog" onClick={() => setAsking(true)}>
+        {view.showcase ? 'Questions from the family' : `Ask ${name} a question`}
+        {view.questions.length > 0 && <span className="count">{view.questions.length}</span>}
+      </button>
 
-        {view.questions.length > 0 && (
-          <>
-            <p className="kicker sent-head">Questions sent</p>
-            <ul className="questions">
-              {view.questions.map((q) => {
-                const answer = q.answered_in.find((id) => titles.has(id));
-                return (
-                  <li key={q.id} className={`question ${answer ? 'answered' : q.status}`}>
-                    <span className="stamp">
-                      {answer ? 'Answered' : q.status === 'waiting' ? 'Waiting' : 'Asked'}
-                    </span>
-                    <p className="from">From {shown(q.asked_by)}</p>
-                    <p className="asked">“{shown(q.text)}”</p>
-                    {answer ? (
-                      <a href={`#${answer}`}>Read the answer: {shown(titles.get(answer) ?? '')} →</a>
-                    ) : (
-                      <p className="state">
-                        {q.status === 'waiting'
-                          ? `Waiting to be asked: ${name} will hear it in a coming conversation.`
-                          : 'Asked. No reply has been shared.'}
+      {asking && (
+        <div className="shade" onClick={() => setAsking(false)}>
+          <div
+            className="drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-label={view.showcase ? 'Questions from the family' : `Ask ${name} a question`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button className="close" onClick={() => setAsking(false)} aria-label="Close">
+              ×
+            </button>
+            <section id="asking" className="asking">
+              {view.questions.length > 0 && (
+                <>
+                  <h2 className="kicker">
+                    {view.showcase ? 'Questions from the family' : 'Questions sent'}
+                  </h2>
+                  <ul className="questions">
+                    {view.questions.map((q) => {
+                      const answer = q.answered_in.find((id) => titles.has(id));
+                      return (
+                        <li key={q.id} className={`question ${answer ? 'answered' : q.status}`}>
+                          <span className="stamp">
+                            {answer ? 'Answered' : q.status === 'waiting' ? 'Waiting' : 'Asked'}
+                          </span>
+                          <p className="from">From {shown(q.asked_by)}</p>
+                          <p className="asked">“{shown(q.text)}”</p>
+                          {answer ? (
+                            <a href={`#${answer}`} onClick={() => setAsking(false)}>
+                              Read the answer: {shown(titles.get(answer) ?? '')} →
+                            </a>
+                          ) : (
+                            <p className="state">
+                              {q.status === 'waiting'
+                                ? `Waiting to be asked: ${name} will hear it in a coming conversation.`
+                                : 'Asked. No reply has been shared.'}
+                            </p>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </>
+              )}
+
+              {view.showcase ? (
+                <p className="read-only">
+                  This page is shown to every visitor, so it takes no questions. To ask one, start a
+                  conversation of your own from the <a href="/">start page</a>: your family page will
+                  take questions, and your next conversation opens with them.
+                </p>
+              ) : (
+                <>
+                  <h2 className="kicker ask-head">Ask {name} something</h2>
+                  <form className="ask" onSubmit={ask}>
+                    <p className="step">
+                      <span>1</span>Who are you to {name}?
+                    </p>
+                    <Who name={name} onChange={(asked_by) => setDraft({ ...draft, asked_by })} />
+                    <p className="step">
+                      <span>2</span>What would you like to ask?
+                    </p>
+                    <textarea
+                      aria-label="Your question"
+                      placeholder="What did you wear on your wedding day?"
+                      maxLength={300}
+                      rows={3}
+                      value={draft.text}
+                      onChange={(e) => setDraft({ ...draft, text: e.target.value })}
+                    />
+                    {draft.asked_by.trim() && draft.text.trim() && (
+                      <p className="preview">
+                        {name} will hear something like: “Your {draft.asked_by.trim()} would love to
+                        know: {draft.text.trim()}” It is asked in a coming conversation, gently, and
+                        if they would rather not answer, it is not pressed.
                       </p>
                     )}
-                  </li>
-                );
-              })}
-            </ul>
-          </>
-        )}
-      </section>
+                    <button
+                      type="submit"
+                      className="start"
+                      disabled={sending || !draft.asked_by.trim() || !draft.text.trim()}
+                    >
+                      Send question
+                    </button>
+                    {unsent && <p className="unsent">{unsent}</p>}
+                  </form>
+                </>
+              )}
+            </section>
+          </div>
+        </div>
+      )}
 
     </div>
   );

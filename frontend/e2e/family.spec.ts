@@ -108,6 +108,8 @@ test('a relative can send a question, and sees it waiting', async ({ page, reque
   const seniorId = await seed(request, 'family', '織物工場のこと');
 
   await page.goto(`/family/${seniorId}`);
+  // Asking is a press away from anywhere in the book.
+  await page.getByRole('button', { name: /^Ask .* a question/ }).click();
   // Who they are, by group and then exactly, as the interviewer will say it.
   await page.getByRole('button', { name: 'Grandchildren' }).click();
   await page.getByRole('button', { name: 'granddaughter', exact: true }).click();
@@ -123,6 +125,7 @@ test('a relative can send a question, and sees it waiting', async ({ page, reque
 
   // Kept, not just shown.
   await page.reload();
+  await page.getByRole('button', { name: /^Ask .* a question/ }).click();
   await expect(page.locator('.question')).toContainText('お着物');
 });
 
@@ -130,6 +133,7 @@ test('her answer comes back to the one who asked', async ({ page, request }) => 
   const seniorId = await seed(request, 'family', '織物工場のこと', 'お父さんの工場のことを教えて');
 
   await page.goto(`/family/${seniorId}`);
+  await page.getByRole('button', { name: /^Ask .* a question/ }).click();
 
   const question = page.locator('.question');
   await expect(question.locator('.stamp')).toHaveText('Answered');
@@ -145,6 +149,7 @@ test('an answer she kept private stays private, even from the one who asked', as
   const seniorId = await seed(request, 'private', '話したくないこと', '子どものころのことを教えて');
 
   await page.goto(`/family/${seniorId}`);
+  await page.getByRole('button', { name: /^Ask .* a question/ }).click();
 
   // They learn it was asked, and nothing about whether or what she answered.
   await expect(page.locator('.question')).toContainText('No reply has been shared');
