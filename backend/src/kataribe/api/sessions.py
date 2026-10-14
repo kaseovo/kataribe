@@ -133,8 +133,9 @@ class FamilyChapter(BaseModel):
 class FamilyQuestionRequest(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
-    asked_by: str = Field(min_length=1, max_length=40)
-    """Who is asking, as the interviewer should say it: 孫のゆか, not just ゆか."""
+    asked_by: str = Field(min_length=1, max_length=60)
+    """Who is asking, as the interviewer should say it: 孫のゆか, not just ゆか.
+    The page sends a relation and a first name, "great-granddaughter Mio"."""
     text: str = Field(min_length=1, max_length=300)
 
 

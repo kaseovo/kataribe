@@ -55,7 +55,13 @@ interface Question {
 }
 
 interface View {
-  senior: { name: string; birth_year: number | null; birthplace: string; language: string };
+  senior: {
+    name: string;
+    birth_year: number | null;
+    birthplace: string;
+    language: string;
+    family: string[];
+  };
   chapters: Chapter[];
   withheld: number;
   questions: Question[];
@@ -172,6 +178,97 @@ function Quotes({
           </blockquote>
         ))}
     </div>
+  );
+}
+
+/** Relations by group, so finding yours is two presses among few, and Other
+ *  for whatever is not here. The interviewer says it aloud: "Your
+ *  daughter-in-law Aiko would love to know…". */
+const RELATIONS: Record<string, string[]> = {
+  Grandchildren: ['granddaughter', 'grandson', 'great-granddaughter', 'great-grandson'],
+  Children: ['daughter', 'son'],
+  Partner: ['wife', 'husband', 'partner'],
+  'Brothers & sisters': ['sister', 'brother'],
+  'In-laws': ['daughter-in-law', 'son-in-law', 'sister-in-law', 'brother-in-law'],
+  'Wider family': ['niece', 'nephew', 'cousin'],
+  'Friends & others': ['friend', 'neighbour', 'carer', 'former colleague'],
+};
+
+/** Who is asking, as the interviewer will say it: a relation, then a name. */
+function Who({ name, onChange }: { name: string; onChange: (askedBy: string) => void }) {
+  const [group, setGroup] = useState<string | null>(null);
+  const [relation, setRelation] = useState('');
+  const [other, setOther] = useState(false);
+  const [person, setPerson] = useState('');
+  const update = (r: string, n: string) => {
+    setRelation(r);
+    setPerson(n);
+    onChange([r.trim(), n.trim()].filter(Boolean).join(' '));
+  };
+  return (
+    <>
+      <div className="relations" role="group" aria-label={`Who you are to ${name}`}>
+        {Object.keys(RELATIONS).map((g) => (
+          <button
+            key={g}
+            type="button"
+            aria-pressed={group === g}
+            onClick={() => {
+              setGroup(g);
+              setOther(false);
+              update('', person);
+            }}
+          >
+            {g}
+          </button>
+        ))}
+      </div>
+      {group && (
+        <div className="relations sub" role="group" aria-label={group}>
+          {RELATIONS[group].map((r) => (
+            <button
+              key={r}
+              type="button"
+              aria-pressed={!other && relation === r}
+              onClick={() => {
+                setOther(false);
+                update(r, person);
+              }}
+            >
+              {r}
+            </button>
+          ))}
+          <button
+            type="button"
+            aria-pressed={other}
+            onClick={() => {
+              setOther(true);
+              update('', person);
+            }}
+          >
+            Other…
+          </button>
+        </div>
+      )}
+      {other && (
+        <input
+          aria-label="Your relation"
+          placeholder="e.g. goddaughter"
+          maxLength={30}
+          value={relation}
+          onChange={(e) => update(e.target.value, person)}
+        />
+      )}
+      {group && (
+        <input
+          aria-label="Your name"
+          placeholder="Your first name"
+          maxLength={25}
+          value={person}
+          onChange={(e) => update(relation, e.target.value)}
+        />
+      )}
+    </>
   );
 }
 
@@ -369,46 +466,10 @@ export default function Family({ seniorId }: { seniorId: string }) {
         </section>
       ))}
 
-      <section className="asking">
-        <h2 className="kicker">{view.showcase ? 'Questions from the family' : `Write to ${name}`}</h2>
-        {!view.showcase && (
-          <p className="how">
-            Your question is put to {name} in a coming conversation, gently and in their own time,
-            and they will hear that it came from you. If they would rather not answer, it is not
-            pressed.
-          </p>
-        )}
-
-        {view.questions.length > 0 && (
-          <ul className="questions">
-            {view.questions.map((q) => (
-              <li key={q.id} className={`question ${q.status}`}>
-                <p>
-                  <span className="who">{shown(q.asked_by)}</span>
-                  {shown(q.text)}
-                </p>
-                <p className="state">
-                  {q.status === 'waiting' && 'Waiting to be asked'}
-                  {q.status === 'asked' && q.answered_in.length > 0 && (
-                    <>
-                      Answered in{' '}
-                      {q.answered_in.map((id, i) => (
-                        <span key={id}>
-                          {i > 0 && ', '}
-                          <a href={`#${id}`}>{shown(titles.get(id) ?? '')}</a>
-                        </span>
-                      ))}
-                    </>
-                  )}
-                  {q.status === 'asked' &&
-                    q.answered_in.length === 0 &&
-                    'Asked. No reply has been shared.'}
-                </p>
-              </li>
-            ))}
-          </ul>
-        )}
-
+      <section id="asking" className="asking">
+        <h2 className="kicker">
+          {view.showcase ? 'Questions from the family' : `Ask ${name} something`}
+        </h2>
         {view.showcase ? (
           <p className="read-only">
             This page is shown to every visitor, so it takes no questions. To ask one, start a
@@ -416,14 +477,14 @@ export default function Family({ seniorId }: { seniorId: string }) {
             questions, and your next conversation opens with them.
           </p>
         ) : (
-          <form onSubmit={ask}>
-            <input
-              aria-label="Who is asking"
-              placeholder="Relation and name, e.g. granddaughter Yuka"
-              maxLength={40}
-              value={draft.asked_by}
-              onChange={(e) => setDraft({ ...draft, asked_by: e.target.value })}
-            />
+          <form className="ask" onSubmit={ask}>
+            <p className="step">
+              <span>1</span>Who are you to {name}?
+            </p>
+            <Who name={name} onChange={(asked_by) => setDraft({ ...draft, asked_by })} />
+            <p className="step">
+              <span>2</span>What would you like to ask?
+            </p>
             <textarea
               aria-label="Your question"
               placeholder="What did you wear on your wedding day?"
@@ -432,6 +493,13 @@ export default function Family({ seniorId }: { seniorId: string }) {
               value={draft.text}
               onChange={(e) => setDraft({ ...draft, text: e.target.value })}
             />
+            {draft.asked_by.trim() && draft.text.trim() && (
+              <p className="preview">
+                {name} will hear something like: “Your {draft.asked_by.trim()} would love to know:{' '}
+                {draft.text.trim()}” It is asked in a coming conversation, gently, and if they would
+                rather not answer, it is not pressed.
+              </p>
+            )}
             <button
               type="submit"
               className="start"
@@ -441,6 +509,35 @@ export default function Family({ seniorId }: { seniorId: string }) {
             </button>
             {unsent && <p className="unsent">{unsent}</p>}
           </form>
+        )}
+
+        {view.questions.length > 0 && (
+          <>
+            <p className="kicker sent-head">Questions sent</p>
+            <ul className="questions">
+              {view.questions.map((q) => {
+                const answer = q.answered_in.find((id) => titles.has(id));
+                return (
+                  <li key={q.id} className={`question ${answer ? 'answered' : q.status}`}>
+                    <span className="stamp">
+                      {answer ? 'Answered' : q.status === 'waiting' ? 'Waiting' : 'Asked'}
+                    </span>
+                    <p className="from">From {shown(q.asked_by)}</p>
+                    <p className="asked">“{shown(q.text)}”</p>
+                    {answer ? (
+                      <a href={`#${answer}`}>Read the answer: {shown(titles.get(answer) ?? '')} →</a>
+                    ) : (
+                      <p className="state">
+                        {q.status === 'waiting'
+                          ? `Waiting to be asked: ${name} will hear it in a coming conversation.`
+                          : 'Asked. No reply has been shared.'}
+                      </p>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </>
         )}
       </section>
 

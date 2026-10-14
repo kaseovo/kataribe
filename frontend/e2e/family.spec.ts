@@ -107,12 +107,16 @@ test('a relative can send a question, and sees it waiting', async ({ page, reque
   const seniorId = await seed(request, 'family', '織物工場のこと');
 
   await page.goto(`/family/${seniorId}`);
-  await page.getByLabel('Who is asking').fill('孫のゆか');
+  // Who they are, by group and then exactly, as the interviewer will say it.
+  await page.getByRole('button', { name: 'Grandchildren' }).click();
+  await page.getByRole('button', { name: 'granddaughter', exact: true }).click();
+  await page.getByLabel('Your name').fill('ゆか');
   await page.getByLabel('Your question').fill('結婚式のときのお着物は、どんなものでしたか?');
+  await expect(page.locator('.preview')).toContainText('Your granddaughter ゆか would love to know');
   await page.getByRole('button', { name: 'Send question' }).click();
 
   const question = page.locator('.question');
-  await expect(question).toContainText('孫のゆか');
+  await expect(question).toContainText('granddaughter ゆか');
   await expect(question).toContainText('お着物');
   await expect(question).toContainText('Waiting to be asked');
 
@@ -127,8 +131,8 @@ test('her answer comes back to the one who asked', async ({ page, request }) => 
   await page.goto(`/family/${seniorId}`);
 
   const question = page.locator('.question');
-  await expect(question).toContainText('Answered in');
-  await expect(question.getByRole('link', { name: '織物工場のこと' })).toBeVisible();
+  await expect(question.locator('.stamp')).toHaveText('Answered');
+  await expect(question.getByRole('link', { name: /織物工場のこと/ })).toBeVisible();
   // And on the story itself, who it answered.
   await expect(page.locator('.told .asked-for')).toContainText('孫のゆか asked');
 });
