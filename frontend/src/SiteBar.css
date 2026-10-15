@@ -73,10 +73,32 @@
   color: #1a1206;
 }
 
-/* A phone: the two buttons, without the name, so the bar stays short. */
+.site-bar .short {
+  display: none;
+}
+
+/* A phone: the two buttons on one line, without the name, by their short
+   labels. */
 @media (max-width: 40rem) {
   .site-bar {
     padding: 0.6rem 1rem;
+  }
+
+  .site-links {
+    flex-wrap: nowrap;
+  }
+
+  .site-bar .home,
+  .site-bar .on {
+    white-space: nowrap;
+  }
+
+  .site-bar .long {
+    display: none;
+  }
+
+  .site-bar .short {
+    display: inline;
   }
 
   .site-bar .brand {

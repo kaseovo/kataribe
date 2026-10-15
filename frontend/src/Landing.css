@@ -621,6 +621,14 @@
   }
 }
 
+/* A phone: room at the foot to scroll the last lines clear of the path's
+   pill in the corner. */
+@media (max-width: 40rem) {
+  .landing {
+    padding-bottom: 6rem;
+  }
+}
+
 /* A desktop: each section's words beside what they are about. */
 @media (min-width: 60rem) {
   .landing {

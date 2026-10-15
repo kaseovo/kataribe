@@ -142,6 +142,7 @@ interface VisitorWords {
   read: string;
   full: string;
   home: string;
+  homeShort: string;
 }
 
 const VISITOR_WORDS: Record<string, VisitorWords> = {
@@ -196,6 +197,7 @@ const VISITOR_WORDS: Record<string, VisitorWords> = {
     read: 'Open your family page',
     full: 'Today’s conversations are used up. They start again at midnight, Japan time.',
     home: 'Back to the start page',
+    homeShort: 'Start page',
   },
   ja: {
     kicker: 'お話の時間',
@@ -240,6 +242,7 @@ const VISITOR_WORDS: Record<string, VisitorWords> = {
     read: 'ご家族のページを開く',
     full: '本日お話しできる回数は終わりました。日本時間の午前0時に、また始まります。',
     home: '最初のページに戻る',
+    homeShort: '最初のページ',
   },
 };
 
@@ -472,7 +475,7 @@ export default function Talk({ seniorId }: { seniorId: string }) {
     return (
       <>
         <SiteBar
-          back={visitorWords.home}
+          back={{ label: visitorWords.home, short: visitorWords.homeShort }}
           on={{ href: `/family/${seniorId}`, label: visitorWords.page }}
         />
         <main className="welcome">

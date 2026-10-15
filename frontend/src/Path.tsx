@@ -97,8 +97,9 @@ export default function Path() {
   if (!open) {
     return (
       <button className="path-pill" onClick={() => toggle(true)}>
-        {all ? 'Your path: done' : 'Your path'}{' '}
-        <span>
+        <span className="path-long">{all ? 'Your path: done' : 'Your path'}</span>
+        <span className="path-short">Path</span>
+        <span className="path-tally">
           {count}/{steps.length}
         </span>
       </button>

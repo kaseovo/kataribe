@@ -102,9 +102,15 @@ interface Words {
   yours: string;
   talkAgain: string;
   startPage: string;
+  /** Its short forms, for the bar on a phone. */
+  startPageShort: string;
   tryIt: string;
+  tryItShort: string;
   askButton: (name: string) => string;
   familyQuestions: string;
+  /** The corner button's short forms, so it shares a phone's last line. */
+  askShort: string;
+  questionsShort: string;
   sent: string;
   askHead: (name: string) => string;
   step1: (name: string) => string;
@@ -151,9 +157,13 @@ const WORDS: Record<string, Words> = {
     yours: 'Your own page, reachable only by its link.',
     talkAgain: 'Talk again',
     startPage: 'Back to the start page',
+    startPageShort: 'Start page',
     tryIt: 'Try it on your own life',
+    tryItShort: 'Try it yourself',
     askButton: (name) => `Ask ${name} a question`,
     familyQuestions: 'Questions from the family',
+    askShort: 'Ask a question',
+    questionsShort: 'Questions',
     sent: 'Questions sent',
     askHead: (name) => `Ask ${name} something`,
     step1: (name) => `Who are you to ${name}?`,
@@ -211,9 +221,13 @@ const WORDS: Record<string, Words> = {
     yours: 'このページは、リンクを知っている方だけが開けます。',
     talkAgain: 'もう一度お話しする',
     startPage: '最初のページに戻る',
+    startPageShort: '最初のページ',
     tryIt: 'ご自分のお話で試してみる',
+    tryItShort: '試してみる',
     askButton: (name) => `${name}さんに質問する`,
     familyQuestions: 'ご家族からのご質問',
+    askShort: '質問する',
+    questionsShort: 'ご質問',
     sent: '送ったご質問',
     askHead: (name) => `${name}さんに聞いてみる`,
     step1: (name) => `${name}さんとのご関係は？`,
@@ -708,10 +722,10 @@ export default function Family({
   // page to talking again.
   const bar = back && (
     <SiteBar
-      back={w.startPage}
+      back={{ label: w.startPage, short: w.startPageShort }}
       on={
         view.showcase
-          ? { href: '/#try', label: w.tryIt }
+          ? { href: '/#try', label: w.tryIt, short: w.tryItShort }
           : { href: `/talk/${seniorId}`, label: w.talkAgain }
       }
     />
@@ -839,7 +853,8 @@ export default function Family({
               aria-selected={tab === 'questions'}
               onClick={() => setTab('questions')}
             >
-              {w.familyQuestions}{' '}
+              <i className="long">{w.familyQuestions}</i>
+              <i className="short">{w.questionsShort}</i>
               {view.questions.length > 0 && <span>{view.questions.length}</span>}
             </button>
           </div>
@@ -880,7 +895,8 @@ export default function Family({
         {/* On a phone, where the guide has scrolled away: the questions from
             anywhere in the story. */}
         <button className="ask-button" aria-pressed={tab === 'questions'} onClick={toQuestions}>
-          {view.showcase ? w.familyQuestions : w.askButton(name)}
+          <span className="long">{view.showcase ? w.familyQuestions : w.askButton(name)}</span>
+          <span className="short">{view.showcase ? w.questionsShort : w.askShort}</span>
           {view.questions.length > 0 && <span className="count">{view.questions.length}</span>}
         </button>
       </div>

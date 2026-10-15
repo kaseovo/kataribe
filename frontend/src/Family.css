@@ -658,6 +658,21 @@
   box-shadow: 0 10px 30px rgb(0 0 0 / 0.45);
 }
 
+.ask-button .short {
+  display: none;
+}
+
+/* A phone: short, so it shares the last line with the judge's path. */
+@media (max-width: 40rem) {
+  .ask-button .long {
+    display: none;
+  }
+
+  .ask-button .short {
+    display: inline;
+  }
+}
+
 .ask-button .count {
   display: inline-grid;
   place-items: center;
@@ -797,8 +812,24 @@
   }
 }
 
-/* A phone: both tabs on one line. */
+.page-tabs i {
+  font-style: normal;
+}
+
+.page-tabs .short {
+  display: none;
+}
+
+/* A phone: both tabs on one line, the questions' by its short name. */
 @media (max-width: 30rem) {
+  .page-tabs .long {
+    display: none;
+  }
+
+  .page-tabs .short {
+    display: inline;
+  }
+
   .page-tabs {
     flex-wrap: nowrap;
     overflow-x: auto;

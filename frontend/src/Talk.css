@@ -258,6 +258,12 @@ a.talk-button {
   line-height: 1.7;
 }
 
+@media (max-width: 40rem) {
+  .welcome {
+    padding-bottom: 6rem;
+  }
+}
+
 .welcome-main {
   display: grid;
   gap: 2.5rem;
