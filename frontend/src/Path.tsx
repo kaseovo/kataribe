@@ -9,8 +9,9 @@ const OPEN_KEY = 'kataribe.path.open';
  *  reaches from the start page, ticking itself off as they go: the demo, its
  *  family page and a family question, their own conversation, and their own
  *  page. Chosen on 2026-10-14 over a guided tour, often skipped, and the start
- *  page as numbered steps, which says least about the family page. The steps
- *  for the video and the demo's family page appear once those exist. */
+ *  page as numbered steps, which says least about the family page. The video's
+ *  step shows before there is a video, its place waiting on the start page, so
+ *  the path reads the same as it will; the family page's once there is one. */
 export default function Path() {
   const [ticked, setTicked] = useState(doneSoFar);
   const [start, setStart] = useState<{ video: string; showcase: string | null } | null>(null);
@@ -59,9 +60,7 @@ export default function Path() {
   };
 
   const steps: { step: Step; title: string; time: string; act: () => void }[] = [
-    ...(start.video
-      ? [{ step: 'watch' as Step, title: 'Watch the demo', time: '2 min', act: () => to('watch') }]
-      : []),
+    { step: 'watch', title: 'Watch the demo', time: '2 min', act: () => to('watch') },
     ...(showcase
       ? [
           {
