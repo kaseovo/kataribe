@@ -292,7 +292,7 @@ function Example({ cover, showcase }: { cover: Cover; showcase: string }) {
 
 /** The demo video, on the page itself: YouTube or Vimeo embedded with their
  *  captions, a video file in the browser's own player, anything else as a
- *  link. Until there is one, development shows where it will go. */
+ *  link. Until there is one, its place, saying it is coming. */
 function Video({ url }: { url: string }) {
   const youtube = url.match(
     /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]{11})/,
@@ -336,7 +336,7 @@ function Video({ url }: { url: string }) {
   return (
     <div className="video placeholder">
       <span aria-hidden>▶</span>
-      The demo video plays here once it is recorded.
+      The demo video is coming soon.
     </div>
   );
 }
@@ -448,7 +448,8 @@ export default function Landing() {
   const open = start?.open ?? true;
   const languages = start?.languages ?? [{ code: 'en', endonym: 'English' }];
   const ready = !!start && open && supported;
-  const watchable = !!start?.video || import.meta.env.DEV;
+  // A video to watch, rather than its place waiting for one.
+  const watchable = !!start?.video;
 
   return (
     <div className="landing">
@@ -482,16 +483,15 @@ export default function Landing() {
           </p>
         </div>
 
-        {/* The quickest way in: a whole conversation, then what it became. */}
-        {watchable && (
-          <figure id="watch" className="watch">
-            <Video url={start?.video ?? ''} />
-            <figcaption>
-              A real conversation in Japanese, with English subtitles: the interviewer, the story it
-              became, and the page the family reads.
-            </figcaption>
-          </figure>
-        )}
+        {/* The quickest way in: a whole conversation, then what it became. Its
+            place is kept until there is one, so the page does not change shape. */}
+        <figure id="watch" className="watch">
+          <Video url={start?.video ?? ''} />
+          <figcaption>
+            A real conversation in Japanese, with English subtitles: the interviewer, the story it
+            became, and the page the family reads.
+          </figcaption>
+        </figure>
       </header>
 
       <section className="loop" aria-label="How it works">

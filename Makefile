@@ -50,12 +50,15 @@ BUCKET ?= kataribe-recordings-0821244556
 # For strangers trying it from the start page; see docs/roadmap.md, "Judges try
 # it themselves". Kept here, since every deploy replaces the service's settings.
 #   TRY_LANGUAGES  en, then en,ja once the native-speaker review has passed
-#   SHOWCASE       the demo persona's id: its family page, read-only, on the start page
+#   SHOWCASE       the demo persona's id: its family page, read-only, on the start page.
+#                  6c9db95285ab is a made-up example, text only, copied from local
+#                  development on 2026-10-16 so the start page shows a family page
+#                  at all; the native speaker's demo take replaces it before judging
 #   VIDEO_URL      the public demo video
 #   MIN_INSTANCES  1 while judges may arrive (until Nov 6), so none waits on a cold
 #                  start of about five seconds; 0 afterwards
 TRY_LANGUAGES ?= en
-SHOWCASE ?=
+SHOWCASE ?= 6c9db95285ab
 VIDEO_URL ?=
 MIN_INSTANCES ?= 1
 
