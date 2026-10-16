@@ -130,7 +130,12 @@ LANGUAGES: dict[str, Language] = {
         endonym="English",
         prompt_file="interviewer_en.md",
         voice="Sulafat",
-        silence_duration_ms=2500,
+        # A starting point, not a measurement. Raised from 2500 on 2026-10-16:
+        # English is what judges speak on the start page, and by the Japanese
+        # test's rule of thumb (allow about double the pause) 2500 ms survives
+        # only a second or so of thought. A slower reply costs less than cutting
+        # in on someone remembering. To be checked with the pause test.
+        silence_duration_ms=4000,
         measured=False,
         opening="(They have just sat down. Speak to them gently, first.)",
         closing="(It is nearly time to close. When their story pauses, close as described.)",
