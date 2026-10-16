@@ -1,0 +1,727 @@
+/* Under the hood, on the start page: the five steps in a row, and the one
+   chosen in full beneath them, its words beside a picture of it at work. One
+   column on a phone, where the row keeps only the steps' names. */
+
+.hood {
+  --her: #9cc9e6;
+  --ok: #a6d38a;
+  --well: #141210;
+  --serif: Georgia, 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  margin: 0 0 4.5rem;
+}
+
+.hood .note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* ---- The row of steps ---- */
+
+.hood-steps {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.4rem;
+  margin: 1.5rem 0 0.75rem;
+}
+
+.hood-steps button {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  min-width: 0;
+  padding: 0.7rem 0.6rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  text-align: left;
+  cursor: pointer;
+}
+
+.hood-steps button:hover {
+  border-color: #4a3f36;
+}
+
+.hood-steps button.on {
+  border-color: var(--accent);
+  background: #221d19;
+  color: var(--text);
+}
+
+.hood-steps button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.hood-steps .n {
+  display: grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border: 1px solid var(--accent);
+  border-radius: 50%;
+  color: var(--accent);
+  font-size: 0.8rem;
+}
+
+.hood-steps button.on .n {
+  background: var(--accent);
+  color: #1a1206;
+}
+
+.hood-steps strong {
+  color: var(--text);
+  font-size: 1rem;
+}
+
+/* On a phone the cards carry only their names; the line is in the panel. */
+.hood-steps .short {
+  display: none;
+}
+
+/* ---- The step in full ---- */
+
+.hood-detail {
+  display: grid;
+  gap: 1.25rem;
+  padding: 1.25rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 0.9rem;
+}
+
+.hood-text {
+  min-width: 0;
+}
+
+.hood-text h3 {
+  margin: 0 0 0.6rem;
+  font-size: 1.2rem;
+}
+
+.hood-text h3 span {
+  color: var(--accent);
+}
+
+.hood-text p {
+  max-width: 36rem;
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.7;
+}
+
+.hood-text p + p {
+  margin-top: 0.75rem;
+}
+
+.hood-figure {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+  margin: 0;
+}
+
+.hood-figure figcaption {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.hood .stack {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 1.5rem;
+  margin: 1.25rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.hood a {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.hood a:hover {
+  text-decoration: underline;
+}
+
+/* ---- The pictures ---- */
+
+.pic {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem 1.1rem;
+  background: var(--well);
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  font-size: 0.85rem;
+  line-height: 1.55;
+}
+
+.pic p,
+.pic ul,
+.pic ol {
+  margin: 0;
+}
+
+.pic [lang='ja'] {
+  font-family: system-ui, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+}
+
+.pic .her {
+  color: var(--her);
+}
+
+.pic .lock {
+  position: relative;
+  display: inline-block;
+  width: 0.65rem;
+  height: 0.55rem;
+  margin: 0 0.15rem 0 0.1rem;
+  border-radius: 0.12rem;
+  background: currentColor;
+  vertical-align: -0.05rem;
+}
+
+.pic .lock::before {
+  content: '';
+  position: absolute;
+  left: 0.12rem;
+  top: -0.32rem;
+  width: 0.41rem;
+  height: 0.4rem;
+  box-sizing: border-box;
+  border: 0.1rem solid currentColor;
+  border-bottom: 0;
+  border-radius: 0.25rem 0.25rem 0 0;
+}
+
+.pic-label {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+/* Talk: two voices, and the pause it leaves alone. */
+.voices .pic-head {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.voices .live {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.1rem 0.6rem;
+  border-radius: 999px;
+  background: rgb(217 143 78 / 0.15);
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.voices .live i {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: hood-live 1.6s ease-in-out infinite;
+}
+
+@keyframes hood-live {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.voices .clock {
+  color: var(--muted);
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 0.78rem;
+}
+
+.voices .lane {
+  display: grid;
+  grid-template-columns: 4.6rem minmax(0, 1fr);
+  align-items: center;
+}
+
+.voices .speaker {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.voices .speaker.its {
+  color: var(--accent);
+}
+
+.voices .wave {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 2.6rem;
+  overflow: hidden;
+}
+
+.voices .wave i {
+  flex: 0 0 3px;
+  min-height: 3px;
+  border-radius: 2px;
+}
+
+.voices .wave i.her {
+  background: var(--her);
+}
+
+.voices .wave i.its {
+  background: var(--accent);
+}
+
+.voices .gap,
+.voices .rest {
+  align-self: center;
+  height: 1px;
+  background: repeating-linear-gradient(90deg, var(--line) 0 4px, transparent 4px 7px);
+}
+
+/* Her pause, and under it the interviewer's limit, in one bracket across
+   both lanes. --lead is the width of her voice before the pause: a bar is 3px
+   and the gap after it 2px, less the last gap. A phone shows fewer bars, so
+   the reply still comes after she has finished. */
+.voices {
+  --lead: 48px;
+}
+
+.voices .lead,
+.voices .tail,
+.voices .reply {
+  display: contents;
+}
+
+.voices .lead i:nth-child(n + 11),
+.voices .tail i:nth-child(n + 9),
+.voices .reply i:nth-child(n + 9) {
+  display: none;
+}
+
+.voices .gap {
+  flex: 0 0 34%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.6rem;
+  background: none;
+  border-left: 1px dashed rgb(240 235 229 / 0.4);
+  border-right: 1px dashed rgb(240 235 229 / 0.4);
+}
+
+/* Her pause, as the video's counter draws it. Its word only where there is room. */
+.voices .silence {
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.3rem;
+  background: #3d3d3d;
+  color: #f0a560;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.voices .silence .word {
+  display: none;
+}
+
+.voices .limit {
+  padding: 0.05rem 0.4rem;
+  border: 1px dashed rgb(217 143 78 / 0.6);
+  border-radius: 0.3rem;
+  color: var(--accent);
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.voices .gap.short {
+  flex-basis: 6%;
+  border: 0;
+}
+
+.voices .rest {
+  flex: 1 1 auto;
+}
+
+.voices .rest.before {
+  flex: 0 0 var(--lead);
+}
+
+.voices .pause {
+  color: var(--text);
+  font-family: var(--serif);
+  font-style: italic;
+  text-align: center;
+}
+
+/* Write: lines of the transcript, then the story they became. */
+.written .lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.written .lines p {
+  display: flex;
+  flex-direction: column;
+}
+
+.written .lines b {
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.written .lines small,
+.checked small {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.written .becomes {
+  color: var(--accent);
+  font-size: 1.1rem;
+  line-height: 1;
+  text-align: center;
+}
+
+.written .story-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  background: var(--panel);
+}
+
+.written .kicker,
+.shared .kicker {
+  color: var(--accent);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.written .title {
+  font-family: var(--serif);
+  font-size: 1.15rem;
+}
+
+.written .retold {
+  color: #cbc3ba;
+  font-family: var(--serif);
+}
+
+.written .quotes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.written .quotes span {
+  padding: 0.1rem 0.45rem;
+  border-radius: 0.35rem;
+  background: rgb(217 143 78 / 0.16);
+  color: #e9c9a6;
+  font-size: 0.78rem;
+}
+
+/* Check: each quote found, then heard. */
+.checked .row {
+  display: grid;
+  grid-template-columns: 2.6rem minmax(0, 1fr);
+  gap: 0.6rem;
+}
+
+.checked .tm {
+  color: var(--muted);
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 0.78rem;
+  line-height: 1.9;
+}
+
+.checked mark {
+  padding: 0 0.15rem;
+  border-radius: 0.2rem;
+  background: rgb(217 143 78 / 0.35);
+  color: inherit;
+}
+
+.checked .ok {
+  display: block;
+  color: var(--ok);
+  font-size: 0.78rem;
+}
+
+.checked .held {
+  color: var(--muted);
+  font-family: var(--serif);
+  font-style: italic;
+}
+
+/* Share: through the gate, or kept. */
+.shared .decided {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0;
+  list-style: none;
+}
+
+.shared .decided li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  font-family: var(--serif);
+}
+
+.shared .decided small {
+  font-family: system-ui, sans-serif;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.shared .sent {
+  border-color: rgb(217 143 78 / 0.5);
+}
+
+.shared .sent small {
+  color: var(--accent);
+}
+
+.shared .kept {
+  border-style: dashed;
+  color: var(--muted);
+}
+
+.shared .gate {
+  padding-left: 0.8rem;
+  border-left: 2px solid var(--accent);
+  color: var(--accent);
+  font-family: var(--serif);
+  font-style: italic;
+}
+
+.shared .mini-cover {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  background: var(--bg);
+  font-family: var(--serif);
+}
+
+.shared .name {
+  font-size: 1.15rem;
+}
+
+.shared .toc span {
+  color: var(--accent);
+  font-style: italic;
+  margin-right: 0.4rem;
+}
+
+/* Plan: the life so far, and what comes next. The six times of life in three
+   rows of two, in order, each the same size whatever its name. Two columns
+   rather than three, so the demo's two told times of life, Childhood and
+   Marriage, do not line up in one column as if they went together. */
+.planned .stages {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.4rem;
+  padding: 0;
+  list-style: none;
+}
+
+.planned .stages li {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 0.4rem 0.5rem;
+  border: 1px dashed #3d352f;
+  border-radius: 0.5rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.planned .stages li small {
+  font-weight: 400;
+  font-size: 0.7rem;
+}
+
+.planned .stages li.has-story {
+  border-style: solid;
+  border-color: rgb(217 143 78 / 0.6);
+  background: rgb(217 143 78 / 0.12);
+  color: var(--text);
+}
+
+.planned .stages li.has-story small {
+  color: var(--accent);
+}
+
+.planned .next-h {
+  color: var(--accent);
+  font-family: var(--serif);
+  font-size: 1.05rem;
+  font-style: italic;
+}
+
+.planned .next {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0;
+  list-style: none;
+  font-family: var(--serif);
+  font-size: 0.95rem;
+}
+
+.planned .tag {
+  display: inline-block;
+  margin-right: 0.5rem;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.07);
+  color: #a9a29a;
+  font-family: system-ui, sans-serif;
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  vertical-align: 0.1rem;
+}
+
+.planned .tag.family {
+  background: rgb(217 143 78 / 0.2);
+  color: var(--accent);
+}
+
+.planned .never {
+  color: var(--muted);
+  font-family: var(--serif);
+  font-style: italic;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .voices .live i {
+    animation: none;
+  }
+}
+
+/* A desktop: the cards carry their line, and lead one to the next; the step
+   in full sets its words beside its picture. */
+@media (min-width: 60rem) {
+  .hood-steps {
+    gap: 1.25rem;
+  }
+
+  .hood-steps button {
+    padding: 1.1rem 1.2rem;
+  }
+
+  .hood-steps strong {
+    font-size: 1.05rem;
+  }
+
+  .hood-steps .short {
+    display: block;
+  }
+
+  .hood-steps button:not(:last-child)::after {
+    content: '→';
+    position: absolute;
+    top: 1.15rem;
+    right: -1.05rem;
+    color: var(--accent);
+    font-size: 0.9rem;
+  }
+
+  .voices {
+    --lead: 128px;
+  }
+
+  .voices .lead i:nth-child(n + 11),
+  .voices .tail i:nth-child(n + 9),
+  .voices .reply i:nth-child(n + 9) {
+    display: block;
+  }
+
+  .voices .gap {
+    flex-basis: 32%;
+  }
+
+  .voices .silence .word {
+    display: inline;
+  }
+
+  .hood-detail {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    gap: 2.5rem;
+    padding: 1.75rem 2rem;
+  }
+}
+
+/* Where each step happens, for a reader who wants to check. */
+.in-code {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.in-code ul {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.in-code a {
+  margin-right: 0.4rem;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 0.82rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}

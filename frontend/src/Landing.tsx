@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 
 import './App.css';
 import Family from './Family';
+import Hood from './Hood';
 import Path from './Path';
 import { GO, mark, type Place } from './pathSteps';
 import './Landing.css';
@@ -663,55 +664,7 @@ export default function Landing() {
 
       {/* For a technical judge: the path from a voice to a family page, and
           what does each step. */}
-      <section className="hood">
-        <h2>Under the hood</h2>
-        <p className="note">From a voice to a family page, in five steps.</p>
-        <ol>
-          <li>
-            <strong>Talk</strong>
-            <span>
-              The browser speaks with Gemini Live directly, on a short-lived token. Its pause is set
-              for someone searching their memory: five seconds in Japanese.
-            </span>
-          </li>
-          <li>
-            <strong>Write</strong>
-            <span>
-              Once it ends, the transcript becomes stories: a retelling, the time of life it belongs
-              to, and the quotes it rests on.
-            </span>
-          </li>
-          <li>
-            <strong>Check</strong>
-            <span>
-              Every quote must be found word for word in the transcript, then heard in its clip of
-              the recording. One that fails either is dropped. Agreement to share is checked the
-              same way.
-            </span>
-          </li>
-          <li>
-            <strong>Share</strong>
-            <span>
-              Only what was agreed reaches the family page, in Japanese or in English, each quote
-              with its own clip. Nothing else of the recording is ever linked.
-            </span>
-          </li>
-          <li>
-            <strong>Plan</strong>
-            <span>
-              It finds the times of life not yet told and plans the next questions, alongside the
-              family's own, and never raises what was refused.
-            </span>
-          </li>
-        </ol>
-        {start?.repo && (
-          <p className="stack">
-            <a href={start.repo}>
-              Read the code <span aria-hidden>→</span>
-            </a>
-          </p>
-        )}
-      </section>
+      <Hood repo={start?.repo} />
 
       <footer className="privacy">
         <p>
