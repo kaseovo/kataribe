@@ -8,12 +8,14 @@ import Path from './Path';
 import { GO, mark, type Place } from './pathSteps';
 import './Landing.css';
 import { lifeStage } from './lifeStages';
+import Who, { type Lines } from './Who';
 
 /** The start page, for strangers on the public URL: judges, mostly.
  *
- *  It goes in the order a judge needs: what it is, the video, how it works,
- *  the demo's family page, and then their own turn. Chosen on 2026-10-14 from
- *  three prototypes, over two side-by-side doors and a guided tour. The family
+ *  It goes in the order a judge needs: what it is, the video, who it is for,
+ *  how it works, the demo's family page, and then their own turn. Chosen on
+ *  2026-10-14 from three prototypes, over two side-by-side doors and a guided
+ *  tour; who it is for was added on 2026-10-17 (see Who). The family
  *  page opens whole over the start page, from its cover: chosen the same day
  *  over one story to browse, one question to follow step by step, the page in
  *  a phone or a browser window, and the page laid out within the start page.
@@ -32,7 +34,9 @@ interface Start {
 }
 
 /** The cover of the demo's family page, in English: its name, its chapters,
- *  and how many questions the family has sent. */
+ *  and how many questions the family has sent. And three lines from it for Who
+ *  it's for: something told, something the family asked, something
+ *  remembered of a place. */
 interface Cover {
   name: string;
   original: string;
@@ -40,6 +44,7 @@ interface Cover {
   pronouns: string;
   chapters: { stage: string; titles: string[] }[];
   questions: number;
+  lines: Lines;
 }
 
 interface Remembered {
@@ -107,6 +112,20 @@ function useCover(showcase: string | null): Cover | null {
       .then(([view, en]: [FamilyPage, Record<string, string>]) => {
         if (view.chapters.length === 0) return;
         const say = (text: string) => en[text] ?? text;
+        const line = (said: string | undefined, story?: { title: string }) =>
+          said ? { said, english: en[said] ?? '', story: story && say(story.title) } : undefined;
+        const stories = view.chapters.flatMap((chapter) => chapter.stories);
+        const [first, ...rest] = stories;
+        // For the town: another story, one set somewhere if there is one, and
+        // its fullest quote.
+        const elsewhere = rest.find((story) => story.places?.length) ?? rest[0];
+        const fullest = elsewhere?.quotes
+          .map((quote) => quote.text)
+          .sort((a, b) => b.length - a.length)[0];
+        const question =
+          view.questions.find((q) => q.answered_in?.length) ?? view.questions[0];
+        const ledTo = stories.find((story) => question?.answered_in?.includes(story.id));
+        const asked = question && line(question.text, ledTo);
         const { birth_year, birthplace } = view.senior;
         setCover({
           name: say(view.senior.name),
@@ -120,6 +139,12 @@ function useCover(showcase: string | null): Cover | null {
             titles: chapter.stories.map((story) => say(story.title)),
           })),
           questions: view.questions.length,
+          lines: {
+            lang: view.senior.language ?? 'ja',
+            told: line(first?.quotes[0]?.text, first),
+            asked: asked && { ...asked, by: say(question.asked_by) },
+            remembered: line(fullest, elsewhere),
+          },
         });
       })
       .catch(() => undefined);
@@ -128,9 +153,18 @@ function useCover(showcase: string | null): Cover | null {
 }
 
 interface FamilyPage {
-  senior: { name: string; birth_year: number | null; birthplace: string; pronouns?: string };
-  chapters: { life_stage: string; stories: { title: string }[] }[];
-  questions: unknown[];
+  senior: {
+    name: string;
+    birth_year: number | null;
+    birthplace: string;
+    pronouns?: string;
+    language?: string;
+  };
+  chapters: {
+    life_stage: string;
+    stories: { id: string; title: string; places?: string[]; quotes: { text: string }[] }[];
+  }[];
+  questions: { asked_by: string; text: string; answered_in?: string[] }[];
 }
 
 /** The demo's family page: its cover here, and the whole page a press away,
@@ -494,6 +528,8 @@ export default function Landing() {
           </figcaption>
         </figure>
       </header>
+
+      <Who name={cover?.name} pronouns={cover?.pronouns} lines={cover?.lines} />
 
       <section className="loop" aria-label="How it works">
         <h2>How it works</h2>
