@@ -30,9 +30,9 @@ OUT = HERE.parent / "kataribe-pitch-deck.pptx"
 TEAM_NAME = "Kataribe"
 TEAM_LEADER = "Tanguy Pemeja"
 PROBLEM_STATEMENT = "Sustainability & Social Impact"
-REPO_URL = "https://github.com/tpemeja/kataribe"
+REPO_URL = "https://github.com/kaseovo/kataribe"
 VIDEO_URL = ""  # TBD: public YouTube, Vimeo or Drive link, under three minutes
-PRODUCT_URL = ""  # TBD: the Cloud Run URL
+PRODUCT_URL = "https://kataribe.kaseovo.com"
 
 INK = "202124"
 MUTED = "5F6368"
@@ -315,25 +315,29 @@ def brief(slide):
         name="Name",
     )
     text(
-        slide, LEFT, 2.05, 5.5, 0.85,
-        [P(R("A voice AI that talks with an elderly person for a few minutes a day, and turns "
-             "their memories into a life story their family can read and hear.", 14, "medium"), line=1.05)],
+        slide, LEFT, 2.02, 5.5, 1.05,
+        [
+            P(R("Every grandparent has stories nobody has asked about yet.", 14, "semibold"), after=4),
+            P(R("Kataribe talks with an elderly person for a few minutes a day, in Japanese, and turns what "
+                "they remember into a life story their family can read, and hear in their own voice.", 11.5,
+                "regular", INK), line=1.05),
+        ],
         name="One-liner",
     )
     rows = [
         ("THE PROBLEM", "Many Japanese seniors spend their days alone, and their families never find the "
                         "time or the courage to ask about their lives. The stories go unrecorded."),
-        ("THE IDEA", "A kataribe is the traditional keeper of oral history. Ours listens, remembers what "
-                     "was said, and plans what to ask next, always in the person's own words."),
-        ("WHO BENEFITS", "The senior: being listened to, memory work, a story that lasts. The family: "
-                         "stories they never asked about, and a reason to call."),
+        ("WHO IT'S FOR", "Them: a few minutes a day about their own life. Their family: the stories they "
+                         "never asked for. Next, their town: a friend, a carer, a local archive."),
+        ("NOT A COMPANION", "It does not stand in for anyone. A kataribe is a keeper of oral history; this "
+                            "one helps the people around them know them better."),
     ]
-    y = 3.0
+    y = 3.12
     for label, body in rows:
-        text(slide, LEFT, y, 5.5, 0.75,
-             [P(R(label, 9.5, "semibold", ACCENT_TEXT), after=2), P(R(body, 11.5, "regular", INK), line=1.05)],
+        text(slide, LEFT, y, 5.5, 0.72,
+             [P(R(label, 9.5, "semibold", ACCENT_TEXT), after=2), P(R(body, 11, "regular", INK), line=1.05)],
              name=label.title())
-        y += 0.78
+        y += 0.74
 
     stats = [
         ("6.72M", "people aged 65 and over live alone in Japan",
@@ -362,7 +366,8 @@ def opportunities(slide):
     box.height = emu(0.61)
 
     text(slide, LEFT, 1.38, WIDTH, 0.35,
-         [P(R("The senior leads. The AI plans what to ask. The family can join.", 14, "medium", ACCENT_TEXT))],
+         [P(R("Not a companion that stands in for anyone: a way for the people around them to know them better.",
+              13, "medium", ACCENT_TEXT))],
          name="Positioning")
     cards = [
         ("How different is it from any of the other existing ideas?", [
@@ -372,14 +377,15 @@ def opportunities(slide):
             "A human-written self-history costs ¥220,000, and is made once.",
         ]),
         ("How will it be able to solve the problem?", [
-            "A few minutes of conversation a day in natural Japanese. Nothing to install, open or type.",
-            "Each talk becomes stories, people and places on a life timeline. The gaps plan the next talk.",
-            "Relatives read what the senior shared, hear their voice, and send questions for next time.",
+            "A few minutes a day in natural Japanese. The interviewer speaks first: nothing to install or learn.",
+            "Each conversation becomes stories, set as a book by time of life. What is untold plans the next.",
+            "Relatives read what was shared, hear the voice behind each quote, and send questions it asks next.",
         ]),
         ("USP of the proposed solution", [
-            "The senior decides what is shared. Consent is kept in their own words, checked against the recording.",
-            "Faithful, not rewritten. Every quote is verified word for word and plays in the senior's own voice.",
-            "Built for Japanese: honorific register, names spelled from the profile, patience for long pauses.",
+            "Theirs to give: nothing reaches the family without a yes in their own words, and any story can "
+            "be taken back.",
+            "It retells, but never adds: every fact has a quote, found word for word, then heard in the recording.",
+            "Built for Japanese: honorific register, names spelled from the profile, patience for a pause.",
         ]),
     ]
     gap = 0.22
@@ -389,25 +395,26 @@ def opportunities(slide):
         rect(slide, x, 1.88, w, 3.45, CARD, radius=0.12, name=f"Card {i + 1}")
         text(slide, x + 0.2, 2.05, w - 0.4, 3.15,
              [P(R(question, 13, "semibold"), after=10, line=1.05)]
-             + [P(R(point, 11.5), bullet=True, after=8, line=1.05) for point in points],
+             + [P(R(point, 11), bullet=True, after=8, line=1.05) for point in points],
              name=f"Card {i + 1} text")
 
 
 def features(slide):
     items = [
         ("MdRecordVoiceOver", "Talks in Japanese",
-         "Gemini Live, native audio. Waits through long pauses for thought: 5 s, not 0.8 s."),
-        ("MdHistory", "Remembers last time", "Opens by recalling last time, then asks what it planned to ask."),
-        ("MdAutoStories", "Stories, not transcripts", "Each talk becomes stories with people, places and a life stage."),
-        ("MdFactCheck", "Never invents", "A quote not found word for word in the transcript is dropped."),
-        ("MdTimeline", "Plans from the gaps",
-         "Finds thin life stages and people never described, and plans the next three questions."),
-        ("MdVerifiedUser", "Consent per story",
-         "Shared only after a yes, in words found in the recording. Private by default."),
-        ("MdFamilyRestroom", "Family page, real voice",
-         "Chapters by life stage. Every quote plays as a clip of the original answer."),
+         "Gemini Live, voice to voice. Speaks first, asks one thing, waits 5 s through a pause."),
+        ("MdHistory", "Remembers last time", "Opens by recalling the last conversation, or with a question the family sent."),
+        ("MdMenuBook", "A life story, as a book",
+         "Chapters by time of life. Each story retold, its quotes a press away, each with its clip."),
+        ("MdFactCheck", "Never adds a detail",
+         "Every fact retold has a quote; each quote found word for word, then heard in its clip."),
+        ("MdTimeline", "Plans from the gaps", "Finds the times of life not yet told, and plans the next three questions."),
+        ("MdVerifiedUser", "Asked at the close",
+         "Shared only on a yes in their own words. No reply: asked again. Any story can be taken back."),
         ("MdForum", "The family asks back",
-         "Relatives send questions and the AI says who is asking. Refused topics are never asked."),
+         "A relative says who they are and asks; it says who asked. Refused topics are never raised."),
+        ("MdTranslate", "Japanese, with English",
+         "The family page in one language at a time, with a switch. Quotes keep the words as said."),
     ]
     gap = 0.2
     w = (WIDTH - 3 * gap) / 4
@@ -423,30 +430,32 @@ def features(slide):
 
 
 def process_flow(slide):
+    """The five steps the start page's Under the hood shows, and the family's loop around them."""
     w, h = 2.6, 0.9
     xs = [LEFT, LEFT + w + 0.71, RIGHT - w]
     ys = [1.45, 2.78, 4.11]
-    loop = {
-        (0, 0): ("1", "Talk", "5–10 min in Japanese with Gemini Live. The senior leads, the AI follows."),
-        (0, 1): ("2", "Store", "A stereo recording and both transcripts, per session."),
-        (0, 2): ("3", "Extract and verify", "Stories, people, places. Quotes and consent checked verbatim."),
-        (1, 2): ("4", "Timeline", "Stories placed on life stages: childhood, work, marriage…"),
-        (1, 1): ("5", "Find gaps", "Thin life stages, people never described, stories cut short."),
-        (1, 0): ("6", "Plan the next talk", "Story so far, three questions, and topics to avoid."),
+    steps = {
+        (0, 0): ("1", "Talk", "Live, by voice. Speaks first, asks one thing, waits through a pause."),
+        (0, 1): ("2", "Write", "The talk becomes stories, each resting on their own sentences."),
+        (0, 2): ("3", "Check", "Each quote found word for word, then heard in the recording."),
+        (1, 2): ("4", "Share", "At the close: may the family read today's? Only a yes goes on."),
+        (1, 1): ("5", "Plan", "Finds what is still untold; plans the next three questions."),
     }
-    family = {
-        (2, 2): ("MdFamilyRestroom", "Family reads", "Only stories the senior agreed to share, each with its audio."),
-        (2, 1): ("MdForum", "Family asks back", "A relative writes a question, and who they are: granddaughter Yuka."),
-        (2, 0): ("MdVerifiedUser", "Screened", "A question touching a refused topic is quietly held back."),
-    }
-    for (r, c), (n, title, body) in loop.items():
+    for (r, c), (n, title, body) in steps.items():
         rect(slide, xs[c], ys[r], w, h, CARD, radius=0.1, name=f"Step {n}")
         number(slide, n, xs[c] + 0.14, ys[r] + 0.14)
         text(slide, xs[c] + 0.56, ys[r] + 0.12, w - 0.7, h - 0.2,
              [P(R(title, 11.5, "semibold"), after=2), P(R(body, 9.5, "regular", MUTED), line=1.0)],
              name=f"Step {n} text")
-    for (r, c), (glyph, title, body) in family.items():
-        rect(slide, xs[c], ys[r], w, h, ACCENT_TINT, radius=0.1, name=title)
+    nodes = {
+        (1, 0, CARD, "MdHistory", "Next conversation", "Opens with last time, or with the family's question."),
+        (2, 2, ACCENT_TINT, "MdFamilyRestroom", "Family reads", "A book by time of life; each quote with its clip."),
+        (2, 1, ACCENT_TINT, "MdForum", "Family asks back",
+         "A relative says who they are, then asks: grandchild Yuka."),
+        (2, 0, ACCENT_TINT, "MdVerifiedUser", "Screened", "A question touching a refused topic is quietly held back."),
+    }
+    for r, c, fill, glyph, title, body in sorted(nodes):
+        rect(slide, xs[c], ys[r], w, h, fill, radius=0.1, name=title)
         badge(slide, glyph, xs[c] + 0.12, ys[r] + 0.12, d=0.34)
         text(slide, xs[c] + 0.56, ys[r] + 0.12, w - 0.7, h - 0.2,
              [P(R(title, 11.5, "semibold"), after=2), P(R(body, 9.5, "regular", MUTED), line=1.0)],
@@ -468,89 +477,104 @@ def process_flow(slide):
     text(slide, centre[2] - 1.62, ys[1] + h + 0.08, 1.5, 0.3,
          [P(R("only what was shared", 9, "medium", ACCENT_TEXT), align="r")], name="Shared label")
     text(slide, centre[0] + 0.12, ys[1] + h + 0.08, 1.5, 0.3,
-         [P(R("up to two a session", 9, "medium", ACCENT_TEXT))], name="Limit label")
+         [P(R("two at most", 9, "medium", ACCENT_TEXT))], name="Limit label")
     text(slide, centre[0] + 0.12, ys[0] + h + 0.08, 1.5, 0.3,
-         [P(R("next session", 9, "medium", MUTED))], name="Loop label")
+         [P(R("next time", 9, "medium", MUTED))], name="Loop label")
 
     # Legend, beside the heading.
     rect(slide, 6.55, 0.93, 0.18, 0.18, CARD, radius=0.03, line=LINE, name="Legend swatch")
-    text(slide, 6.8, 0.89, 1.4, 0.3, [P(R("Every session", 9.5, "medium", MUTED))], name="Legend 1")
+    text(slide, 6.8, 0.89, 1.5, 0.3, [P(R("Every conversation", 9.5, "medium", MUTED))], name="Legend 1")
     rect(slide, 8.35, 0.93, 0.18, 0.18, ACCENT_TINT, radius=0.03, line=ACCENT, name="Legend swatch 2")
     text(slide, 8.6, 0.89, 1.0, 0.3, [P(R("The family", 9.5, "medium", MUTED))], name="Legend 2")
 
 
 def wireframes(slide):
+    """The two screens as built: the senior's while talking, and the family page on a phone."""
+
     def callout(n, x, y):
         number(slide, n, x, y, d=0.24, fill=ACCENT, color=DARK)
 
-    # Tablet, landscape: the screen the senior sees. Callouts sit in a column at its right.
+    # Tablet, landscape: the senior's screen mid-conversation. Callouts in a column at its right.
     tx, ty, tw, th = LEFT, TOP, 4.75, 2.75
     rect(slide, tx, ty, tw, th, DARK, radius=0.22, name="Tablet frame")
     sx, sy, sw, sh = tx + 0.18, ty + 0.18, tw - 0.36, th - 0.36
     rect(slide, sx, sy, sw, sh, APP_BG, radius=0.06, name="Tablet screen")
     content = sw - 0.45
     cx = sx + content / 2
-    text(slide, sx + 0.15, sy + 0.1, 1.0, 0.25, [P(R("語り部", 9, "medium", ON_DARK_MUTED))])
-    text(slide, sx, sy + 0.33, content, 0.48, [P(R("こんにちは、ハルさん", 22, "medium", ON_DARK), align="ctr")],
-         anchor="ctr", name="Greeting")
-    chip = rect(slide, cx - 1.45, sy + 0.92, 2.9, 0.34, APP_PANEL, radius=0.17, name="Topic")
-    label_in(chip, [P(R("今日のお話 · お父様の織物工場", 11, "medium", ACCENT), align="ctr")])
+    text(slide, sx + 0.15, sy + 0.1, 2.0, 0.25, [P(R("田中ハルさん", 9, "medium", ON_DARK_MUTED))])
+    text(slide, sx + 0.25, sy + 0.32, content - 0.4, 0.78,
+         [P(R("ハルさん、こんにちは。学校のころのお話を、聞かせてください。", 15, "medium", ON_DARK),
+            align="ctr", line=1.1)],
+         anchor="ctr", name="Interviewer's words")
     bars = [0.1, 0.22, 0.34, 0.2, 0.28, 0.14, 0.08]
     bx = cx - (len(bars) * 0.13 - 0.06) / 2
     for i, bh in enumerate(bars):
-        rect(slide, bx + i * 0.13, sy + 1.55 - bh / 2, 0.07, bh, ACCENT, radius=0.035, name=f"Level {i}")
-    stop = rect(slide, cx - 0.75, sy + 1.86, 1.5, 0.38, "A8503F", radius=0.19, name="Stop button")
+        rect(slide, bx + i * 0.13, sy + 1.36 - bh / 2, 0.07, bh, ACCENT, radius=0.035, name=f"Level {i}")
+    text(slide, sx, sy + 1.56, content, 0.25,
+         [P(R("お話ししています", 10, "medium", ON_DARK_MUTED), align="ctr")], name="Phase")
+    stop = rect(slide, cx - 0.75, sy + 1.88, 1.5, 0.36, "A8503F", radius=0.18, name="Finish button")
     label_in(stop, [P(R("おわる", 13, "semibold", WHITE), align="ctr")])
     column = sx + sw - 0.36
-    for n, centre in enumerate([sy + 0.57, sy + 1.09, sy + 1.55, sy + 2.05], 1):
+    for n, centre in enumerate([sy + 0.7, sy + 1.45, sy + 2.06], 1):
         callout(n, column, centre - 0.12)
 
     text(slide, LEFT, ty + th + 0.12, tw, 0.3,
-         [P(R("Senior's tablet: nothing to open, tap or type", 11, "semibold"))], name="Tablet caption")
-    notes = ["Greets the senior by name", "One topic, from last time", "Listens, and waits", "One big button to stop"]
+         [P(R("The senior's screen: one button to start, nothing to learn", 11, "semibold"))], name="Tablet caption")
+    notes = ["Its words, large, as it says them", "Listening or speaking, calmly", "One button to finish",
+             "Then: share today's story, or keep it"]
     for i, note in enumerate(notes):
         nx, ny = LEFT + (i % 2) * 2.4, ty + th + 0.5 + (i // 2) * 0.32
         number(slide, i + 1, nx, ny + 0.02, d=0.22, fill=ACCENT, color=DARK)
         text(slide, nx + 0.3, ny, 2.05, 0.28, [P(R(note, 9.5, "regular", MUTED))], name=f"Tablet note {i + 1}")
 
-    # Phone, portrait: the family page. Callouts sit just outside its right edge.
+    # Phone, portrait: the family page as a book. Callouts just outside its right edge.
     px, py, pw, ph = 5.4, TOP, 1.75, 3.6
     rect(slide, px, py, pw, ph, DARK, radius=0.22, name="Phone frame")
     qx, qy, qw, qh = px + 0.1, py + 0.18, pw - 0.2, ph - 0.36
     rect(slide, qx, qy, qw, qh, APP_BG, radius=0.08, name="Phone screen")
-    text(slide, qx + 0.12, qy + 0.12, qw - 0.2, 0.55, [
-        P(R("田中ハル", 12, "semibold", ON_DARK)), P(R("Born in 1947 · 長野", 6.5, "regular", ON_DARK_MUTED)),
+    text(slide, qx + 0.12, qy + 0.1, qw - 0.2, 0.62, [
+        P(R("A LIFE STORY", 5.5, "semibold", ACCENT)),
+        P(R("Tanaka Haru", 11, "semibold", ON_DARK)),
+        P(R("田中ハル · Born in 1947, Nagano", 6, "regular", ON_DARK_MUTED)),
     ])
-    text(slide, qx + 0.12, qy + 0.72, qw - 0.2, 0.2, [P(R("Childhood", 6.5, "medium", ACCENT))])
-    text(slide, qx + 0.12, qy + 0.9, qw - 0.2, 0.25, [P(R("織物工場のこと", 9, "semibold", ON_DARK))])
-    rect(slide, qx + 0.12, qy + 1.2, qw - 0.24, 0.5, APP_PANEL, radius=0.05, name="Quote")
-    text(slide, qx + 0.2, qy + 1.26, qw - 0.65, 0.42,
-         [P(R("「父は村で小さな織物の工場をやっておりました。」", 6.5, "regular", ON_DARK), line=1.0)])
-    circle(slide, qx + qw - 0.4, qy + 1.33, 0.24, ACCENT, name="Play")
-    icon(slide, "MdPlayArrow", qx + qw - 0.37, qy + 1.36, 0.18, color=WHITE)
-    text(slide, qx + 0.12, qy + 1.88, qw - 0.2, 0.22, [P(R("Ask 田中ハル something", 7.5, "semibold", ON_DARK))])
-    rect(slide, qx + 0.12, qy + 2.12, qw - 0.24, 0.26, APP_BG, radius=0.04, line="3A332E", name="Field 1")
-    rect(slide, qx + 0.12, qy + 2.44, qw - 0.24, 0.4, APP_BG, radius=0.04, line="3A332E", name="Field 2")
-    send = rect(slide, qx + 0.12, qy + 2.92, 0.85, 0.22, ACCENT, radius=0.06, name="Send")
-    label_in(send, [P(R("Send question", 6.5, "semibold", DARK), align="ctr")], inset=0.01)
-    for n, centre in enumerate([qy + 0.82, qy + 1.45, qy + 1.99], 1):
+    for i, (label, x, wide) in enumerate([("A life story  3", qx + 0.12, 0.66), ("Questions  2", qx + 0.82, 0.6)]):
+        pill = rect(slide, x, qy + 0.76, wide, 0.18, APP_PANEL if i else ACCENT, radius=0.09, name=label)
+        label_in(pill, [P(R(label, 5.5, "semibold", ON_DARK if i else DARK), align="ctr")], inset=0.0)
+    text(slide, qx + 0.12, qy + 1.04, qw - 0.2, 0.18, [P(R("CHAPTER 1 · CHILDHOOD", 5.5, "semibold", ACCENT))])
+    text(slide, qx + 0.12, qy + 1.2, qw - 0.2, 0.3,
+         [P(R("Her father's textile factory", 7.5, "semibold", ON_DARK), line=1.0)])
+    text(slide, qx + 0.12, qy + 1.52, qw - 0.22, 0.4,
+         [P(R("Tanaka Haru grew up in a small mountain village in Nagano. Her father ran a small textile "
+              "factory…", 6, "regular", ON_DARK), line=1.05)])
+    quotes = rect(slide, qx + 0.12, qy + 1.95, 0.78, 0.17, APP_BG, radius=0.08, line="5A4A3C", name="Quotes button")
+    label_in(quotes, [P(R("All 3 quotes", 5.5, "medium", ACCENT), align="ctr")], inset=0.0)
+    rect(slide, qx + 0.12, qy + 2.2, qw - 0.24, 0.8, APP_PANEL, radius=0.05, name="Quote")
+    text(slide, qx + 0.2, qy + 2.24, qw - 0.4, 0.5, [
+        P(R("「長野の、山あいの小さな村です。父は村で小さな織物の工場をやっておりました。」", 6, "regular", ON_DARK),
+          line=1.0, after=2),
+        P(R("“It was a small village in Nagano…”", 5.5, "regular", ON_DARK_MUTED), line=1.0),
+    ])
+    circle(slide, qx + 0.2, qy + 2.76, 0.18, ACCENT, name="Play")
+    icon(slide, "MdPlayArrow", qx + 0.222, qy + 2.782, 0.135, color=WHITE)
+    rect(slide, qx + 0.44, qy + 2.845, qw - 0.64, 0.015, "5A4A3C", radius=0.0, name="Progress")
+    for n, centre in enumerate([qy + 0.38, qy + 0.85, qy + 2.6], 1):
         callout(n, px + pw + 0.06, centre - 0.12)
 
     family_notes = [
-        "The senior's stories as chapters, by life stage",
-        "Their own words, with a clip of the answer to play",
-        "Ask a question; the senior hears who is asking",
+        "The life story as a book, by time of life",
+        "The family's questions, one tab away, each with the story it led to",
+        "Each retelling with its quotes, in the words as said, and the voice that said them",
     ]
     nx = 7.62
-    text(slide, nx, TOP, RIGHT - nx, 0.3, [P(R("Family page", 11, "semibold"))], name="Phone caption")
+    text(slide, nx, TOP, RIGHT - nx, 0.3, [P(R("The family page", 11, "semibold"))], name="Phone caption")
     for i, note in enumerate(family_notes):
-        ny = TOP + 0.45 + i * 0.62
+        ny = TOP + 0.45 + i * 0.66
         number(slide, i + 1, nx, ny + 0.02, d=0.22, fill=ACCENT, color=DARK)
-        text(slide, nx + 0.3, ny, RIGHT - nx - 0.3, 0.55, [P(R(note, 9.5, "regular", MUTED), line=1.0)],
+        text(slide, nx + 0.3, ny, RIGHT - nx - 0.3, 0.6, [P(R(note, 9.5, "regular", MUTED), line=1.0)],
              name=f"Family note {i + 1}")
     text(slide, nx, TOP + 2.55, RIGHT - nx, 0.9,
-         [P(R("The family page is built. The tablet screen is the next step: today the prototype "
-              "starts from a Talk button.", 9, "regular", MUTED), line=1.05)], name="Status note")
+         [P(R("Both are built. kataribe.kaseovo.com shows a family page from the demo, and lets anyone "
+              "try the conversation in English.", 9, "regular", MUTED), line=1.05)], name="Status note")
 
 
 def architecture(slide):
@@ -563,23 +587,24 @@ def architecture(slide):
              name=f"{title} text")
 
     cl_w = 1.95
-    node(LEFT, TOP, cl_w, 2.35, "MdTabletAndroid", "Senior's tablet",
-         ["React web app", "Mic in at 16 kHz, voice out at 24 kHz",
-          "Records the talk in stereo: the senior left, the AI right",
-          "Holds only a short-lived token, which cannot change the prompt"])
-    node(LEFT, 4.3, cl_w, 1.05, "MdPhoneIphone", "Family's phone", ["The family page: shared stories, with audio"])
+    node(LEFT, TOP, cl_w, 2.35, "MdTabletAndroid", "Senior's screen",
+         ["React web app", "Mic in, voice out at 24 kHz",
+          "Records both voices on one timeline",
+          "Holds only a single-use token, with the prompt sealed in"])
+    node(LEFT, 4.3, cl_w, 1.05, "MdPhoneIphone", "Family page", ["Shared stories only, in Japanese or English"])
 
     run_x, run_w = 3.05, 3.5
     rect(slide, run_x, 2.05, run_w, 3.3, CARD, radius=0.12, name="Cloud Run")
     icon(slide, "MdCloud", run_x + 0.15, 2.12, 0.32)
     text(slide, run_x + 0.55, 2.1, run_w - 0.65, 0.42,
-         [P(R("Cloud Run", 11, "semibold")), P(R("FastAPI and the web app, in one container", 9, "regular", MUTED))],
+         [P(R("Cloud Run, Tokyo", 11, "semibold")),
+          P(R("kataribe.kaseovo.com · FastAPI and the web app", 9, "regular", MUTED))],
          anchor="ctr", name="Cloud Run title")
     steps = [
-        ("1", "Session start", "The story so far and family questions, locked into a short-lived Live token"),
+        ("1", "Session start", "The story so far and family questions, sealed into a single-use Live token"),
         ("3", "Recording upload", "Stereo WAV in parts, joined in Cloud Storage"),
-        ("4", "Processing", "Extract → verify → screen → plan, after every session"),
-        ("5", "Family API", "Shared stories only; clips cut from the senior's channel"),
+        ("4", "After each conversation", "Write → check → screen → plan"),
+        ("5", "Family API", "Shared stories only; one clip per quote; English beside it"),
     ]
     sub_ys = [2.6, 3.28, 3.96, 4.64]
     for (n, title, body), y in zip(steps, sub_ys):
@@ -593,8 +618,8 @@ def architecture(slide):
     node(rx, TOP, rw, 0.85, "MdGraphicEq", "Gemini Live API", ["gemini-3.8-live: native audio, built-in transcription"])
     services = [
         (sub_ys[0], "MdStorage", "Firestore", "People, sessions, stories, plans"),
-        (sub_ys[1], "MdFolder", "Cloud Storage", "Recordings, then clips"),
-        (sub_ys[2], "MdAutoAwesome", "Gemini 3.8 Flash", "Extraction, screening, planning"),
+        (sub_ys[1], "MdFolder", "Cloud Storage", "Recordings; a clip per quote"),
+        (sub_ys[2], "MdAutoAwesome", "Gemini 3.8 Flash", "Writes, listens again, translates, plans"),
     ]
     for y, glyph, title, body in services:
         node(rx, y, rw, 0.6, glyph, title, [body])
@@ -615,24 +640,24 @@ def architecture(slide):
 def technologies(slide):
     groups = [
         ("MdAutoAwesome", "Google AI", [
-            "Gemini 3.8 Live: real-time Japanese voice, native audio, built-in transcription",
-            "Gemini 3.8 Flash: extraction, screening, planning, and judging the evals",
-            "Google Gen AI SDK, Python and JavaScript; ephemeral tokens",
+            "Gemini 3.8 Live: real-time voice, native audio, built-in transcription",
+            "Gemini 3.8 Flash: writes the stories, listens to each quote's clip, translates, plans",
+            "Google Gen AI SDK, Python and JavaScript; single-use tokens",
         ]),
         ("MdCloud", "Google Cloud", [
-            "Cloud Run: the API and the web app in one container",
-            "Firestore: people, sessions, stories, plans, questions",
-            "Cloud Storage: recordings, uploaded in parts",
+            "Cloud Run in Tokyo, at kataribe.kaseovo.com",
+            "Firestore and Cloud Storage; Secret Manager for the keys",
+            "An uptime check, Error Reporting and a budget alert",
         ]),
         ("MdTabletAndroid", "Application", [
             "React 19, Vite, TypeScript",
-            "Web Audio worklet: 16 kHz capture, stereo recording",
+            "Web Audio worklet: capture, and both voices on one recording",
             "FastAPI on Python 3.13, managed with uv",
         ]),
         ("MdFactCheck", "Quality", [
             "pytest and Playwright against the live API, with synthesized Japanese speech",
             "AI-vs-AI sparring: three personas, real audio both ways",
-            "GitHub Actions: checks on every push, the live eval on demand",
+            "make smoke: a judge's whole path, on the live service",
         ]),
     ]
     gap = 0.2
@@ -648,69 +673,71 @@ def technologies(slide):
     rect(slide, LEFT, 4.72, WIDTH, 0.62, DARK, radius=0.12, name="Principle")
     text(slide, LEFT + 0.25, 4.76, WIDTH - 0.5, 0.54, [
         P(R("One rule across the stack  ", 11, "semibold", ACCENT),
-          R("The model never speaks for the senior. Gemini extracts the stories; plain code then checks every quote, "
-            "and every yes to sharing, against the transcript.", 10, "regular", ON_DARK), line=1.05),
+          R("The model never speaks for the senior. Gemini writes the stories; plain code checks every quote "
+            "and every yes against the transcript, and Gemini hears each one again in the recording.", 10,
+            "regular", ON_DARK), line=1.05),
     ], anchor="ctr", name="Principle text")
 
 
 def cost(slide):
     rect(slide, LEFT, TOP, 3.0, 3.88, DARK, radius=0.12, name="Cost summary")
     text(slide, LEFT + 0.28, TOP + 0.25, 2.5, 3.5, [
-        P(R("≈ $0.12", 34, "semibold", ACCENT), after=2),
+        P(R("≈ $0.13", 34, "semibold", ACCENT), after=2),
         P(R("per 10-minute conversation, in AI and cloud, at list prices", 11.5, "medium", ON_DARK), after=16, line=1.05),
-        P(R("≈ ¥6,400", 26, "semibold", ON_DARK), after=2),
+        P(R("≈ ¥6,900", 26, "semibold", ON_DARK), after=2),
         P(R("for a year of daily conversations, per person", 11.5, "medium", ON_DARK), after=16, line=1.05),
-        P(R("Under 3% of one ¥220,000 self-history written by hand.", 10.5, "regular", ON_DARK_MUTED), line=1.05),
+        P(R("About 3% of one ¥220,000 self-history written by hand.", 10.5, "regular", ON_DARK_MUTED), line=1.05),
     ], name="Cost summary text")
 
     rows = [
         ["Item", "Basis", "Per session"],
         ["Gemini Live, audio in", "$0.005 a minute, for all 10 minutes", "$0.050"],
         ["Gemini Live, audio out", "$0.018 a minute, about 2.5 minutes spoken", "$0.045"],
-        ["Gemini Flash processing", "≈ 15k tokens in, 3k out, across four passes", "$0.023"],
+        ["Gemini Flash, writing", "≈ 15k tokens in, 3k out: write, screen, plan", "$0.023"],
+        ["Gemini Flash, listening", "≈ 3 minutes of quoted clips, heard again", "≈ $0.006"],
         ["Recording storage", "58 MB of WAV, at ≈ $0.023 per GB-month", "< $0.002"],
         ["Cloud Run, Firestore", "Scale to zero; free tiers at this scale", "≈ $0"],
-        ["Total", "", "≈ $0.12", "*"],
+        ["Total", "", "≈ $0.13", "*"],
     ]
-    table(slide, 3.65, TOP, [1.85, 3.0, 1.11], rows, row_h=0.42)
-    text(slide, 3.65, TOP + 3.1, RIGHT - 3.65, 0.8, [
-        P(R("Audio is billed for the whole time a session is open, silence included. Rates are Google's "
-            "list prices as of 23 Sep 2026, kept in backend/costs.py; the Flash token counts are estimates. "
-            "Yen at ¥150 to the dollar.", 9, "regular", MUTED), line=1.05),
+    table(slide, 3.65, TOP, [1.85, 3.0, 1.11], rows, row_h=0.38)
+    text(slide, 3.65, TOP + 3.16, RIGHT - 3.65, 0.75, [
+        P(R("Audio is billed for the whole time a session is open, silence included. Rates are Google's list "
+            "prices as of 23 Sep 2026, kept in backend/costs.py; token counts are estimates, the listening at 32 "
+            "audio tokens a second. Yen at ¥150 to the dollar. Judging: at most 30 visitor conversations a day, "
+            "about $0.10 each.", 9, "regular", MUTED), line=1.05),
     ], name="Cost notes")
 
 
 def snapshots(slide):
     shots = [
-        ("console.png", "Interview console",
-         "Who is being interviewed, which voice, and how long to wait: 5 s, measured, against the "
-         "model's 0.8 s default."),
-        ("session.png", "After the session",
-         "A story extracted from a live session: life stage, people, places, and the quote matched to "
-         "the turn it came from."),
-        ("family.png", "Family page",
-         "A granddaughter's question, the story that answers it, and the senior's own words, one tap "
-         "from the audio."),
+        ("start.png", "The start page",
+         "What it is, who it's for, a family page from the demo, then a judge's own turn."),
+        ("story.png", "A story, and what it rests on",
+         "A retelling to read; every quote a press away, in Japanese with the English beneath."),
+        ("questions.png", "Questions from the family",
+         "Who asked, and the story each question led to. A waiting one says so."),
     ]
     gap = 0.31
     w = (WIDTH - 2 * gap) / 3
+    h = w * 480 / 430
     for i, (file, title, body) in enumerate(shots):
         x = LEFT + i * (w + gap)
-        picture(slide, SHOTS / file, x, TOP - 0.05, w, w, radius=0.1)
-        text(slide, x, TOP + w + 0.05, w, 0.95,
-             [P(R(title, 11.5, "semibold"), after=2), P(R(body, 9.5, "regular", MUTED), line=1.05)],
+        picture(slide, SHOTS / file, x, TOP - 0.05, w, h, radius=0.1)
+        text(slide, x, TOP + h + 0.04, w, 0.7,
+             [P(R(title, 11, "semibold"), after=1), P(R(body, 9, "regular", MUTED), line=1.0)],
              name=f"{title} caption")
-    text(slide, 6.4, 0.89, RIGHT - 6.4, 0.3,
-         [P(R("Persona 田中ハル (Tanaka Haru), synthesized voice", 9, "regular", MUTED), align="r")],
+    text(slide, 5.2, 0.86, RIGHT - 5.2, 0.42,
+         [P(R("Live at kataribe.kaseovo.com, on a phone. The example persona stands in until the demo take.",
+              9, "regular", MUTED), align="r", line=1.0)],
          name="Data note")
 
 
 def benchmarks(slide):
     tiles = [
-        ("12 / 12", "Consent: a clear yes shared the story; a no, a hesitation or never being asked kept it private"),
-        ("9 / 9", "Family questions: answered, never raised, or let pass, each reported correctly"),
-        ("6 / 6", "Openings that recall last time, then put the family's question"),
-        ("6 min", "A browser session with no drop, 34 transcript entries. Run with every live eval"),
+        ("36 / 36", "Consent, twelve cases: a yes shares; a no or a hesitation keeps it private; no reply is asked again"),
+        ("12 / 12", "The recording check: the same words confirmed, 18 for 十八 accepted, a changed place caught"),
+        ("3 / 3", "A judge's whole path on the live service, from the start page to their own family page"),
+        ("6 min", "A browser session with no drop, 34 transcript entries"),
     ]
     gap = 0.2
     w = (WIDTH - 3 * gap) / 4
@@ -732,15 +759,15 @@ def benchmarks(slide):
     ]
     table(slide, LEFT, y + 0.35, [1.55, 1.45, 1.3], rows, row_h=0.3, size=10)
     text(slide, LEFT, y + 1.92, 4.3, 0.3,
-         [P(R("Default set to 5,000 ms. The model's own is 800 ms.", 9.5, "medium", ACCENT_TEXT))],
+         [P(R("Japanese: 5,000 ms, measured. English visitors: 4 s. The model's own: 800 ms.", 9.5, "medium",
+              ACCENT_TEXT))],
          name="Patience note")
 
     method = [
-        "Real models, three runs a case. Japanese speech is streamed at the Live API in real time; replies are "
-        "graded by rules and by a model judging them against the interviewer's own prompt.",
+        "Real models, three runs a case: speech streamed at the Live API in real time, replies graded by rules "
+        "and by a model judging them against the prompt.",
         "AI-vs-AI sparring: three personas press a long pause, a refused topic, a change of subject.",
-        "Family questions about a topic the senior refused, the war and the evacuation, were held back; the rest "
-        "went through. 3 of 3.",
+        "The recording check caught a real slip on its own: 私は transcribed as 私を. The quote was held back.",
         "Not yet measured: elderly voices and dialect. A native speaker reviews with the demo take.",
     ]
     text(slide, 5.0, y, RIGHT - 5.0, 2.1,
@@ -751,7 +778,7 @@ def benchmarks(slide):
 
 def future(slide):
     columns = [
-        ("MdSensors", "Next, on the same tablet", [
+        ("MdSensors", "Next, on the same screen", [
             "It notices the senior sitting nearby, so there is no button at all",
             "Names it is unsure of kept in kana; the family fixes the spelling in one tap",
             "A message to the family when a new story lands",
@@ -762,9 +789,9 @@ def future(slide):
             "Inside the companion robots Japanese families already buy",
         ]),
         ("MdGroups", "Beyond the family", [
-            "Sharing with whoever the senior chooses: a friend, a care worker, a local archive",
+            "The teller chooses who else may read: a friend, a care worker, a local archive",
+            "Testimony, the oldest sense of 語り部: the war, the bombings, the disasters, told by those who lived them",
             "Municipalities as payers: Yokosuka City has trialled conversation AI for seniors since 2025",
-            "A printed book of the stories",
         ]),
     ]
     gap = 0.22
@@ -812,17 +839,23 @@ def links(slide):
 
     import qrcode
 
-    code = qrcode.QRCode(border=0, box_size=20)
-    code.add_data(REPO_URL)
-    image = code.make_image(fill_color="#1F1F1F", back_color="white")
-    path = HERE / "assets" / "qr-repo.png"
-    image.save(path)
-    picture(slide, path, LEFT + 0.1, 2.75, 1.7, 1.7)
-    text(slide, LEFT + 2.05, 3.05, 4.5, 1.2, [
-        P(R("The code, the tests, and the plan behind them", 12, "semibold"), after=4),
-        P(R("Built in the open over four weeks, from the first commit on 22 Sep 2026.", 10.5, "regular", MUTED),
-          line=1.05),
-    ], anchor="ctr", name="Repo note")
+    blocks = [
+        (PRODUCT_URL, "qr-product.png", "Try it on your own life",
+         "A family page from the demo, then a conversation of your own, in English. About three minutes."),
+        (REPO_URL, "qr-repo.png", "The code, the tests, and the plan behind them",
+         "Open source, under the MIT licence. Built in the open from the first commit on 22 Sep 2026."),
+    ]
+    for i, (url, file, title, body) in enumerate(blocks):
+        code = qrcode.QRCode(border=0, box_size=20)
+        code.add_data(url)
+        path = HERE / "assets" / file
+        code.make_image(fill_color="#1F1F1F", back_color="white").save(path)
+        x = LEFT + 0.1 + i * 4.65
+        picture(slide, path, x, 2.85, 1.45, 1.45)
+        text(slide, x + 1.65, 2.85, 2.75, 1.45, [
+            P(R(title, 12, "semibold"), after=4),
+            P(R(body, 10, "regular", MUTED), line=1.05),
+        ], anchor="ctr", name=f"{title} note")
 
 
 def business_case(slide, heading_source):
@@ -832,20 +865,20 @@ def business_case(slide, heading_source):
     run.find(qn("a:t")).text = "Community benefit and business case"
 
     columns = [
-        ("MdElderly", "For the senior", [
-            "Being listened to, a few minutes every day",
-            "Reminiscence (回想法) is established practice in Japanese elderly care",
-            "A life story that lasts, in their own words",
+        ("MdElderly", "For them", [
+            "A few minutes a day that are theirs, about their own life",
+            "Remembering out loud, with someone who waits for a name or a year",
+            "Theirs to give: nothing reaches the family until they say so",
         ]),
-        ("MdFamilyRestroom", "For the family", [
-            "Stories they never found the time to ask about",
-            "The original voice behind every quote",
-            "A reason to call, and to ask more",
+        ("MdFamilyRestroom", "For their family", [
+            "The stories they never asked for: not for lack of love, for lack of a moment",
+            "In their own words, with their voice behind each quote",
+            "Something to talk about, and a question to send",
         ]),
-        ("MdGroups", "For the community", [
-            "Many of the 6.72 million who live alone have nobody nearby. The interviewer plans its own "
-            "questions, so no family is needed",
-            "A local archive is the original kataribe",
+        ("MdGroups", "For their town, next", [
+            "Whoever they choose: a friend, a care worker, a local archive",
+            "Many of the 6.72 million who live alone have nobody nearby; no family is needed",
+            "What a town lived through, in the voices of those who lived it",
         ]),
     ]
     gap = 0.22
@@ -862,7 +895,7 @@ def business_case(slide, heading_source):
     payers = [
         ("Families", "A subscription, against a ¥220,000 one-off book"),
         ("Municipalities and care providers", "Preventive care and reminiscence programmes"),
-        ("Cost to serve", "≈ ¥530 a month for a daily conversation"),
+        ("Cost to serve", "≈ ¥570 a month for a daily conversation"),
     ]
     y = 4.2
     rect(slide, LEFT, y, WIDTH, 1.13, DARK, radius=0.12, name="Who pays")
