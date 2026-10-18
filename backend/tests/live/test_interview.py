@@ -26,12 +26,29 @@ async def test_hears_japanese_accurately(settings: Settings) -> None:
     assert checks.similarity(BIRTH + FATHER, result.heard) > 0.8, result.heard
 
 
+async def _until_it_answers(settings: Settings, tuning: InterviewTuning) -> session.Conversation:
+    """The pause script, run again once if the session never answered at all.
+
+    A session that stays silent, not even replying in the silence after the
+    script, says nothing about patience either way: it neither waited nor cut
+    in. The release eval of 2026-10-18 saw one at 400 ms, once in three, its
+    transcript stopping two words in. A second silent run is a failure."""
+    result = await session.run(THINKING_ALOUD, settings, tuning)
+    if result.closed is None and not result.replies:
+        result = await session.run(THINKING_ALOUD, settings, tuning)
+    return result
+
+
 async def test_waits_through_a_pause_for_thought(settings: Settings) -> None:
     patient = InterviewTuning(silence_duration_ms=6000)
 
-    result = await session.run(THINKING_ALOUD, settings, patient)
+    result = await _until_it_answers(settings, patient)
 
     assert result.closed is None, result.closed
+    # Waiting means answering once she has finished, not saying nothing at all.
+    assert result.replies, (
+        f"Never answered, twice, at {patient.silence_duration_ms}ms: {result.heard}"
+    )
     assert not result.interrupted, (
         f"Cut in {result.first_reply_at:.1f}s into a {result.script_seconds:.1f}s memory "
         f"at {patient.silence_duration_ms}ms patience: {result.spoken}"
@@ -41,11 +58,14 @@ async def test_waits_through_a_pause_for_thought(settings: Settings) -> None:
 async def test_interrupts_when_patience_is_short(settings: Settings) -> None:
     impatient = InterviewTuning(silence_duration_ms=400, end_of_speech_sensitivity="HIGH")
 
-    result = await session.run(THINKING_ALOUD, settings, impatient)
+    result = await _until_it_answers(settings, impatient)
 
     assert result.closed is None, result.closed
     # The patient case above only means something if the impatient one behaves
     # differently — otherwise it could pass with nothing listening at all.
+    assert result.replies, (
+        f"Never answered, twice, at {impatient.silence_duration_ms}ms: {result.heard}"
+    )
     assert result.interrupted, (
         f"Sat through the whole {result.script_seconds:.1f}s memory at "
         f"{impatient.silence_duration_ms}ms: {result.spoken}"
