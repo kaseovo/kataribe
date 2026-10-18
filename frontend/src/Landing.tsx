@@ -264,7 +264,9 @@ function Example({ cover, showcase }: { cover: Cover; showcase: string }) {
       <div className="example-text">
         <h2>See a life story</h2>
         <p className="note">
-          From our demo, the page {their} family reads. Told in Japanese, shown in English.
+          From our demo video: {cover.name} is a made-up person, voiced by AI, and this is the
+          page Kataribe wrote from {their} conversations, as {their} family would read it. Told in
+          Japanese, shown in English.
         </p>
         <ul className="look">
           <li>
@@ -523,8 +525,8 @@ export default function Landing() {
         <figure id="watch" className="watch">
           <Video url={start?.video ?? ''} />
           <figcaption>
-            A real conversation in Japanese, with English subtitles: the interviewer, the story it
-            became, and the page the family reads.
+            A made-up grandmother, voiced by AI, in two conversations in Japanese with English
+            subtitles: the stories they became, and the page her family reads.
           </figcaption>
         </figure>
       </header>

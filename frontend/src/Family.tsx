@@ -100,6 +100,8 @@ interface Words {
   writing: string;
   empty: string;
   yours: string;
+  /** On the start page's example: who she is, and who wrote her page. */
+  example: (name: string) => string;
   talkAgain: string;
   startPage: string;
   /** Its short forms, for the bar on a phone. */
@@ -155,6 +157,8 @@ const WORDS: Record<string, Words> = {
     empty:
       'There is nothing here yet. Stories appear once they have been told, and only once they have been agreed to be shared.',
     yours: 'Your own page, reachable only by its link.',
+    example: (name) =>
+      `An example from our demo video: ${name} is a made-up person, voiced by AI, and this page is what Kataribe wrote from those conversations.`,
     talkAgain: 'Talk again',
     startPage: 'Back to the start page',
     startPageShort: 'Start page',
@@ -219,6 +223,8 @@ const WORDS: Record<string, Words> = {
     empty:
       'まだお話は載っていません。お話しいただき、ご家族に読んでもらってよいとおっしゃったお話だけが、ここに載ります。',
     yours: 'このページは、リンクを知っている方だけが開けます。',
+    example: (name) =>
+      `デモ動画のための例です。${name}さんは架空の人物で、声はAIによるものです。このページは、その会話からKataribeが書いたものです。`,
     talkAgain: 'もう一度お話しする',
     startPage: '最初のページに戻る',
     startPageShort: '最初のページ',
@@ -740,6 +746,7 @@ export default function Family({
         </p>
       )}
       {view.visitor && <p className="yours">{w.yours}</p>}
+      {view.showcase && <p className="yours">{w.example(name)}</p>}
     </>
   );
 

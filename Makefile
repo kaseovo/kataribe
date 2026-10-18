@@ -51,15 +51,16 @@ BUCKET ?= kataribe-recordings-0821244556
 # it themselves". Kept here, since every deploy replaces the service's settings.
 #   TRY_LANGUAGES  en, then en,ja once the native-speaker review has passed
 #   SHOWCASE       the demo persona's id: its family page, read-only, on the start page.
-#                  6c9db95285ab is a made-up example, text only, copied from local
-#                  development on 2026-10-16 so the start page shows a family page
-#                  at all; the native speaker's demo take replaces it before judging
-#   VIDEO_URL      the public demo video
+#                  b0902602320c is 小川節子, the demo video's made-up grandmother,
+#                  voiced by AI: her page was written by the pipeline from the
+#                  video's two conversations, uploaded through the console on
+#                  2026-10-18. It replaced 6c9db95285ab, a text-only stand-in.
+#   VIDEO_URL      the public demo video, on YouTube since 2026-10-18
 #   MIN_INSTANCES  1 while judges may arrive (until Nov 6), so none waits on a cold
 #                  start of about five seconds; 0 afterwards
 TRY_LANGUAGES ?= en
-SHOWCASE ?= 6c9db95285ab
-VIDEO_URL ?=
+SHOWCASE ?= b0902602320c
+VIDEO_URL ?= https://youtu.be/wg3SdraT2Oo
 MIN_INSTANCES ?= 1
 
 # Built remotely by Cloud Build from the Dockerfile; nothing git-ignored is sent.
