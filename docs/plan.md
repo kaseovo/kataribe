@@ -212,7 +212,7 @@ The hackathon is the [AI Builder Cup 2026](https://aibuildercup.com/index.html),
 | A working live URL on Cloud Run, GCP or Firebase | Deploying is required, not optional. SQLite on Cloud Run's local disk does not survive a restart. |
 | A demo video of 3 to 4 minutes, public on YouTube, Vimeo or Drive, that clearly shows the solution working. Outside the window risks a penalty or elimination, and one that does not show it working stops at the prototype step | Aim for 3:30. This replaced "strictly under three minutes", read on 2026-10-10, on 2026-10-15. |
 | A public GitHub repository | Done: [kaseovo/kataribe](https://github.com/kaseovo/kataribe) is public and pushed. |
-| A deck, as a PDF, covering the solution architecture and the business case | The deck has no business-case slide yet and lives as a hosted page, so it needs a PDF export. |
+| A deck, as a PDF, covering the solution architecture and the business case | Done: [kataribe-pitch-deck.pdf](demo/kataribe-pitch-deck.pdf), on the contest's own template, built by [demo/deck/build.py](demo/deck/build.py). |
 | All submission materials in English, code and documentation included | The interviewer prompts ship in Japanese, with English glosses alongside. |
 | Only fresh work, started after the program launched on 7 Sept | The first commit is dated 2026-09-22. Keep the history as it is: it is the evidence. |
 | Built mainly on Google Cloud, using Google AI models | Gemini Live and Gemini Flash qualify. AI Studio is listed as an accepted platform, so Vertex is not required. |

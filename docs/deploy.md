@@ -53,7 +53,7 @@ From the submission on Oct 17 to the end of judging on Nov 6. Decided in [roadma
 - **The live eval gets a key of its own**, in the repository's `KATARIBE_GEMINI_API_KEY` secret, so testing cannot use up what judges need.
 - **One instance stays warm**, `MIN_INSTANCES=1`, the Makefile's default until Nov 6. A cold start measured 4.6 s, nearly all of it Cloud Run starting the container; startup CPU boost was already on.
 - **The deploy sets** `TRY_LANGUAGES=en` (`en,ja` once the native-speaker review passes), `SHOWCASE` to the demo persona and `VIDEO_URL` to the video.
-- **Watched by** an uptime check on `/api/health`, Error Reporting by email, the budget above, and `make smoke` each morning.
+- **Watched by**, since 2026-10-18: an uptime check on `/api/health` every five minutes, *Kataribe health*, which emails the team when it fails (*Kataribe is down*); Error Reporting, with an email when the service answers with a server error or logs a traceback, at most one every 30 minutes (*Kataribe logged an error*); the budget above; and `make smoke` each morning, since a health check cannot see a broken key.
 - **Frozen.** The submitted commit is tagged and deployed. Only an outage is fixed, and each fix is noted in the README.
 - **Afterwards**, on Nov 7 unless the project is shortlisted, every visitor persona is forgotten, as the start page promises, and `MIN_INSTANCES` goes back to 0:
 

@@ -9,7 +9,7 @@ See [plan.md](plan.md) for the product thinking behind this.
 | Decision | Choice | Why |
 | --- | --- | --- |
 | Gemini access | Developer API (key + ephemeral tokens) first | Gets a Japanese conversation running in week 1, before any GCP setup. The provider sits behind one adapter, so Vertex is a config swap when the data-residency story matters. |
-| Storage | SQLite + local disk, behind a storage port | Zero cloud setup, fast tests, works offline. Firestore and Cloud Storage adapters land when we deploy. |
+| Storage | SQLite + local disk, behind a storage port | Zero cloud setup, fast tests, works offline. Deployed, the same port runs on Firestore and Cloud Storage (`KATARIBE_STORAGE=cloud`). |
 | Family loop | Family can suggest questions | Relatives submit a question, the AI weaves it into the next session, the answer comes back to them. This is the demo moment that separates us from a memoir app. |
 | Repo layout | `backend/` (FastAPI, uv) + `frontend/` (Vite, React, TS) | One Vite app serves kiosk, family view and dev view on separate routes. |
 | VAD patience | Tunable in the console, not hardcoded | Default 800 ms of silence ends a turn — far too short for someone retrieving a sixty-year-old memory. The right number is an empirical question about real speech, so we find it with a real speaker and bake in what wins. |
@@ -84,11 +84,11 @@ Measured once each way on live audio, with the check-in brought forward to 30 se
 
 **Limits and money.** At most 30 visitor conversations a day across all visitors, about $0.10 each, so the worst case over the evaluation is under $60 and the likely one a few dollars. The Gemini key moves to the paid tier (the Cloud trial credit does not cover Gemini), and the live eval gets a key of its own so testing cannot use up what judges need. One instance stays warm until Nov 6: a cold start measured 4.6 s, of which the app's own imports are under a second, and startup CPU boost was already on.
 
-**A made-up example on the live start page, from 2026-10-16, until the demo take.** With no example set, the live start page showed no family page, and the judge's path no step about one; with no video, the video's place vanished. The made-up 田中ハル from local development, text only (no recordings, so every quote's player is greyed), was copied to the cloud store with its English, so the live page never calls Gemini for it, and set as the showcase in the Makefile. The video's place now stays, saying the video is coming. Both go when the native speaker's take gives the real example and the video: until then the page says "From our demo" of stories nobody told.
+**A made-up example on the live start page, from 2026-10-16, until the demo take.** With no example set, the live start page showed no family page, and the judge's path no step about one; with no video, the video's place vanished. The made-up 田中ハル from local development, text only (no recordings, so every quote's player is greyed), was copied to the cloud store with its English, so the live page never calls Gemini for it, and set as the showcase in the Makefile. The video's place now stays, saying the video is coming. Both go when the native speaker's take gives the real example and the video: until then the page says "From our demo" of stories nobody told. Replaced on 2026-10-18 by the demo's own grandmother, 小川節子, voiced by AI, and the video; see *As made* in [demo-script.md](demo/demo-script.md).
 
 **The live eval runs by hand, from 2026-10-15.** It ran every night against the real API, tens of minutes of Live audio and many text calls, on a macOS runner. With the credit spent it failed every night from Oct 10 and caught nothing, and topped up it would have spent credit every night of judging, when nothing changes. Its schedule is gone and its button kept (Actions, *Eval*, *Run workflow*): run after topping up, after any change to how the interviewer speaks or listens, and before the submission. The deployed service is checked by `make smoke`, which was never part of it.
 
-**Watching it.** An uptime check on `/api/health`, Error Reporting by email, a budget alert, and `make smoke` by hand every morning, since a health check cannot see a broken key.
+**Watching it.** An uptime check on `/api/health`, Error Reporting by email, a budget alert, and `make smoke` by hand every morning, since a health check cannot see a broken key. The budget alert came first; the uptime check, Error Reporting and their emails were switched on on 2026-10-18, before the release (see [deploy.md](deploy.md)).
 
 **Frozen after submission.** The submitted commit is tagged and deployed; `main` stays as submitted until Nov 6. Only an outage is fixed, and each fix is noted in the README.
 
@@ -129,13 +129,13 @@ Prototype deadline **2026-10-18**. A real senior tests from week 2.
 ## Status
 
 - [x] **0 — Walking skeleton**
-- [~] **1 — It talks** — built; the live test with a Japanese speaker is with the demo take on Oct 14–15, see *Japanese validation is deferred*
+- [~] **1 — It talks** — built; the live test with a native Japanese speaker has not happened, since the demo was voiced by AI instead, so judges talk in English; see *Japanese validation is deferred*
 - [x] **2 — It remembers the session** — sessions, transcripts and audio stored and replayable
 - [x] **3 — It has a brain** — stories extracted and verified, timeline, gaps, next questions, context carried into the following session
 - [~] 4 — It notices you — **cut from the hackathon**, see below
 - [x] **5 — It asks permission** — consent asked in conversation, evidenced by the person's own words; family view shows only shared stories, with audio
 - [x] **6 — The family asks back** — relatives send questions from the family page; the interviewer opens with one, saying who asked; the answer links back to the story, if she shared it
-- [~] **7 — Ready to judge** — deployed on Cloud Run in Tokyo, with Firestore and Cloud Storage, and checked end to end by `make smoke` (see [deploy.md](deploy.md)); the senior's own screen is at `/talk/{senior_id}`; the start page and visitor personas for judges went live on 2026-10-13, and `make smoke` takes a judge's whole path on the live service (see *Judges try it themselves*); the demo video went up on 2026-10-18, with the showcase family page written from its conversations and the deck's link to it; still to do is monitoring
+- [x] **7 — Ready to judge** — deployed on Cloud Run in Tokyo, with Firestore and Cloud Storage, and checked end to end by `make smoke` (see [deploy.md](deploy.md)); the senior's own screen is at `/talk/{senior_id}`; the start page and visitor personas for judges went live on 2026-10-13, and `make smoke` takes a judge's whole path on the live service (see *Judges try it themselves*); the demo video went up on 2026-10-18, with the showcase family page written from its conversations and the deck's link to it, and the service is watched (uptime, errors, budget); released as v1.0.0
 
 ## Running the week-1 test
 

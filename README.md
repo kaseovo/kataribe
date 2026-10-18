@@ -13,7 +13,7 @@ A *kataribe* is a traditional keeper of oral history — the person who remember
 3. At two minutes it asks whether you want to go on. When you are done, say so or press **Finish**: it asks whether your family may read today's story. Answer aloud, or press **Share with my family** or **Keep it private**.
 4. Your story appears on your own family page, with your voice behind each quote. Talk again, and it remembers.
 
-The product itself is Japanese. The start page also links a family page from the demo, in Japanese with an English translation under each passage, and plays the [demo video](https://youtu.be/wg3SdraT2Oo) (3:48): two conversations with English subtitles, the family page Kataribe wrote from them, and a turn on the live site. The grandmother in it is made up, and every voice is AI.
+The product itself is Japanese. The start page also links a family page from the demo, in Japanese with an English translation under each passage, and plays the [demo video](https://youtu.be/wg3SdraT2Oo) (3:48): two conversations with English subtitles, the family page Kataribe wrote from them, and a turn on the live site. The grandmother in it is made up, and every voice is AI. The pitch deck is [docs/demo/kataribe-pitch-deck.pdf](docs/demo/kataribe-pitch-deck.pdf).
 
 Best in Chrome or Edge on a computer. Your conversation is recorded and processed by Gemini; your family page is reachable only by its link and shows only what you agree to share; the team can see full conversations to fix problems. Everything recorded from the start page is deleted once judging ends.
 
