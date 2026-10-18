@@ -31,7 +31,7 @@ TEAM_NAME = "Kataribe"
 TEAM_LEADER = "Tanguy Pemeja"
 PROBLEM_STATEMENT = "Sustainability & Social Impact"
 REPO_URL = "https://github.com/kaseovo/kataribe"
-VIDEO_URL = ""  # TBD: public YouTube, Vimeo or Drive link, under three minutes
+VIDEO_URL = "https://youtu.be/wg3SdraT2Oo"  # public on YouTube, 3:48
 PRODUCT_URL = "https://kataribe.kaseovo.com"
 
 INK = "202124"
@@ -501,9 +501,9 @@ def wireframes(slide):
     rect(slide, sx, sy, sw, sh, APP_BG, radius=0.06, name="Tablet screen")
     content = sw - 0.45
     cx = sx + content / 2
-    text(slide, sx + 0.15, sy + 0.1, 2.0, 0.25, [P(R("田中ハルさん", 9, "medium", ON_DARK_MUTED))])
+    text(slide, sx + 0.15, sy + 0.1, 2.0, 0.25, [P(R("小川節子さん", 9, "medium", ON_DARK_MUTED))])
     text(slide, sx + 0.25, sy + 0.32, content - 0.4, 0.78,
-         [P(R("ハルさん、こんにちは。学校のころのお話を、聞かせてください。", 15, "medium", ON_DARK),
+         [P(R("郡上おどり、いいですねえ。どなたと踊られたんですか。", 15, "medium", ON_DARK),
             align="ctr", line=1.1)],
          anchor="ctr", name="Interviewer's words")
     bars = [0.1, 0.22, 0.34, 0.2, 0.28, 0.14, 0.08]
@@ -534,25 +534,24 @@ def wireframes(slide):
     rect(slide, qx, qy, qw, qh, APP_BG, radius=0.08, name="Phone screen")
     text(slide, qx + 0.12, qy + 0.1, qw - 0.2, 0.62, [
         P(R("A LIFE STORY", 5.5, "semibold", ACCENT)),
-        P(R("Tanaka Haru", 11, "semibold", ON_DARK)),
-        P(R("田中ハル · Born in 1947, Nagano", 6, "regular", ON_DARK_MUTED)),
+        P(R("Ogawa Setsuko", 11, "semibold", ON_DARK)),
+        P(R("小川節子 · Born in 1944, Gifu", 6, "regular", ON_DARK_MUTED)),
     ])
     for i, (label, x, wide) in enumerate([("A life story  3", qx + 0.12, 0.66), ("Questions  2", qx + 0.82, 0.6)]):
         pill = rect(slide, x, qy + 0.76, wide, 0.18, APP_PANEL if i else ACCENT, radius=0.09, name=label)
         label_in(pill, [P(R(label, 5.5, "semibold", ON_DARK if i else DARK), align="ctr")], inset=0.0)
-    text(slide, qx + 0.12, qy + 1.04, qw - 0.2, 0.18, [P(R("CHAPTER 1 · CHILDHOOD", 5.5, "semibold", ACCENT))])
+    text(slide, qx + 0.12, qy + 1.04, qw - 0.2, 0.18, [P(R("CHAPTER 2 · MARRIAGE", 5.5, "semibold", ACCENT))])
     text(slide, qx + 0.12, qy + 1.2, qw - 0.2, 0.3,
-         [P(R("Her father's textile factory", 7.5, "semibold", ON_DARK), line=1.0)])
+         [P(R("Gujo Odori and Meeting Kazuo", 7.5, "semibold", ON_DARK), line=1.0)])
     text(slide, qx + 0.12, qy + 1.52, qw - 0.22, 0.4,
-         [P(R("Tanaka Haru grew up in a small mountain village in Nagano. Her father ran a small textile "
-              "factory…", 6, "regular", ON_DARK), line=1.05)])
+         [P(R("In the summer of Showa 40, when Setsuko was twenty-one, she met her husband Kazuo at the "
+              "Gujo Odori…", 6, "regular", ON_DARK), line=1.05)])
     quotes = rect(slide, qx + 0.12, qy + 1.95, 0.78, 0.17, APP_BG, radius=0.08, line="5A4A3C", name="Quotes button")
-    label_in(quotes, [P(R("All 3 quotes", 5.5, "medium", ACCENT), align="ctr")], inset=0.0)
+    label_in(quotes, [P(R("All 2 quotes", 5.5, "medium", ACCENT), align="ctr")], inset=0.0)
     rect(slide, qx + 0.12, qy + 2.2, qw - 0.24, 0.8, APP_PANEL, radius=0.05, name="Quote")
     text(slide, qx + 0.2, qy + 2.24, qw - 0.4, 0.5, [
-        P(R("「長野の、山あいの小さな村です。父は村で小さな織物の工場をやっておりました。」", 6, "regular", ON_DARK),
-          line=1.0, after=2),
-        P(R("“It was a small village in Nagano…”", 5.5, "regular", ON_DARK_MUTED), line=1.0),
+        P(R("「主人の和夫さんとはね、郡上おどりで知り合ったんですよ。…」", 6, "regular", ON_DARK), line=1.0, after=2),
+        P(R("“I met my husband Kazuo…”", 5.5, "regular", ON_DARK_MUTED), line=1.0),
     ])
     circle(slide, qx + 0.2, qy + 2.76, 0.18, ACCENT, name="Play")
     icon(slide, "MdPlayArrow", qx + 0.222, qy + 2.782, 0.135, color=WHITE)
@@ -727,7 +726,7 @@ def snapshots(slide):
              [P(R(title, 11, "semibold"), after=1), P(R(body, 9, "regular", MUTED), line=1.0)],
              name=f"{title} caption")
     text(slide, 5.2, 0.86, RIGHT - 5.2, 0.42,
-         [P(R("Live at kataribe.kaseovo.com, on a phone. The example persona stands in until the demo take.",
+         [P(R("Live at kataribe.kaseovo.com, on a phone: the demo's family page, written from the video's conversations.",
               9, "regular", MUTED), align="r", line=1.0)],
          name="Data note")
 
@@ -768,7 +767,7 @@ def benchmarks(slide):
         "and by a model judging them against the prompt.",
         "AI-vs-AI sparring: three personas press a long pause, a refused topic, a change of subject.",
         "The recording check caught a real slip on its own: 私は transcribed as 私を. The quote was held back.",
-        "Not yet measured: elderly voices and dialect. A native speaker reviews with the demo take.",
+        "Not yet measured: elderly voices and dialect. A native speaker's review of the Japanese is next.",
     ]
     text(slide, 5.0, y, RIGHT - 5.0, 2.1,
          [P(R("How it is measured", 11.5, "semibold"), after=6)]
@@ -840,6 +839,8 @@ def links(slide):
     import qrcode
 
     blocks = [
+        (VIDEO_URL, "qr-video.png", "Watch the demo",
+         "3:48, in English: two conversations, the family page they made, and how to try it yourself."),
         (PRODUCT_URL, "qr-product.png", "Try it on your own life",
          "A family page from the demo, then a conversation of your own, in English. About three minutes."),
         (REPO_URL, "qr-repo.png", "The code, the tests, and the plan behind them",
@@ -850,9 +851,9 @@ def links(slide):
         code.add_data(url)
         path = HERE / "assets" / file
         code.make_image(fill_color="#1F1F1F", back_color="white").save(path)
-        x = LEFT + 0.1 + i * 4.65
-        picture(slide, path, x, 2.85, 1.45, 1.45)
-        text(slide, x + 1.65, 2.85, 2.75, 1.45, [
+        x = LEFT + 0.1 + i * 3.1
+        picture(slide, path, x, 2.85, 1.2, 1.2)
+        text(slide, x + 1.35, 2.7, 1.6, 1.5, [
             P(R(title, 12, "semibold"), after=4),
             P(R(body, 10, "regular", MUTED), line=1.05),
         ], anchor="ctr", name=f"{title} note")

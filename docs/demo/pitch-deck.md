@@ -2,6 +2,8 @@
 
 Live deck: https://claude.ai/artifact/2LPwKqBnhN8Ey7o3u8EUQK
 
+The deck submitted to the AI Builder Cup is [kataribe-pitch-deck.pptx](kataribe-pitch-deck.pptx), on the contest's own template, built by [deck/build.py](deck/build.py).
+
 The deck itself is hosted (not exportable as static files), so this is the content in version-controlled form — edit here first for wording changes, then apply them on the live deck.
 
 ## 1. Cover
@@ -41,7 +43,7 @@ Find gaps → Plan next questions → Back into the next session
 
 ## 6. Demo
 
-*Placeholder — [demo recording](demo-script.md) not yet captured.*
+**Two conversations, her family page, and your turn** — the [demo video](https://youtu.be/wg3SdraT2Oo), 3:48, in English. Setsuko is a made-up person, voiced by AI. How it was made: [demo-script.md](demo-script.md).
 
 ## 7. Stack
 
