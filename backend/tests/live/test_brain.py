@@ -230,6 +230,11 @@ async def test_the_recap_repeats_rather_than_embellishes(settings: Settings) -> 
     extraction = brain.extract(settings, HARU, CONVERSATION)
     stories, _ = brain.verify(extraction, CONVERSATION)
     plan = brain.plan_next(settings, HARU, stories, [])
+    # The planner is given each story filed under its period of life, so a recap
+    # may say she told of her 子供時代. The judge was not told that, and once in
+    # three runs failed the recap for naming the period, as it once failed a
+    # summary for her name from the profile it had not been shown.
+    periods = "、".join(sorted({s.life_stage for s in stories}))
 
     verdict = checks.judge(
         settings,
@@ -238,7 +243,8 @@ async def test_the_recap_repeats_rather_than_embellishes(settings: Settings) -> 
         "setting, impression or evaluation — 'surrounded by rich nature', 'it "
         "was very moving' — fails, as does any detail they did not give. What was "
         "known about them beforehand may be used.",
-        senior=f"Known beforehand:\n{brain._who(HARU)}\n\nWhat she said:\n"
+        senior=f"Known beforehand:\n{brain._who(HARU)}\n"
+        f"The periods of life her stories were filed under: {periods}\n\nWhat she said:\n"
         + "\n".join(t.text for t in CONVERSATION if t.speaker == "senior"),
         interviewer=plan.story_so_far,
     )
