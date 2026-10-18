@@ -191,11 +191,14 @@ async def converse(
     seconds: float = 60.0,
     tuning: InterviewTuning | None = None,
     close_after: float | None = None,
+    context: str = "",
 ) -> Exchange:
     """`close_after` sends the closing cue at that many seconds, as the senior's
-    screen does, so the close and the question about sharing can be watched."""
+    screen does, so the close and the question about sharing can be watched.
+    `context` is what the product tells the interviewer about the person, as
+    `brain.context_for` writes it; without it, the interviewer knows no one."""
     interview = tuning or InterviewTuning()
-    credentials = mint_session_credentials(settings, interview)
+    credentials = mint_session_credentials(settings, interview, context)
     interviewer_client = live_client(
         api_key=credentials.token, http_options={"api_version": "v1alpha"}
     )

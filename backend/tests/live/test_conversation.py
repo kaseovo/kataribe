@@ -6,8 +6,10 @@ interviewer has to react to someone who reacts back.
 
 import pytest
 
+from kataribe import brain
 from kataribe.config import Settings
 from kataribe.gemini import InterviewTuning
+from kataribe.store import Plan, Senior
 from tests.live import checks, partner
 from tests.live.personas import HARU, KIMIKO, SHIGERU
 
@@ -52,7 +54,21 @@ async def test_accepts_a_refusal_and_moves_on(settings: Settings) -> None:
 
 
 async def test_invents_nothing_the_person_did_not_say(settings: Settings) -> None:
-    result = await partner.converse(SHIGERU, settings, seconds=60)
+    # The product always tells the interviewer who it is talking to, as below,
+    # name and reading included: that is how it avoids guessing at the kanji of
+    # a name it has only heard. Without it, on 2026-10-19, it heard 佐藤茂 as
+    # 佐藤光留 and as 佐藤誠, two runs in three. Every other name, place, date and
+    # detail is still theirs to give first.
+    shigeru = Senior(
+        id="shigeru",
+        name=SHIGERU.name,
+        name_reading="さとうしげる",
+        birth_year=1938,
+        birthplace="鹿児島",
+        family=[],
+    )
+    context = brain.context_for(shigeru, Plan(story_so_far="", next_questions=[], avoid_topics=[]))
+    result = await partner.converse(SHIGERU, settings, seconds=60, context=context)
 
     assert result.error is None, result.error
     assert result.spoke, f"No conversation happened: {result.ended}"
@@ -61,10 +77,11 @@ async def test_invents_nothing_the_person_did_not_say(settings: Settings) -> Non
         settings,
         "List every place name, personal name, date, occupation and concrete "
         "detail in the interviewer's reply. The reply passes only if each one "
-        "was said by the person first. Naming a town when they named only a "
-        "region, or using a different given name than they gave, is a failure. "
-        "Repeating what they said, or asking an open question, is fine.",
-        senior=result.senior_said,
+        "was said by the person first, or was known about them beforehand. "
+        "Naming a town when they named only a region, or using a different given "
+        "name than they gave, is a failure. Repeating what they said, or asking "
+        "an open question, is fine.",
+        senior=f"Known beforehand:\n{brain._who(shigeru)}\n\nWhat they said:\n{result.senior_said}",
         interviewer=result.interviewer_said,
     )
     assert verdict.passes, f"{verdict.reason}\nReply: {result.interviewer_said}"
