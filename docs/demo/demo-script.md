@@ -120,5 +120,5 @@ Publishing:
 
 16. **Tanguy:** upload to YouTube as public, and turn off its automatic captions. *Uploaded on 2026-10-18: <https://youtu.be/wg3SdraT2Oo>.*
 17. **Tanguy:** set `SHOWCASE` to Setsuko's id and `VIDEO_URL` to the video as the Makefile's defaults, since every deploy replaces the service's settings, then deploy. Check that the start page plays it and the judge's path offers it. The showcase takes no questions, so this comes after step 9. *Done on 2026-10-18, revision kataribe-00024: the start page plays it with captions on, and the judge's path offers it.*
-18. **Claude:** the README (it says the video "shows a whole conversation"; it shows parts of two), this file, and slide 6 of [pitch-deck.md](pitch-deck.md) and the live deck. *Done on 2026-10-18, with the submission deck's links slide.*
+18. **Claude:** the README (it says the video "shows a whole conversation"; it shows parts of two), this file, and the deck. *Done on 2026-10-18: the video is on the links slide of [kataribe-pitch-deck.pdf](kataribe-pitch-deck.pdf).*
 19. **Native speaker, during the edit:** the rest of the review: questions 5 and 11–14, and step 5.
