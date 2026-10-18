@@ -15,7 +15,9 @@ jobs:
   eval:
     # macOS for `say` and `afconvert`, which generate the Japanese fixture audio.
     runs-on: macos-latest
-    timeout-minutes: 30
+    # About 32 minutes since 2026-10-19: 17 for the API checks, 4 for the browser,
+    # 6 for the endurance session, and the setup. At 30 the endurance was cut off.
+    timeout-minutes: 45
     env:
       KATARIBE_GEMINI_API_KEY: ${{ secrets.KATARIBE_GEMINI_API_KEY }}
     steps:
