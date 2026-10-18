@@ -198,9 +198,8 @@ function bars(count: number, seed: number): number[] {
 const HER = bars(46, 1.7);
 const ITS = bars(14, 4.1);
 
-/** How long Setsuko stopped to remember in the demo's first conversation, as
- *  the video's pause counter shows it. Her take's own length replaces it once
- *  it is measured. */
+/** How long Setsuko stopped to remember in the demo's first conversation, from
+ *  0:35 to 0:39, as her recording has it and the video's pause bar shows it. */
 const PAUSE_SECONDS = 4.0;
 /** How long the interviewer waits through silence in Japanese before it speaks. */
 const PATIENCE_SECONDS = 5;
@@ -212,7 +211,7 @@ function Voices() {
         <span className="live">
           <i aria-hidden /> Live
         </span>
-        <span className="clock">Session 1 · 0:48</span>
+        <span className="clock">Session 1 · 0:35</span>
       </p>
       <div className="lane">
         <span className="speaker her">Setsuko</span>
@@ -266,28 +265,35 @@ function Written() {
       <div className="lines">
         <p>
           <b className="her">Setsuko</b>
-          <span lang="ja">主人の和夫さんとはね、郡上おどりで知り合ったんですよ。昭和四十年の夏。</span>
-          <small>I met my husband, Kazuo, at the Gujō dance. Summer 1965.</small>
+          <span lang="ja">
+            主人の和夫さんとはね、郡上おどりで知り合ったんですよ。昭和四十年の夏。わたし、二十一でした。
+          </span>
+          <small>
+            I met my husband Kazuo at the Gujo Odori, you see. The summer of Showa 40. I was
+            twenty-one.
+          </small>
         </p>
         <p>
           <b className="her">Setsuko</b>
           <span lang="ja">あの晩に踊ってたのは……そう、『かわさき』。</span>
-          <small>That night, we danced… yes, “Kawasaki”.</small>
+          <small>What was being danced that night was… yes, ‘Kawasaki’.</small>
         </p>
       </div>
       <span className="becomes" aria-hidden>
         ↓
       </span>
       <div className="story-card">
-        <p className="kicker">Marriage · Summer 1965</p>
-        <p className="title">The night of the Gujō dance</p>
+        <p className="kicker">Marriage · Summer of Showa 40</p>
+        <p className="title">Gujo Odori and Meeting Kazuo</p>
         <p className="retold">
-          In the summer of 1965, when she was twenty-one, Setsuko met Kazuo at the Gujō dance.
-          They were dancing “Kawasaki”.
+          In the summer of Showa 40, when Setsuko was twenty-one, she met her husband Kazuo at the
+          Gujo Odori. What they danced that night was ‘Kawasaki’.
         </p>
         <p className="quotes">
-          <span lang="ja">「主人の和夫さんとはね、郡上おどりで知り合ったんですよ。」</span>
-          <span lang="ja">「そう、『かわさき』。」</span>
+          <span lang="ja">
+            「主人の和夫さんとはね、郡上おどりで知り合ったんですよ。昭和四十年の夏。わたし、二十一でした。」
+          </span>
+          <span lang="ja">「あの晩に踊ってたのは……そう、『かわさき』。」</span>
         </p>
       </div>
     </div>
@@ -299,19 +305,19 @@ function Checked() {
     <div className="pic checked">
       <p className="pic-label">Session 1 · transcript</p>
       <p className="row">
-        <span className="tm">0:52</span>
+        <span className="tm">0:18</span>
         <span>
           <span lang="ja">
-            <mark>主人の和夫さんとはね、郡上おどりで知り合ったんですよ</mark>。昭和四十年の夏。
+            <mark>主人の和夫さんとはね、郡上おどりで知り合ったんですよ。昭和四十年の夏。わたし、二十一でした。</mark>
           </span>
           <span className="ok">✓ word for word · ✓ heard</span>
         </span>
       </p>
       <p className="row">
-        <span className="tm">1:10</span>
+        <span className="tm">0:33</span>
         <span>
           <span lang="ja">
-            あの晩に踊ってたのは……<mark>そう、『かわさき』</mark>。
+            <mark>あの晩に踊ってたのは……そう、『かわさき』。</mark>
           </span>
           <span className="ok">✓ word for word · ✓ heard</span>
         </span>
@@ -326,13 +332,13 @@ function Shared() {
     <div className="pic shared">
       <ul className="decided">
         <li className="sent">
-          The night of the Gujō dance<small>✓ To her family</small>
+          Gujo Odori and Meeting Kazuo<small>✓ To her family</small>
         </li>
         <li className="sent">
-          Summers at the Shinbashi bridge<small>✓ To her family</small>
+          Jumping into the River from Shinbashi Bridge<small>✓ To her family</small>
         </li>
         <li className="kept">
-          Her husband’s last years
+          Nursing Kazuo and Saying Goodbye
           <small>
             <span className="lock" aria-hidden /> Kept between us
           </small>
@@ -343,10 +349,10 @@ function Shared() {
         <p className="kicker">A life story</p>
         <p className="name">Ogawa Setsuko</p>
         <p className="toc">
-          <span>1 · Childhood</span> Summers at the Shinbashi bridge
+          <span>1 · Childhood</span> Jumping into the River from Shinbashi Bridge
         </p>
         <p className="toc">
-          <span>2 · Marriage</span> The night of the Gujō dance
+          <span>2 · Marriage</span> Gujo Odori and Meeting Kazuo
         </p>
       </div>
     </div>
@@ -385,7 +391,7 @@ function Planned() {
         </li>
       </ol>
       <p className="never">
-        <span className="lock" aria-hidden /> Never raised: her husband’s last years
+        <span className="lock" aria-hidden /> Never raised: Nursing Kazuo and Saying Goodbye
       </p>
     </div>
   );
