@@ -50,7 +50,7 @@ class Settings(BaseSettings):
     """The persona whose family page the start page shows: stories from the demo
     take, read-only."""
     video_url: str = ""
-    repo_url: str = "https://github.com/tpemeja/kataribe"
+    repo_url: str = "https://github.com/kaseovo/kataribe"
 
     @property
     def visitor_languages(self) -> list[str]:
