@@ -89,6 +89,6 @@ Retake steps 3 and 4 on a fresh person if the fixes changed what the interviewer
 | Voice and pause | `ja` in `backend/src/kataribe/languages.py`, then deploy |
 | Prompt fixes | `interviewer_ja.md` and its gloss, measured with `make eval` |
 | The showcase person's id | `SHOWCASE=<id> make deploy` |
-| The recordings | Cut to 2–3 minutes with English subtitles, see [demo-script.md](demo-script.md); `VIDEO_URL` in the deploy, slide 6 of the deck, the README |
+| The recordings | Cut to 3–4 minutes with English subtitles, see [demo-script.md](demo-script.md); `VIDEO_URL` in the deploy, slide 6 of the deck, the README |
 | Japanese for judges, yes or no | `TRY_LANGUAGES` in the Makefile |
 | What was decided, and why | The roadmap, under *Japanese validation is deferred* |

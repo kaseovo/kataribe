@@ -53,6 +53,7 @@ That matters because many of the people this is for have nobody nearby: about 6.
 
 - **The value is the same:** being listened to, memory work, a reason to look back. Reminiscence (回想法) is established in Japanese elderly care.
 - **The audience is whoever they choose:** a friend, a care worker (a life history helps staff care for the person), a local archive, or nobody but themselves. A local archive is the original *kataribe*: the keeper of a community's stories.
+- **Testimony, the oldest meaning of the word.** In Japan, 語り部 are the people who tell what they lived through, the war, the atomic bombings, disasters, and a local archive or museum could keep such accounts with the same faithfulness. Two things stand in the way, both after the deadline: sharing beyond the family needs the chosen audiences below, and the interviewer never presses on a painful memory, so an archive version lets the teller choose that topic and stop at any time. The video's closing line names it as what comes next.
 - **The payer is the municipality.** Yokosuka's trial with Cotomo shows the interest. One vendor says preventive conversation AI can be funded from the 介護予防・日常生活支援総合事業 budget ([Tifana](https://www.tifana.ai/article/mimamori-2)); unverified.
 
 For the hackathon the demo keeps the family loop, which shows best on camera, and the pitch says the family *can join*, not that it drives anything. After the deadline, sharing generalizes from "family" to a list of audiences the person chooses.
@@ -209,8 +210,8 @@ The hackathon is the [AI Builder Cup 2026](https://aibuildercup.com/index.html),
 | --- | --- |
 | Teams of 2 to 4; no solo entries; no roster changes after October 11 | Every commit so far has one author. A team must be registered by Oct 11. |
 | A working live URL on Cloud Run, GCP or Firebase | Deploying is required, not optional. SQLite on Cloud Run's local disk does not survive a restart. |
-| A demo video strictly under three minutes, public on YouTube, Vimeo or Drive | The shot list allows 2–3 minutes. Aim for under 2:50. |
-| A public GitHub repository | Done: [tpemeja/kataribe](https://github.com/tpemeja/kataribe) is public and pushed. |
+| A demo video of 3 to 4 minutes, public on YouTube, Vimeo or Drive, that clearly shows the solution working. Outside the window risks a penalty or elimination, and one that does not show it working stops at the prototype step | Aim for 3:30. This replaced "strictly under three minutes", read on 2026-10-10, on 2026-10-15. |
+| A public GitHub repository | Done: [kaseovo/kataribe](https://github.com/kaseovo/kataribe) is public and pushed. |
 | A deck, as a PDF, covering the solution architecture and the business case | The deck has no business-case slide yet and lives as a hosted page, so it needs a PDF export. |
 | All submission materials in English, code and documentation included | The interviewer prompts ship in Japanese, with English glosses alongside. |
 | Only fresh work, started after the program launched on 7 Sept | The first commit is dated 2026-09-22. Keep the history as it is: it is the evidence. |

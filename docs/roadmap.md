@@ -135,7 +135,7 @@ Prototype deadline **2026-10-18**. A real senior tests from week 2.
 - [~] 4 — It notices you — **cut from the hackathon**, see below
 - [x] **5 — It asks permission** — consent asked in conversation, evidenced by the person's own words; family view shows only shared stories, with audio
 - [x] **6 — The family asks back** — relatives send questions from the family page; the interviewer opens with one, saying who asked; the answer links back to the story, if she shared it
-- [~] **7 — Ready to judge** — deployed on Cloud Run in Tokyo, with Firestore and Cloud Storage, and checked end to end by `make smoke` (see [deploy.md](deploy.md)); the senior's own screen is at `/talk/{senior_id}`; the start page and visitor personas for judges went live on 2026-10-13, and `make smoke` takes a judge's whole path on the live service (see *Judges try it themselves*); still to do are the demo video, the showcase family page from the demo take, the deck's slide for the video, and monitoring
+- [~] **7 — Ready to judge** — deployed on Cloud Run in Tokyo, with Firestore and Cloud Storage, and checked end to end by `make smoke` (see [deploy.md](deploy.md)); the senior's own screen is at `/talk/{senior_id}`; the start page and visitor personas for judges went live on 2026-10-13, and `make smoke` takes a judge's whole path on the live service (see *Judges try it themselves*); the demo video went up on 2026-10-18, with the showcase family page written from its conversations and the deck's link to it; still to do is monitoring
 
 ## Running the week-1 test
 

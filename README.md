@@ -13,7 +13,7 @@ A *kataribe* is a traditional keeper of oral history — the person who remember
 3. At two minutes it asks whether you want to go on. When you are done, say so or press **Finish**: it asks whether your family may read today's story. Answer aloud, or press **Share with my family** or **Keep it private**.
 4. Your story appears on your own family page, with your voice behind each quote. Talk again, and it remembers.
 
-The product itself is Japanese. The start page also links a family page from the demo, in Japanese with an English translation under each passage, and the [demo video](docs/demo/demo-script.md) shows a whole conversation with English subtitles.
+The product itself is Japanese. The start page also links a family page from the demo, in Japanese with an English translation under each passage, and plays the [demo video](https://youtu.be/wg3SdraT2Oo) (3:48): two conversations with English subtitles, the family page Kataribe wrote from them, and a turn on the live site. The grandmother in it is made up, and every voice is AI.
 
 Best in Chrome or Edge on a computer. Your conversation is recorded and processed by Gemini; your family page is reachable only by its link and shows only what you agree to share; the team can see full conversations to fix problems. Everything recorded from the start page is deleted once judging ends.
 
@@ -23,8 +23,14 @@ Best in Chrome or Edge on a computer. Your conversation is recorded and processe
 
 Many Japanese seniors spend a lot of time alone, and their families never find the time or the courage to ask about their lives. Having a professional write a 自分史 (self-history) costs upwards of ¥220,000 and happens once.
 
-- **For the senior:** memory work, a sense of purpose, and the knowledge that their story will last.
+- **For the senior:** a few minutes a day to look forward to, sometimes with a grandchild's question waiting; memory work; and the knowledge that their story will last.
 - **For the family:** stories they never had time to ask about, and a reason to call and ask more.
+
+### Beyond the family
+
+Not everyone has relatives nearby, and a life story is worth keeping either way. Today a story reaches only the family, and only what its teller agreed to share. Next, the teller chooses who else may read it: a friend, a care worker who knows them better for it, or a local archive.
+
+That last one is the oldest meaning of the word. In Japan, 語り部 are the people who tell what they lived through, the war, the bombings, the disasters, so that it is not forgotten, and fewer of them are left each year. Kataribe's rules suit that work: every quote is checked against the recording and the AI never adds a detail, the rule Hiroshima's [testimony device](https://www.city.hiroshima.lg.jp/atomicbomb-peace/fukko/1021099/1042983.html) follows too. An archive needs a version of its own, though. Today the interviewer never presses on a painful memory, so there a teller would choose to tell it, and stay free to stop.
 
 ## How it differs
 
