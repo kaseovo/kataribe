@@ -92,10 +92,13 @@ test('a visitor who ends without choosing is asked afterwards', async ({ page, c
 
   await expect(page.locator('.talk-thanks')).toHaveText('Thank you.', { timeout: 60_000 });
   await expect(page.getByText('Writing up your story…')).toBeVisible();
-  // No answer about sharing, so asked here, naming the story.
-  await expect(page.getByText('Before you go: may your family read these?')).toBeVisible({
-    timeout: 120_000,
-  });
+  // No answer about sharing, so asked here, naming the story. Waited for in two
+  // steps, so a failure says which it was: still writing after two minutes, or
+  // written up with something else to say. In the eval of 2026-10-19 it was one
+  // of the two, and nothing showed which.
+  const outcome = page.locator('.talk-done .talk-message').first();
+  await expect(outcome).not.toHaveText(/Writing up your story…|taking longer/, { timeout: 120_000 });
+  await expect(outcome).toHaveText('Before you go: may your family read these?');
   await expect(page.locator('.talk-titles li').first()).not.toBeEmpty();
   await page.getByRole('button', { name: 'Let my family read them' }).click();
   await expect(page.getByText(/now on your family page/)).toBeVisible();
