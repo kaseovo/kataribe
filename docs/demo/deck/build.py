@@ -520,11 +520,15 @@ def wireframes(slide):
 
     text(slide, LEFT, ty + th + 0.12, tw, 0.3,
          [P(R("The senior's screen: one button to start, nothing to learn", 11, "semibold"))], name="Tablet caption")
+    # Numbered as the screen's markers are; the close comes after, on a screen of its own.
     notes = ["Its words, large, as it says them", "Listening or speaking, calmly", "One button to finish",
-             "Then: share today's story, or keep it"]
+             "Then, at the close: share today's story, or keep it"]
     for i, note in enumerate(notes):
         nx, ny = LEFT + (i % 2) * 2.4, ty + th + 0.5 + (i // 2) * 0.32
-        number(slide, i + 1, nx, ny + 0.02, d=0.22, fill=ACCENT, color=DARK)
+        if i < 3:
+            number(slide, i + 1, nx, ny + 0.02, d=0.22, fill=ACCENT, color=DARK)
+        else:
+            text(slide, nx, ny - 0.02, 0.3, 0.28, [P(R("→", 11, "semibold", ACCENT_TEXT))], name="Tablet then")
         text(slide, nx + 0.3, ny, 2.05, 0.28, [P(R(note, 9.5, "regular", MUTED))], name=f"Tablet note {i + 1}")
 
     # Phone, portrait: the family page as a book. Callouts just outside its right edge.
@@ -556,7 +560,8 @@ def wireframes(slide):
     circle(slide, qx + 0.2, qy + 2.76, 0.18, ACCENT, name="Play")
     icon(slide, "MdPlayArrow", qx + 0.222, qy + 2.782, 0.135, color=WHITE)
     rect(slide, qx + 0.44, qy + 2.845, qw - 0.64, 0.015, "5A4A3C", radius=0.0, name="Progress")
-    for n, centre in enumerate([qy + 0.38, qy + 0.85, qy + 2.6], 1):
+    centres = [qy + 0.38, qy + 0.85, qy + 2.6]
+    for n, centre in enumerate(centres, 1):
         callout(n, px + pw + 0.06, centre - 0.12)
 
     family_notes = [
@@ -564,16 +569,14 @@ def wireframes(slide):
         "The family's questions, one tab away, each with the story it led to",
         "Each retelling with its quotes, in the words as said, and the voice that said them",
     ]
-    nx = 7.62
+    nx = px + pw + 0.4
     text(slide, nx, TOP, RIGHT - nx, 0.3, [P(R("The family page", 11, "semibold"))], name="Phone caption")
-    for i, note in enumerate(family_notes):
-        ny = TOP + 0.45 + i * 0.66
-        number(slide, i + 1, nx, ny + 0.02, d=0.22, fill=ACCENT, color=DARK)
-        text(slide, nx + 0.3, ny, RIGHT - nx - 0.3, 0.6, [P(R(note, 9.5, "regular", MUTED), line=1.0)],
+    for i, (note, centre) in enumerate(zip(family_notes, centres)):
+        text(slide, nx, centre - 0.08, RIGHT - nx, 0.6, [P(R(note, 9.5, "regular", MUTED), line=1.0)],
              name=f"Family note {i + 1}")
-    text(slide, nx, TOP + 2.55, RIGHT - nx, 0.9,
-         [P(R("Both are built. kataribe.kaseovo.com shows a family page from the demo, and lets anyone "
-              "try the conversation in English.", 9, "regular", MUTED), line=1.05)], name="Status note")
+    text(slide, nx, py + ph - 0.28, RIGHT - nx, 0.5,
+         [P(R("Both are live at kataribe.kaseovo.com, with this family page and a conversation to try "
+              "in English.", 9, "regular", MUTED), line=1.05)], name="Status note")
 
 
 def architecture(slide):
@@ -624,11 +627,16 @@ def architecture(slide):
         node(rx, y, rw, 0.6, glyph, title, [body])
 
     pad = 0.05
-    # 2: voice goes straight between the browser and Gemini, over the backend.
-    arrow(slide, LEFT + cl_w + pad, 1.8, rx - pad, 1.8, color=ACCENT, width=2, both=True)
-    number(slide, 2, 4.6, 1.65, d=0.3, fill=ACCENT, color=DARK)
-    text(slide, 4.98, 1.47, 2.15, 0.3, [P(R("Voice, both ways, with that token", 9, "medium", ACCENT_TEXT))],
-         name="Voice label")
+    # 2: the conversation, voice straight between the screen and Gemini, not
+    # through Cloud Run: a step like the others, on the voice's own path.
+    voice_y = 1.75
+    arrow(slide, LEFT + cl_w + pad, voice_y, rx - pad, voice_y, color=ACCENT, width=2, both=True)
+    rect(slide, run_x + 0.15, voice_y - 0.27, run_w - 0.3, 0.54, WHITE, radius=0.06, line=ACCENT, name="The conversation")
+    number(slide, 2, run_x + 0.25, voice_y - 0.15, d=0.3, fill=ACCENT, color=DARK)
+    text(slide, run_x + 0.65, voice_y - 0.24, run_w - 0.85, 0.48,
+         [P(R("The conversation", 10, "semibold"), after=1),
+          P(R("Voice both ways, screen to Gemini, on the token from 1", 8.5, "regular", MUTED), line=1.0)],
+         anchor="ctr", name="The conversation text")
     for y in (sub_ys[0] + 0.3, sub_ys[1] + 0.3):
         arrow(slide, LEFT + cl_w + pad, y, run_x - pad, y, both=y == sub_ys[0] + 0.3)
     arrow(slide, LEFT + cl_w + pad, sub_ys[3] + 0.3, run_x - pad, sub_ys[3] + 0.3, both=True)
