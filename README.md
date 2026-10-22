@@ -105,6 +105,10 @@ Synthesized speech is clean and evenly paced, so it proves correctness rather th
 
 **Live:** <https://kataribe.kaseovo.com>. The start page and family pages are open to anyone with their link; the console, at `/console`, is behind a team password. See [docs/deploy.md](docs/deploy.md).
 
+**Fixed since the submission.** The submitted build, [v1.0.0](https://github.com/kaseovo/kataribe/releases/tag/v1.0.0), is frozen. Only an outage is fixed, each one as a patch release:
+
+- **[v1.0.1](https://github.com/kaseovo/kataribe/releases/tag/v1.0.1), 2026-10-22.** Overnight on Oct 21, with nothing deployed on our side, Google's Gemini Live API began refusing a transcription setting it had always accepted: word timestamps, which it never actually sent. Every conversation on the live site was cut off the moment it opened. The fix stops asking for them; nothing else changed. See [#1](https://github.com/kaseovo/kataribe/issues/1).
+
 Prototype, built in the open over four weeks. See [docs/plan.md](docs/plan.md) for the full plan and [docs/roadmap.md](docs/roadmap.md) for what is built and what is next.
 
 ## Privacy

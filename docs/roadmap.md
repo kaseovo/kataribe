@@ -251,7 +251,7 @@ It leaves exactly one thing it cannot judge, which is the point of the human ses
 
 Slice 5 shows every passage with the senior's own voice behind it, which needs to know where in the recording each phrase sits.
 
-The Live API takes `word_timestamp` on its transcription config and then ignores it: the transcription comes back with text and an empty `words` list, on a raw key as well as through an ephemeral token, with and without `VERBATIM` mode. It is still requested, so offsets arrive free if that changes, but nothing may be built on it.
+The Live API used to take `word_timestamp` on its transcription config and then ignore it: the transcription came back with text and an empty `words` list, on a raw key as well as through an ephemeral token, with and without `VERBATIM` mode. Overnight on 2026-10-21, between 23:51 and 09:09 JST, it began refusing the field outright, closing the session with 1007 "word_timestamp is not supported in BidiGenerateContent", on every current Live model. That cut off every conversation on the live site until v1.0.1 stopped asking for it ([#1](https://github.com/kaseovo/kataribe/issues/1)). A field the model ignores today can be refused tomorrow, with nothing deployed on our side, so the Live config asks only for what is used.
 
 Stored turns carry a `started_at`, and it is honest about what it is: the moment the transcript *arrived*, which is when the turn ended. In a thirteen second session both turns were stamped at 0:12 and 0:13. Useful for ordering, useless for seeking.
 

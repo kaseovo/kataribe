@@ -54,7 +54,8 @@ From the submission on Oct 17 to the end of judging on Nov 6. Decided in [roadma
 - **One instance stays warm**, `MIN_INSTANCES=1`, the Makefile's default until Nov 6. A cold start measured 4.6 s, nearly all of it Cloud Run starting the container; startup CPU boost was already on.
 - **The deploy sets** `TRY_LANGUAGES=en` (`en,ja` once the native-speaker review passes), `SHOWCASE` to the demo persona and `VIDEO_URL` to the video.
 - **Watched by**, since 2026-10-18: an uptime check on `/api/health` every five minutes, *Kataribe health*, which emails the team when it fails (*Kataribe is down*); Error Reporting, with an email when the service answers with a server error or logs a traceback, at most one every 30 minutes (*Kataribe logged an error*); the budget above; and `make smoke` each morning, since a health check cannot see a broken key.
-- **Frozen.** The submitted commit is tagged and deployed. Only an outage is fixed, and each fix is noted in the README.
+- **Gemini can change under a frozen build.** Between 2026-10-21 23:51 and 2026-10-22 09:09 JST, with nothing deployed, the Live API began refusing `word_timestamp`, which it had accepted and ignored since the start. Every session that set it closed with `1007 word_timestamp is not supported in BidiGenerateContent`, so every conversation on the live site was cut off as it opened. The uptime check could not see it, as with the key; the morning `make smoke` did. Fixed in v1.0.1 ([#1](https://github.com/kaseovo/kataribe/issues/1)).
+- **Frozen.** The submitted commit is tagged v1.0.0 and deployed. Only an outage is fixed, each as a patch release that is tagged, deployed from its tag and noted in the README.
 - **Afterwards**, on Nov 7 unless the project is shortlisted, every visitor persona is forgotten, as the start page promises, and `MIN_INSTANCES` goes back to 0:
 
 ```sh
