@@ -73,13 +73,13 @@ def test_live_config_pins_japanese_and_applies_tuning() -> None:
     assert detection.end_of_speech_sensitivity == types.EndSensitivity.END_SENSITIVITY_LOW
 
 
-def test_live_config_asks_for_word_timestamps_even_though_they_do_not_come_back() -> None:
-    # The model ignores this today. Kept so offsets arrive free if that changes;
-    # see the note in gemini.py before building anything on it.
+def test_live_config_leaves_word_timestamps_off() -> None:
+    # Setting it makes the Live API close the session with close code 1007.
+    # It used to be accepted and ignored; see the note in gemini.py and issue #1.
     config = build_live_config(InterviewTuning())
 
     assert config.input_audio_transcription is not None
-    assert config.input_audio_transcription.word_timestamp is True
+    assert not config.input_audio_transcription.word_timestamp
 
 
 def test_live_config_leaves_affective_dialog_off() -> None:

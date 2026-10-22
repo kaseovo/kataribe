@@ -91,15 +91,14 @@ def build_live_config(tuning: InterviewTuning, context: str = "") -> types.LiveC
                 prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name=tuning.voice)
             ),
         ),
-        # word_timestamp is accepted and then ignored by this model: the
-        # transcription comes back with text and an empty `words`, on the raw
-        # key as well as through a token, with and without VERBATIM mode. It is
-        # left set so we get offsets if support arrives, but nothing may depend
-        # on it — linking a quote to its audio needs a separate pass over the
-        # stored recording.
-        input_audio_transcription=types.AudioTranscriptionConfig(
-            language_codes=[language.locale], word_timestamp=True
-        ),
+        # No word_timestamp. The Live API used to accept it and send back an
+        # empty `words`. Between 2026-10-21 23:51 and 2026-10-22 09:09 JST, with
+        # nothing deployed on our side, it began closing any session that sets
+        # it with 1007 "word_timestamp is not supported in BidiGenerateContent",
+        # on every current Live model. That cut off every conversation on the
+        # live site until v1.0.1; see issue #1. Linking a quote to its audio
+        # needs a separate pass over the stored recording.
+        input_audio_transcription=types.AudioTranscriptionConfig(language_codes=[language.locale]),
         output_audio_transcription=types.AudioTranscriptionConfig(language_codes=[language.locale]),
         realtime_input_config=types.RealtimeInputConfig(
             automatic_activity_detection=types.AutomaticActivityDetection(
